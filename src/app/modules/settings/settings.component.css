@@ -1,0 +1,18 @@
+.settings-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.settings-card {
+  backdrop-filter: blur(8px);
+}
+
+.switch {
+  cursor: pointer;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

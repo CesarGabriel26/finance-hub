@@ -1,0 +1,86 @@
+<div class="settings-container p-6">
+  <div class="header mb-8">
+    <h1 class="text-2xl font-bold flex items-center gap-3 text-slate-100">
+      <lucide-angular [img]="SettingsIcon" class="w-8 h-8 text-blue-400"></lucide-angular>
+      Configurações
+    </h1>
+    <p class="text-slate-400 mt-1">Gerencie as preferências e o comportamento do aplicativo.</p>
+  </div>
+
+  <div class="settings-grid grid gap-6 max-w-2xl">
+    <!-- Auto Start -->
+    <div class="settings-card bg-slate-800/50 border border-slate-700 rounded-xl p-5 hover:border-blue-500/50 transition-all">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="icon-wrapper p-3 bg-blue-500/10 rounded-lg text-blue-400">
+            <lucide-angular [img]="MonitorIcon" class="w-6 h-6"></lucide-angular>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-100">Abrir com o Windows</h3>
+            <p class="text-sm text-slate-400">Iniciar o aplicativo automaticamente ao ligar o computador.</p>
+          </div>
+        </div>
+        <button 
+          (click)="toggleSetting('open_at_login')"
+          class="switch relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+          [ngClass]="settingsService.settings()['open_at_login'] ? 'bg-blue-600' : 'bg-slate-600'"
+        >
+          <span 
+            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+            [ngClass]="settingsService.settings()['open_at_login'] ? 'translate-x-6' : 'translate-x-1'"
+          ></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="settings-card bg-slate-800/50 border border-slate-700 rounded-xl p-5 hover:border-blue-500/50 transition-all">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="icon-wrapper p-3 bg-purple-500/10 rounded-lg text-purple-400">
+            <lucide-angular [img]="BellIcon" class="w-6 h-6"></lucide-angular>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-100">Notificações de Contas</h3>
+            <p class="text-sm text-slate-400">Avisar sobre contas que estão próximas do vencimento.</p>
+          </div>
+        </div>
+        <button 
+          (click)="toggleSetting('notifications_enabled')"
+          class="switch relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+          [ngClass]="settingsService.settings()['notifications_enabled'] ? 'bg-purple-600' : 'bg-slate-600'"
+        >
+          <span 
+            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+            [ngClass]="settingsService.settings()['notifications_enabled'] ? 'translate-x-6' : 'translate-x-1'"
+          ></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- System Tray -->
+    <div class="settings-card bg-slate-800/50 border border-slate-700 rounded-xl p-5 hover:border-blue-500/50 transition-all">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="icon-wrapper p-3 bg-teal-500/10 rounded-lg text-teal-400">
+            <lucide-angular [img]="PowerIcon" class="w-6 h-6"></lucide-angular>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-100">Permanecer na Bandeja</h3>
+            <p class="text-sm text-slate-400">Ocultar na bandeja do sistema em vez de fechar o app.</p>
+          </div>
+        </div>
+        <button 
+          (click)="toggleSetting('minimized_to_tray')"
+          class="switch relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+          [ngClass]="settingsService.settings()['minimized_to_tray'] ? 'bg-teal-600' : 'bg-slate-600'"
+        >
+          <span 
+            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+            [ngClass]="settingsService.settings()['minimized_to_tray'] ? 'translate-x-6' : 'translate-x-1'"
+          ></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

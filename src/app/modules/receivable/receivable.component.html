@@ -1,0 +1,157 @@
+<div class="p-6 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 space-y-6">
+      <div class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight text-gray-900">Contas a Receber</h1>
+          <p class="text-gray-500 mt-1">Gerencie suas receitas e entradas futuras.</p>
+        </div>
+        <button (click)="showAddForm.set(true)" 
+                class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl transition-all shadow-md active:scale-95">
+          <lucide-icon [name]="PlusIcon" class="w-5 h-5"></lucide-icon>
+          Nova Receita
+        </button>
+      </div>
+
+      <!-- Add Bill Form -->
+      <div *ngIf="showAddForm()" class="bg-white shadow-sm border border-gray-100 p-6 rounded-2xl animate-in zoom-in-95 duration-300">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 text-gray-900">
+            <lucide-icon [name]="PlusIcon" class="w-5 h-5 text-green-500"></lucide-icon>
+            Adicionar Conta a Receber
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="space-y-2">
+            <label class="text-sm text-gray-500">Descrição</label>
+            <input [(ngModel)]="nbDescription" type="text" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2 focus:border-green-500 outline-none transition-colors" placeholder="Ex: Salário, Venda">
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm text-gray-500">Valor</label>
+            <input [(ngModel)]="nbAmount" type="number" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2 focus:border-green-500 outline-none transition-colors" placeholder="0,00">
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm text-gray-500">Vencimento</label>
+            <input [(ngModel)]="nbDueDate" type="date" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2 focus:border-green-500 outline-none transition-colors">
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm text-gray-500">Categoria</label>
+            <select [(ngModel)]="nbCategoryId" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2 focus:border-green-500 outline-none transition-colors">
+              <option [ngValue]="null">Sem Categoria</option>
+              <option *ngFor="let cat of revenueCategories()" [value]="cat.id">{{cat.name}}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-6">
+            <label class="flex items-center gap-2 cursor-pointer group">
+                <input type="checkbox" [(ngModel)]="nbIsRecurring" class="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                <span class="text-sm text-gray-600 group-hover:text-gray-900 transition-colors flex items-center gap-1">
+                    <lucide-icon [name]="RepeatIcon" class="w-4 h-4"></lucide-icon>
+                    Recorrente (Mensal)
+                </span>
+            </label>
+
+            <div class="flex items-center gap-4">
+                <label class="text-sm text-gray-500 flex items-center gap-1">
+                    <lucide-icon [name]="LayersIcon" class="w-4 h-4"></lucide-icon>
+                    Parcelas:
+                </label>
+                <input [(ngModel)]="nbTotalInstallments" type="number" min="1" class="w-20 bg-white border border-gray-200 rounded-lg px-3 py-1 focus:border-green-500 outline-none transition-colors">
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+          <button (click)="showAddForm.set(false)" class="px-6 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600">Cancelar</button>
+          <button (click)="addBill()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded-lg transition-all active:scale-95 shadow-md">Salvar</button>
+        </div>
+      </div>
+
+      <!-- Receipt Modal -->
+      <div *ngIf="receivingBill()" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-300">
+        <div class="bg-white border border-gray-100 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-300">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-gray-900">
+                <lucide-icon [name]="CheckCircleIcon" class="w-6 h-6 text-green-500"></lucide-icon>
+                Baixar Receita: {{receivingBill()?.description}}
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="space-y-2">
+                    <label class="text-sm text-gray-500">Conta para Depósito</label>
+                    <select [(ngModel)]="selectedAccountId" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2 focus:border-green-500 outline-none transition-colors text-gray-900">
+                        <option *ngFor="let acc of accounts()" [value]="acc.id">{{acc.name}} (Saldo: {{acc.balance | currency:'BRL'}})</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm text-gray-500">Data do Recebimento</label>
+                    <input [(ngModel)]="paymentDate" type="date" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2 focus:border-green-500 outline-none transition-colors text-gray-900">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-8">
+                <button (click)="receivingBill.set(null)" class="px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600">Cancelar</button>
+                <button (click)="confirmReceipt()" 
+                        [disabled]="!selectedAccountId()"
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-all active:scale-95 shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                    Confirmar Recebimento
+                </button>
+            </div>
+        </div>
+      </div>
+
+      <!-- Bills List -->
+      <div class="overflow-hidden bg-white shadow-sm border border-gray-100 rounded-2xl">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-gray-100 bg-gray-50/50">
+              <th class="px-6 py-4 font-semibold text-gray-600 uppercase text-xs tracking-wider">Vencimento</th>
+              <th class="px-6 py-4 font-semibold text-gray-600 uppercase text-xs tracking-wider">Descrição</th>
+              <th class="px-6 py-4 font-semibold text-gray-600 uppercase text-xs tracking-wider">Categoria</th>
+              <th class="px-6 py-4 font-semibold text-gray-600 uppercase text-xs tracking-wider">Valor</th>
+              <th class="px-6 py-4 font-semibold text-gray-600 uppercase text-xs tracking-wider">Status</th>
+              <th class="px-6 py-4 font-semibold text-gray-600 uppercase text-xs tracking-wider text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr *ngFor="let bill of bills()" 
+                class="hover:bg-gray-50 transition-colors group">
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-2 text-gray-700">
+                    <lucide-icon [name]="CalendarIcon" class="w-4 h-4 text-gray-400"></lucide-icon>
+                    {{bill.due_date | date:'dd/MM/yyyy'}}
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="font-medium text-gray-900">{{bill.description}}</div>
+                <div *ngIf="bill.total_installments > 1" class="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                    <lucide-icon [name]="LayersIcon" class="w-3 h-3"></lucide-icon>
+                    Parcela {{bill.current_installment}} de {{bill.total_installments}}
+                </div>
+                 <div *ngIf="bill.is_recurring" class="text-xs text-blue-600 flex items-center gap-1 mt-0.5">
+                    <lucide-icon [name]="RepeatIcon" class="w-3 h-3"></lucide-icon>
+                    Recorrente
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{{bill.category_name || 'Diversos'}}</span>
+              </td>
+              <td class="px-6 py-4 font-bold text-green-600">+{{bill.amount | currency:'BRL'}}</td>
+              <td class="px-6 py-4">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">Pendente</span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button (click)="openReceiptModal(bill)" title="Baixar Receita" 
+                          class="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors">
+                    <lucide-icon [name]="CheckCircleIcon" class="w-5 h-5"></lucide-icon>
+                  </button>
+                  <button (click)="deleteBill(bill.id!)" title="Excluir"
+                          class="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors">
+                    <lucide-icon [name]="TrashIcon" class="w-5 h-5"></lucide-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="bills().length === 0">
+              <td colspan="6" class="px-6 py-12 text-center text-gray-400 italic">Nenhuma conta a receber pendente.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>

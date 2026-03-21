@@ -1,0 +1,89 @@
+<div class="space-y-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-gray-900">Dashboard</h1>
+      <p class="text-gray-500 mt-1">Visão geral das suas finanças</p>
+    </div>
+    
+    <div class="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-gray-100 shadow-sm">
+      <select [(ngModel)]="selectedMonth" (change)="onPeriodChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer">
+        <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+      </select>
+      <div class="w-px h-4 bg-gray-200"></div>
+      <select [(ngModel)]="selectedYear" (change)="onPeriodChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer">
+        <option *ngFor="let y of years()" [value]="y">{{ y }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+    <!-- Balance -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 p-5">
+      <dt class="truncate text-sm font-medium text-gray-500 uppercase tracking-wider">Saldo Geral</dt>
+      <dd class="mt-2 text-3xl font-extrabold tracking-tight text-blue-600">
+        {{ totalBalance() | currency:'BRL' }}
+      </dd>
+    </div>
+
+    <!-- Revenue -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 p-5">
+      <dt class="truncate text-sm font-medium text-gray-500 uppercase tracking-wider">Receitas do Mês</dt>
+      <dd class="mt-2 text-3xl font-extrabold tracking-tight text-emerald-600">
+        {{ totalRevenue() | currency:'BRL' }}
+      </dd>
+    </div>
+
+    <!-- Expenses -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 p-5">
+      <dt class="truncate text-sm font-medium text-gray-500 uppercase tracking-wider">Despesas do Mês</dt>
+      <dd class="mt-2 text-3xl font-extrabold tracking-tight text-red-600">
+        {{ totalExpense() | currency:'BRL' }}
+      </dd>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Chart Growth -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px]">
+      <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center">
+        <span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
+        Evolução de Gastos (6 Meses)
+      </h2>
+      <div class="flex-1 relative">
+        <canvas baseChart
+                [type]="'line'"
+                [datasets]="lineChartDatasets"
+                [labels]="lineChartLabels"
+                [options]="lineChartOptions">
+        </canvas>
+      </div>
+    </div>
+
+    <!-- Chart Sect -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px]">
+      <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center">
+        <span class="w-2 h-2 rounded-full bg-rose-500 mr-2"></span>
+        Despesas por Categoria
+      </h2>
+      
+      <div class="flex-1 relative flex items-center justify-center">
+        <canvas *ngIf="pieChartLabels.length > 0; else noData"
+                baseChart
+                [type]="'pie'"
+                [datasets]="pieChartDatasets"
+                [labels]="pieChartLabels"
+                [options]="pieChartOptions"
+                [legend]="pieChartLegend">
+        </canvas>
+        <ng-template #noData>
+          <div class="text-center text-gray-400 flex flex-col items-center">
+            <svg class="h-12 w-12 mb-2 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <p class="text-sm">Nenhuma despesa registrada neste mês.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>
