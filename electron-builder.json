@@ -1,0 +1,42 @@
+{
+  "appId": "com.cesargabriel.financehub",
+  "productName": "Finance Hub",
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "CesarGabriel26",
+      "repo": "finance-hub"
+    }
+  ],
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "dist/finance-hub/browser/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "win": {
+    "icon": "public\\assets\\icons\\financehubicon.ico",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ]
+  },
+  "nsis": {
+    "perMachine": true,
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "public\\assets\\icons\\financehubicon.ico",
+    "uninstallerIcon": "public\\assets\\icons\\financehubicon.ico",
+    "uninstallDisplayName": "Finance Hub",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Finance Hub",
+    "include": "build/installer.nsh"
+  }
+}

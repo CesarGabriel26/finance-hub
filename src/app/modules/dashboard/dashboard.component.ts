@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
@@ -41,7 +41,7 @@ export class DashboardComponent implements OnInit {
   public pieChartLegend = true;
   public pieChartPlugins = [];
 
-  // Line Chart for Evolution
+  // Line Chart for Expense Evolution
   public lineChartOptions: ChartOptions<'line'> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -74,7 +74,52 @@ export class DashboardComponent implements OnInit {
     }
   ];
 
-  constructor(private db: DatabaseService) { }
+  // Pie Chart for Revenue by Category
+  public pieChartRevenueOptions: ChartOptions<'pie'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+  };
+  public pieChartRevenueLabels: string[] = [];
+  public pieChartRevenueDatasets = [{
+    data: [] as number[],
+    backgroundColor: ['#10b981', '#34d399', '#059669', '#047857', '#6ee7b7', '#064e3b', '#022c22', '#a7f3d0', '#d1fae5', '#3b82f6']
+  }];
+  public pieChartRevenueLegend = true;
+
+  // Line Chart for Revenue Evolution
+  public lineChartRevenueOptions: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: { color: '#f3f4f6' }
+      },
+      x: {
+        grid: { display: false }
+      }
+    }
+  };
+  public lineChartRevenueLabels: string[] = [];
+  public lineChartRevenueDatasets: ChartConfiguration<'line'>['data']['datasets'] = [
+    {
+      data: [],
+      label: 'Receitas',
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#10b981',
+      pointBorderColor: '#fff',
+      pointHoverBackgroundColor: '#fff',
+      pointHoverBorderColor: '#10b981'
+    }
+  ];
+
+  constructor(private db: DatabaseService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     const currentYear = new Date().getFullYear();
@@ -88,25 +133,22 @@ export class DashboardComponent implements OnInit {
     const accounts = await this.db.getAccounts();
     this.totalBalance.set(accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0));
 
-    const categories = await this.db.getCategories();
-    const categoryNameMap = new Map(categories.map(c => [c.id, c.name]));
+    const dbData = await this.db.getDashboardData(monthStr);
 
     let expensesByCategory: { [key: string]: number } = {};
+    let revenuesByCategory: { [key: string]: number } = {};
     let revenues = 0;
     let expenses = 0;
 
-    for (const acc of accounts) {
-      if (acc.id) {
-        const movs = await this.db.getMovements(acc.id, monthStr);
-        movs.forEach(m => {
-          if (m.type === 'C') {
-            revenues += m.amount;
-          } else if (m.type === 'D') {
-            expenses += Math.abs(m.amount);
-            const catName = m.category_id ? (categoryNameMap.get(m.category_id) || 'Outros') : 'Outros';
-            expensesByCategory[catName] = (expensesByCategory[catName] || 0) + Math.abs(m.amount);
-          }
-        });
+    for (const row of dbData) {
+      if (row.type === 'C') {
+        revenues += row.total;
+        const catName = row.category_name || 'Outros';
+        revenuesByCategory[catName] = (revenuesByCategory[catName] || 0) + row.total;
+      } else if (row.type === 'D') {
+        expenses += row.total;
+        const catName = row.category_name || 'Outros';
+        expensesByCategory[catName] = (expensesByCategory[catName] || 0) + row.total;
       }
     }
 
@@ -117,37 +159,51 @@ export class DashboardComponent implements OnInit {
       data: Object.values(expensesByCategory),
       backgroundColor: this.pieChartDatasets[0].backgroundColor
     }];
+    this.pieChartRevenueLabels = Object.keys(revenuesByCategory);
+    this.pieChartRevenueDatasets = [{
+      data: Object.values(revenuesByCategory),
+      backgroundColor: this.pieChartRevenueDatasets[0].backgroundColor
+    }];
 
     await this.loadEvolutionData(accounts);
+    this.cdr.detectChanges();
   }
 
   async loadEvolutionData(accounts: Account[]) {
     // Get data for the last 6 months
     const now = new Date(this.selectedYear(), this.selectedMonth() - 1, 1);
     const labels: string[] = [];
-    const points: number[] = [];
+    const periods: string[] = [];
 
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const period = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
       labels.push(d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
-
-      let monthlyExpense = 0;
-      for (const acc of accounts) {
-        if (acc.id) {
-          const movs = await this.db.getMovements(acc.id, period);
-          monthlyExpense += movs
-            .filter(m => m.type === 'D')
-            .reduce((sum, m) => sum + Math.abs(m.amount), 0);
-        }
-      }
-      points.push(monthlyExpense);
+      periods.push(period);
     }
+
+    const evolutionData = await this.db.getDashboardEvolution(periods);
+
+    const pointsExpense = periods.map(p => {
+      const match = evolutionData.find(row => row.period === p);
+      return match ? match.total_expense : 0;
+    });
+
+    const pointsRevenue = periods.map(p => {
+      const match = evolutionData.find(row => row.period === p);
+      return match ? match.total_revenue : 0;
+    });
 
     this.lineChartLabels = labels;
     this.lineChartDatasets = [{
       ...this.lineChartDatasets[0],
-      data: points
+      data: pointsExpense
+    }];
+
+    this.lineChartRevenueLabels = labels;
+    this.lineChartRevenueDatasets = [{
+      ...this.lineChartRevenueDatasets[0],
+      data: pointsRevenue
     }];
   }
 

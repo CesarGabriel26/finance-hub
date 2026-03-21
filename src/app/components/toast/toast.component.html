@@ -1,0 +1,36 @@
+<div class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+  <div *ngFor="let toast of toastService.toasts()"
+       class="pointer-events-auto flex items-center w-80 p-4 rounded-xl shadow-lg border backdrop-blur-md transition-all duration-300 transform translate-x-0 opacity-100"
+       [ngClass]="{
+         'bg-green-50/90 border-green-200 text-green-800': toast.type === 'success',
+         'bg-red-50/90 border-red-200 text-red-800': toast.type === 'error',
+         'bg-blue-50/90 border-blue-200 text-blue-800': toast.type === 'info'
+       }"
+       role="alert">
+       
+    <!-- Icon -->
+    <div class="flex-shrink-0">
+      <lucide-icon *ngIf="toast.type === 'success'" [img]="CheckCircleIcon" class="w-5 h-5 text-green-500"></lucide-icon>
+      <lucide-icon *ngIf="toast.type === 'error'" [img]="AlertCircleIcon" class="w-5 h-5 text-red-500"></lucide-icon>
+      <lucide-icon *ngIf="toast.type === 'info'" [img]="InfoIcon" class="w-5 h-5 text-blue-500"></lucide-icon>
+    </div>
+    
+    <!-- Message -->
+    <div class="ml-3 text-sm font-medium flex-1">
+      {{ toast.message }}
+    </div>
+    
+    <!-- Close button -->
+    <button type="button" 
+            (click)="remove(toast.id)"
+            class="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 inline-flex h-8 w-8 hover:bg-black/5 focus:ring-2 focus:ring-black/10 transition-colors"
+            [ngClass]="{
+              'text-green-500 hover:text-green-700': toast.type === 'success',
+              'text-red-500 hover:text-red-700': toast.type === 'error',
+              'text-blue-500 hover:text-blue-700': toast.type === 'info'
+            }">
+      <span class="sr-only">Close</span>
+      <lucide-icon [img]="XIcon" class="w-4 h-4"></lucide-icon>
+    </button>
+  </div>
+</div>

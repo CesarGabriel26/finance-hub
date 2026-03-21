@@ -51,6 +51,8 @@ export class KeywordsComponent implements OnInit {
       this.newKeyword().trim(), 
       this.selectedCategoryId()!
     );
+
+    await this.db.recategorizeMovements();
     this.newKeyword.set('');
     await this.loadData();
   }

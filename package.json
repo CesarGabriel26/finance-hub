@@ -1,6 +1,6 @@
 {
   "name": "finance-hub",
-  "version": "0.0.0",
+  "version": "1.0.1",
   "main": "electron/main.js",
   "type": "module",
   "scripts": {
@@ -9,7 +9,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "dev": "concurrently \"ng serve\" \"wait-on http://localhost:4200 && cross-env NODE_ENV=development electron .\""
+    "dev": "concurrently \"ng serve\" \"wait-on http://localhost:4200 && cross-env NODE_ENV=development electron .\"",
+    "dist": "ng build --base-href ./ && cross-env NODE_ENV=production electron-builder"
   },
   "prettier": {
     "printWidth": 100,
@@ -32,10 +33,12 @@
     "@angular/forms": "^21.1.0",
     "@angular/platform-browser": "^21.1.0",
     "@angular/router": "^21.1.0",
+    "auto-launch": "^5.0.6",
     "chart.js": "^4.5.1",
-    "electron": "^41.0.3",
+    "electron-updater": "^6.8.3",
     "lucide-angular": "^0.577.0",
     "ng2-charts": "^10.0.0",
+    "ofx-data-extractor": "^1.4.8",
     "rxjs": "~7.8.0",
     "sqlite3": "^6.0.1",
     "tslib": "^2.3.0"
@@ -47,6 +50,8 @@
     "@tailwindcss/postcss": "^4.1.12",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1",
     "jsdom": "^27.1.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.12",

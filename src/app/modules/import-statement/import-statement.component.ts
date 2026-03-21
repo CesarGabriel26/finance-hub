@@ -3,17 +3,32 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService, Account, Movement, Category, Keyword } from '../../services/database.service';
 import { LucideAngularModule, FileUp, CheckCircle, AlertCircle, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-angular';
+import { Ofx } from 'ofx-data-extractor';
+import { DeepSearch } from '../../utils/object.utils';
 
 interface ParsedMovement {
   date: string;
   description: string;
   amount: number;
   type: 'C' | 'D';
+  period: string; // YYYY-MM
   category_id?: number | null;
 
   classification_source?: 'manual' | 'keyword' | 'imported';
   classification_rule_id?: number | null;
   confidence?: number | null;
+}
+
+interface ParsedStatement {
+  fileName: string;
+  period: string;
+  movements: ParsedMovement[];
+  total: number;
+  credit: number;
+  debit: number;
+  initialBalance: number | null;
+  finalBalance: number | null;
+  isComplete: boolean;
 }
 
 @Component({
@@ -27,8 +42,14 @@ export class ImportStatementComponent implements OnInit {
   accounts = signal<Account[]>([]);
   selectedAccountId = signal<number | null>(null);
   selectedPeriod = signal(new Date().toISOString().slice(0, 7)); // YYYY-MM
-  
-  parsedMovements = signal<ParsedMovement[]>([]);
+
+  parsedStatements = signal<ParsedStatement[]>([]);
+  readonly allMovements = computed(() =>
+    this.parsedStatements().flatMap((s, sIdx) =>
+      s.movements.map((m, mIdx) => ({ ...m, sIdx, mIdx }))
+    ).sort((a, b) => a.date.localeCompare(b.date))
+  );
+
   isParsing = signal(false);
   importStatus = signal<'idle' | 'success' | 'error'>('idle');
   errorMessage = signal('');
@@ -39,12 +60,12 @@ export class ImportStatementComponent implements OnInit {
   readonly TrashIcon = Trash2;
   readonly UpIcon = ArrowUpCircle;
   readonly DownIcon = ArrowDownCircle;
-  
+
   keywords = signal<Keyword[]>([]);
   keywordRules = signal<any[]>([]);
   categories = signal<Category[]>([]);
 
-  constructor(private db: DatabaseService) {}
+  constructor(private db: DatabaseService) { }
 
   async ngOnInit() {
     const [accs, cats, keys, rules] = await Promise.all([
@@ -63,45 +84,70 @@ export class ImportStatementComponent implements OnInit {
     }
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (!file) return;
+  async onFileSelected(event: any) {
+    const files: FileList = event.target.files;
+    if (!files || files.length === 0) return;
 
     this.isParsing.set(true);
     this.importStatus.set('idle');
     this.errorMessage.set('');
 
-    const reader = new FileReader();
-    reader.onload = (e: any) => {
-      const content = e.target.result;
+    const statements: ParsedStatement[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const content = await file.text();
+
       try {
         if (file.name.toLowerCase().endsWith('.ofx')) {
-          this.parseOFX(content);
+          const statement = await this.processOFX(file.name, content);
+          statements.push(statement);
         } else {
-          this.parseCSV(content);
+          const statement = this.processCSV(file.name, content);
+          statements.push(statement);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        this.errorMessage.set('Erro ao processar o arquivo. Verifique o formato.');
-        this.importStatus.set('error');
-      } finally {
-        this.isParsing.set(false);
+        this.errorMessage.set(`Erro no arquivo ${file.name}: ${err.message}`);
       }
-    };
-    reader.readAsText(file);
+    }
+
+    this.parsedStatements.set(statements);
+    this.isParsing.set(false);
   }
 
-  private parseCSV(content: string) {
+  private normalizeDate(dateStr: string): string {
+    if (!dateStr) return '';
+    
+    // OFX format: YYYYMMDD...
+    if (/^\d{8}/.test(dateStr)) {
+      return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+    }
+
+    // DD/MM/YYYY
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+        return `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+    }
+
+    // YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+      return dateStr.slice(0, 10);
+    }
+
+    return dateStr;
+  }
+
+  private processCSV(fileName: string, content: string): ParsedStatement {
     const lines = content.split(/\r?\n/).filter(line => line.trim() !== '');
     if (lines.length < 2) throw new Error('Arquivo vazio ou sem dados.');
 
-    // Try to detect delimiter
-    const firstLine = lines[0];
-    const delimiter = firstLine.includes(';') ? ';' : ',';
-    
-    const headers = firstLine.toLowerCase().split(delimiter).map(h => h.trim());
-    
-    // Find column indexes
+    const delimiter = lines[0].includes(';') ? ';' : ',';
+    const headers = lines[0].toLowerCase().split(delimiter).map(h => h.trim());
+
     const dateIdx = headers.findIndex(h => h.includes('data') || h.includes('date'));
     const descIdx = headers.findIndex(h => h.includes('desc') || h.includes('memo') || h.includes('hist'));
     const valIdx = headers.findIndex(h => h.includes('valor') || h.includes('amount') || h.includes('val'));
@@ -111,6 +157,9 @@ export class ImportStatementComponent implements OnInit {
     }
 
     const movements: ParsedMovement[] = [];
+    let credit = 0;
+    let debit = 0;
+    let total = 0;
 
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split(delimiter).map(c => c.trim());
@@ -119,17 +168,28 @@ export class ImportStatementComponent implements OnInit {
       const dateStr = cols[dateIdx];
       const desc = cols[descIdx];
       let amountStr = cols[valIdx].replace(/[R$\s]/g, '').replace(',', '.');
-      
+
       const amount = parseFloat(amountStr);
       if (isNaN(amount)) continue;
 
+      const formattedDate = this.normalizeDate(dateStr);
+      const period = formattedDate.slice(0, 7);
       const autoCat = this.autoCategorize(desc);
-      
+
+      const absAmount = Math.abs(amount);
+      if (amount < 0) {
+        debit += absAmount;
+      } else {
+        credit += absAmount;
+      }
+      total += amount;
+
       movements.push({
-        date: this.formatDate(dateStr),
+        date: formattedDate,
         description: desc,
-        amount: Math.abs(amount),
+        amount: absAmount,
         type: amount < 0 ? 'D' : 'C',
+        period,
         category_id: autoCat.categoryId,
         classification_source: autoCat.source as any,
         classification_rule_id: autoCat.ruleId,
@@ -137,40 +197,39 @@ export class ImportStatementComponent implements OnInit {
       });
     }
 
-    this.parsedMovements.set(movements);
-    this.detectPeriod(movements);
+    const detectedPeriod = this.getMostFrequentPeriod(movements);
+
+    return {
+      fileName,
+      period: detectedPeriod,
+      movements,
+      total,
+      credit,
+      debit,
+      initialBalance: null,
+      finalBalance: null,
+      isComplete: false
+    };
   }
 
-  private detectPeriod(movements: ParsedMovement[]) {
-    if (movements.length === 0) return;
-
+  private getMostFrequentPeriod(movements: ParsedMovement[]): string {
+    if (movements.length === 0) return this.selectedPeriod();
     const counts: { [key: string]: number } = {};
     movements.forEach(m => {
-      const period = m.date.slice(0, 7); // YYYY-MM
-      counts[period] = (counts[period] || 0) + 1;
+      const p = m.period;
+      counts[p] = (counts[p] || 0) + 1;
     });
-
-    let maxCount = 0;
-    let bestPeriod = this.selectedPeriod();
-
-    for (const period in counts) {
-      if (counts[period] > maxCount) {
-        maxCount = counts[period];
-        bestPeriod = period;
-      }
-    }
-
-    this.selectedPeriod.set(bestPeriod);
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
   }
 
-  private autoCategorize(description: string): { 
-    categoryId: number | null, 
+  private autoCategorize(description: string): {
+    categoryId: number | null,
     source: string | null,
     ruleId: number | null,
-    confidence: number | null 
+    confidence: number | null
   } {
     const desc = description.toUpperCase();
-    
+
     // Check Keyword Rules (Priority)
     const ruleMatch = this.keywordRules().find(r => desc.includes(r.keyword.toUpperCase()));
     if (ruleMatch) {
@@ -192,59 +251,116 @@ export class ImportStatementComponent implements OnInit {
     };
   }
 
-  private parseOFX(content: string) {
-    const movements: ParsedMovement[] = [];
-    
-    // Simple regex parser for OFX
-    const transactions = content.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/g);
-    
-    if (!transactions) throw new Error('Nenhuma transação encontrada no arquivo OFX.');
+  private async processOFX(fileName: string, content: string): Promise<ParsedStatement> {
+    const ofxData = new Ofx(content).toJson();
+    const bankName = DeepSearch(ofxData, 'ORG');
 
-    transactions.forEach(trx => {
-      const dateMatch = trx.match(/<DTPOSTED>(\d{8})/);
-      const amountMatch = trx.match(/<TRNAMT>([\d.-]+)/);
-      const memoMatch = trx.match(/<MEMO>([^<]+)/) || trx.match(/<NAME>([^<]+)/);
-
-      if (dateMatch && amountMatch) {
-        const rawDate = dateMatch[1]; // YYYYMMDD
-        const amount = parseFloat(amountMatch[1]);
-        const description = memoMatch ? memoMatch[1].trim() : 'Sem descrição';
-
-        const autoCat = this.autoCategorize(description);
-
-        movements.push({
-          date: `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`,
-          description,
-          amount: Math.abs(amount),
-          type: amount < 0 ? 'D' : 'C',
-          category_id: autoCat.categoryId,
-          classification_source: autoCat.source as any,
-          classification_rule_id: autoCat.ruleId,
-          confidence: autoCat.confidence
-        });
+    if (bankName) {
+      let account = this.accounts().find(a => a.name.includes(bankName) || a.name === bankName);
+      if (!account) {
+        if (confirm(`O banco '${bankName}' não foi encontrado. Deseja criar uma nova conta automaticamente?`)) {
+          const res = await this.db.addAccount({ name: bankName, balance: 0 });
+          const newAccs = await this.db.getAccounts();
+          this.accounts.set(newAccs);
+          account = newAccs.find(a => a.id === res.id);
+        }
       }
-    });
-
-    this.parsedMovements.set(movements);
-    this.detectPeriod(movements);
-  }
-
-  private formatDate(dateStr: string): string {
-    // Try to parse DD/MM/YYYY or YYYY-MM-DD
-    if (dateStr.includes('/')) {
-      const parts = dateStr.split('/');
-      if (parts.length === 3) {
-        if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-        return `20${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      if (account) {
+        this.selectedAccountId.set(account.id!);
       }
     }
-    return dateStr; // Fallback
+
+    const ofxMovements = DeepSearch(ofxData, 'STRTTRN') || [];
+    let credit = 0;
+    let debit = 0;
+    let total = 0;
+
+    const movements: ParsedMovement[] = ofxMovements.map((m: any) => {
+      const amount = Number(m.TRNAMT);
+      const absAmount = Math.abs(amount);
+      
+      total = (total || 0) + amount;
+      if (m.TRNTYPE === 'CREDIT' || amount > 0) {
+        credit = (credit || 0) + absAmount;
+      } else {
+        debit = (debit || 0) + absAmount;
+      }
+
+      const autoCat = this.autoCategorize(m.MEMO);
+      const normalizedDate = this.normalizeDate(m.DTPOSTED);
+
+      return {
+        date: normalizedDate,
+        description: m.MEMO,
+        amount: absAmount,
+        type: (m.TRNTYPE === 'CREDIT' || amount > 0) ? 'C' : 'D',
+        period: normalizedDate.slice(0, 7),
+        category_id: autoCat.categoryId,
+        classification_source: autoCat.source as any,
+        classification_rule_id: autoCat.ruleId,
+        confidence: autoCat.confidence
+      };
+    });
+
+    const finalBalance = Number(DeepSearch(ofxData, 'BALAMT'));
+    const initialBalance = !isNaN(finalBalance) ? finalBalance - total : null;
+    const period = this.getMostFrequentPeriod(movements);
+    
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const isComplete = !isNaN(finalBalance) && period < currentMonth;
+
+    return {
+      fileName,
+      period,
+      movements,
+      total,
+      credit,
+      debit,
+      initialBalance: isNaN(initialBalance!) ? null : initialBalance,
+      finalBalance: isNaN(finalBalance) ? null : finalBalance,
+      isComplete
+    };
   }
 
-  removeMovement(index: number) {
-    const current = [...this.parsedMovements()];
-    current.splice(index, 1);
-    this.parsedMovements.set(current);
+  removeMovement(statementIndex: number, movementIndex: number) {
+    const statements = [...this.parsedStatements()];
+    const statement = { ...statements[statementIndex] };
+    const movements = [...statement.movements];
+    
+    movements.splice(movementIndex, 1);
+    statement.movements = movements;
+    
+    // Recalculate totals for this statement
+    let credit = 0;
+    let debit = 0;
+    let total = 0;
+    for (const m of movements) {
+      const amount = m.amount;
+      total += (m.type === 'C' ? amount : -amount);
+      if (m.type === 'C') credit += amount;
+      else debit += amount;
+    }
+    statement.total = total;
+    statement.credit = credit;
+    statement.debit = debit;
+    if (statement.finalBalance !== null) {
+      statement.initialBalance = statement.finalBalance - total;
+    }
+
+    statements[statementIndex] = statement;
+    this.parsedStatements.set(statements);
+  }
+
+  private isAllowedToCreateAC(period: string, source: 'import' | 'manual'): boolean {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+
+    if (source === 'import') return true;
+
+    if (source === 'manual') {
+      return period === currentMonth;
+    }
+
+    return false;
   }
 
   async importData() {
@@ -254,36 +370,63 @@ export class ImportStatementComponent implements OnInit {
       return;
     }
 
-    if (this.parsedMovements().length === 0) {
+    if (this.allMovements().length === 0) {
       this.errorMessage.set('Nenhum dado para importar.');
       return;
     }
 
+    const account = this.accounts().find(a => a.id == accId);
+    const accountName = account ? account.name : 'conta selecionada';
+
+    if (!confirm(`Deseja importar ${this.allMovements().length} movimentações para a conta "${accountName}"?`)) {
+      return;
+    }
+
     try {
-      for (const m of this.parsedMovements()) {
-        await this.db.addMovement({
-          account_id: accId,
-          description: m.description,
-          amount: m.amount, // amount should be positive in the signal, addMovement handles it
-          period: this.selectedPeriod(),
-          date: m.date,
-          type: m.type,
-          category_id: m.category_id,
-          classification_source: m.classification_source,
-          classification_rule_id: m.classification_rule_id,
-          confidence: m.confidence
-        });
+      for (const statement of this.parsedStatements()) {
+        if (statement.initialBalance !== null && this.isAllowedToCreateAC(statement.period, 'import')) {
+          await this.db.addMovement({
+            account_id: accId,
+            description: 'Abertura de Conta (Importado)',
+            amount: statement.initialBalance,
+            period: statement.period,
+            date: `${statement.period}-01`,
+            type: 'AC'
+          }, true);
+        }
+
+        await Promise.all(statement.movements.map(m => 
+          this.db.addMovement({
+            account_id: accId,
+            description: m.description,
+            amount: m.amount,
+            period: statement.period,
+            date: m.date,
+            type: m.type,
+            category_id: m.category_id,
+            classification_source: m.classification_source,
+            classification_rule_id: m.classification_rule_id,
+            confidence: m.confidence
+          }, true)
+        ));
+
+        // Recalculate account definitive balance once after all batch inserts
+        await this.db.recalculateBalance(accId);
+
+        // 4. Conditional closing (Suggestion)
+        if (statement.isComplete) {
+          if (confirm(`O período ${statement.period} parece completo. Deseja fechá-lo agora?`)) {
+            await this.db.closePeriod(accId, statement.period);
+          }
+        }
       }
+
       this.importStatus.set('success');
-      this.parsedMovements.set([]);
+      this.parsedStatements.set([]);
     } catch (err) {
       console.error(err);
       this.errorMessage.set('Erro ao salvar no banco de dados.');
       this.importStatus.set('error');
     }
-  }
-
-  get totalImport() {
-    return this.parsedMovements().reduce((acc, m) => acc + (m.type === 'C' ? m.amount : -m.amount), 0);
   }
 }

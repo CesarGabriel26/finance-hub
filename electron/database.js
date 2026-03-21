@@ -1,12 +1,15 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { app } from 'electron';
+import fs from 'fs';
 
-const appPath = app.isPackaged
-    ? path.join(path.dirname(app.getPath('exe')), 'finance-hub.db')
+const dbPath = app.isPackaged
+    ? path.join(app.getPath('userData'), 'finance-hub.db')
     : path.join(app.getAppPath(), 'finance-hub.db');
 
-export const db = new sqlite3.Database(appPath, (err) => {
+console.log(`Database path: ${dbPath}`);
+
+export const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error("Error opening database " + err.message);
     } else {
@@ -130,6 +133,33 @@ export const db = new sqlite3.Database(appPath, (err) => {
 
             defaultSettings.forEach(setting => {
                 db.run("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", [setting.key, setting.value]);
+            });
+
+            // Initialize default categories
+            const defaultCategories = [
+                { name: 'Moradia', type: 'D' },
+                { name: 'Contas', type: 'D' },
+                { name: 'Supermercado', type: 'D' },
+                { name: 'Transporte', type: 'D' },
+                { name: 'Alimentação', type: 'D' },
+                { name: 'Lazer', type: 'D' },
+                { name: 'Compras', type: 'D' },
+                { name: 'Assinaturas', type: 'D' },
+                { name: 'Saúde', type: 'D' },
+                { name: 'Educação', type: 'D' },
+                { name: 'Impostos', type: 'D' },
+                { name: 'Financeiro', type: 'D' },
+                { name: 'Viagem', type: 'D' },
+                { name: 'Salário', type: 'C' },
+                { name: 'Freelance', type: 'C' },
+                { name: 'Investimentos', type: 'C' },
+                { name: 'Venda', type: 'C' },
+                { name: 'Transferência', type: 'C' },
+                { name: 'Reembolso', type: 'C' }
+            ];
+
+            defaultCategories.forEach(cat => {
+                db.run("INSERT INTO categories (name, type) SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = ? AND type = ?)", [cat.name, cat.type, cat.name, cat.type]);
             });
 
             // Optional: Migrate keywords to keyword_rules if empty

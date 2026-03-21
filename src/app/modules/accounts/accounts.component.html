@@ -21,9 +21,27 @@
 
     <ul role="list" class="divide-y divide-gray-100">
       <li *ngFor="let account of accounts()" class="flex items-center justify-between gap-x-6 p-6 hover:bg-gray-50 transition-colors">
-        <div class="min-w-0">
-          <div class="flex items-start gap-x-3">
-            <p class="text-sm font-semibold leading-6 text-gray-900">{{ account.name }}</p>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-x-3">
+            <ng-container *ngIf="editingAccount()?.id !== account.id; else editMode">
+              <p class="text-sm font-semibold leading-6 text-gray-900">{{ account.name }}</p>
+              <button (click)="startEdit(account)" class="text-gray-400 hover:text-blue-600 transition-colors">
+                <lucide-icon [img]="EditIcon" class="w-4 h-4"></lucide-icon>
+              </button>
+            </ng-container>
+            <ng-template #editMode>
+              <div class="flex items-center gap-x-2 w-full">
+                <input type="text" [(ngModel)]="editingAccount()!.name" 
+                       class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-1 px-2 border text-sm" 
+                       (keyup.enter)="saveEdit()" (keyup.escape)="cancelEdit()" autofocus />
+                <button (click)="saveEdit()" class="text-emerald-600 hover:text-emerald-700">
+                  <lucide-icon [img]="CheckIcon" class="w-5 h-5"></lucide-icon>
+                </button>
+                <button (click)="cancelEdit()" class="text-red-600 hover:text-red-700">
+                  <lucide-icon [img]="XIcon" class="w-5 h-5"></lucide-icon>
+                </button>
+              </div>
+            </ng-template>
           </div>
           <div class="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500">
             <p class="truncate">Criado em: {{ account.created_at | date:'dd/MM/yyyy HH:mm' }}</p>

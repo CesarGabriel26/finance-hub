@@ -1,50 +1,80 @@
 import { ipcMain } from "electron";
 import { dbAll, dbRun, dbGet } from "./database.js";
 
+function handleIpc(channel, handler) {
+    ipcMain.handle(channel, async (event, ...args) => {
+        try {
+            return await handler(event, ...args);
+        } catch (error) {
+            console.error(`[IPC Error] ${channel}:`, error);
+            throw error;
+        }
+    });
+}
+
+
+async function recalculateAccountBalance(accountId) {
+    // Obter o primeiro AC
+    const firstAC = await dbGet(`
+        SELECT amount FROM movements 
+        WHERE account_id = ? AND type = 'AC' 
+        ORDER BY date ASC, order_index ASC, id ASC LIMIT 1
+    `, [accountId]);
+
+    // Obter saldo das outras movimentações (Ignorando todos os ACs extras)
+    const result = await dbGet(`
+        SELECT 
+            SUM(CASE WHEN type = 'C' THEN amount WHEN type = 'D' THEN -amount ELSE 0 END) as total 
+        FROM movements 
+        WHERE account_id = ? AND type != 'AC'
+    `, [accountId]);
+
+    const balance = (firstAC ? firstAC.amount : 0) + (result?.total || 0);
+
+    await dbRun("UPDATE accounts SET balance = ? WHERE id = ?", [balance, accountId]);
+}
+
 export function setupAPI() {
 
+    handleIpc("recalculate-balance", async (_, accountId) => {
+        await recalculateAccountBalance(accountId);
+        return { success: true };
+    });
+
     // -- IPC Handlers --
-    ipcMain.handle("get-accounts", async () => {
+    handleIpc("get-accounts", async () => {
         return await dbAll("SELECT * FROM accounts ORDER BY name");
     });
 
-    ipcMain.handle("add-account", async (_, account) => {
+    handleIpc("add-account", async (_, account) => {
         return await dbRun("INSERT INTO accounts (name, balance) VALUES (?, ?)", [account.name, account.balance || 0]);
     });
 
-    ipcMain.handle("delete-account", async (_, id) => {
+    handleIpc("delete-account", async (_, id) => {
         return await dbRun("DELETE FROM accounts WHERE id = ?", [id]);
     });
 
-    ipcMain.handle("update-account-balance", async (_, id, balance) => {
+    handleIpc("update-account-balance", async (_, id, balance) => {
         return await dbRun("UPDATE accounts SET balance = ? WHERE id = ?", [balance, id]);
     });
 
-    ipcMain.handle("get-categories", async () => {
+    handleIpc("update-account-name", async (_, id, name) => {
+        return await dbRun("UPDATE accounts SET name = ? WHERE id = ?", [name, id]);
+    });
+
+    handleIpc("get-categories", async () => {
         return await dbAll("SELECT * FROM categories ORDER BY name");
     });
 
-    ipcMain.handle("add-category", async (_, category) => {
+    handleIpc("add-category", async (_, category) => {
         return await dbRun("INSERT INTO categories (name, type) VALUES (?, ?)", [category.name, category.type]);
     });
 
-    ipcMain.handle("delete-category", async (_, id) => {
+    handleIpc("delete-category", async (_, id) => {
         return await dbRun("DELETE FROM categories WHERE id = ?", [id]);
     });
 
-    ipcMain.handle("get-movements", async (_, accountId, period) => {
-        // Find if AC exists for this period
-        let ac = await dbGet("SELECT * FROM movements WHERE account_id = ? AND period = ? AND type = 'AC'", [accountId, period]);
-        if (!ac) {
-            const account = await dbGet("SELECT * FROM accounts WHERE id = ?", [accountId]);
-            const balance = account ? account.balance : 0;
-
-            await dbRun(
-                "INSERT INTO movements (account_id, description, amount, period, date, type, order_index) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [accountId, "Abertura de Conta", balance, period, new Date().toISOString(), 'AC', 1]
-            );
-        }
-
+    handleIpc("get-movements", async (_, accountId, period) => {
         return await dbAll(`
             SELECT m.*, c.name as category_name
             FROM movements m
@@ -54,44 +84,54 @@ export function setupAPI() {
         `, [accountId, period]);
     });
 
-    ipcMain.handle("add-movement", async (_, movement) => {
+    handleIpc("add-movement", async (_, movement, skipRecalculation = false) => {
         let { 
             account_id, category_id, description, amount, period, date, type, 
-            classification_source, classification_rule_id, confidence 
+            order_index, classification_source, classification_rule_id, confidence 
         } = movement;
 
-        const account = await dbGet("SELECT balance FROM accounts WHERE id = ?", [account_id]);
-        if (account) {
-            const newBalance = type === 'expense' ? account.balance - amount : account.balance + amount;
-            await dbRun("UPDATE accounts SET balance = ? WHERE id = ?", [newBalance, account_id]);
+        if (type === 'AC') {
+            const existingAC = await dbGet("SELECT id FROM movements WHERE account_id = ? AND period = ? AND type = 'AC'", [account_id, period]);
+            if (existingAC) {
+                // update existing instead of inserting
+                await dbRun("UPDATE movements SET amount = ?, date = ?, description = ? WHERE id = ?", [amount, date, description, existingAC.id]);
+                if (!skipRecalculation) await recalculateAccountBalance(account_id);
+                return { id: existingAC.id, updated: true };
+            }
+        }
+
+        // STRICT Duplicate Detection for all movements
+        const normDesc = (description || "").trim().toUpperCase();
+        const normAmount = Math.round(amount * 100) / 100;
+        const normDate = date.substring(0, 10);
+
+        const existingMatch = await dbGet(`
+            SELECT id FROM movements 
+            WHERE account_id = ? AND SUBSTR(date, 1, 10) = ? 
+            AND ROUND(amount, 2) = ? AND UPPER(TRIM(description)) = ?
+        `, [account_id, normDate, normAmount, normDesc]);
+
+        if (existingMatch) {
+            return { id: existingMatch.id, skipped: true };
         }
 
         const result = await dbRun(
             "INSERT INTO movements (account_id, category_id, description, amount, period, date, type, order_index, classification_source, classification_rule_id, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [account_id, category_id || null, description, amount, period, date, type, 2, classification_source || null, classification_rule_id || null, confidence || null]
+            [account_id, category_id || null, description, amount, period, date, type, order_index !== undefined ? order_index : 2, classification_source || null, classification_rule_id || null, confidence || null]
         );
+
+        if (!skipRecalculation) {
+            await recalculateAccountBalance(account_id);
+        }
 
         return result;
     });
 
-    ipcMain.handle("update-movement", async (_, id, movement) => {
+    handleIpc("update-movement", async (_, id, movement, skipRecalculation = false) => {
         const { category_id, description, amount, date, type, classification_source, classification_rule_id, confidence } = movement;
         
         const oldMov = await dbGet("SELECT * FROM movements WHERE id = ?", [id]);
         if (!oldMov) throw new Error("Movement not found");
-
-        if (amount !== undefined && amount !== oldMov.amount) {
-            const account = await dbGet("SELECT balance FROM accounts WHERE id = ?", [oldMov.account_id]);
-            if (account) {
-                // Revert old
-                let bal = oldMov.type === 'expense' ? account.balance + oldMov.amount : account.balance - oldMov.amount;
-                // Apply new
-                const nextAmount = amount !== undefined ? amount : oldMov.amount;
-                const nextType = type !== undefined ? type : oldMov.type;
-                bal = nextType === 'expense' ? bal - nextAmount : bal + nextAmount;
-                await dbRun("UPDATE accounts SET balance = ? WHERE id = ?", [bal, oldMov.account_id]);
-            }
-        }
 
         await dbRun(
             `UPDATE movements SET 
@@ -111,51 +151,63 @@ export function setupAPI() {
             ]
         );
 
+        if (!skipRecalculation) {
+            await recalculateAccountBalance(oldMov.account_id);
+        }
+
         return { success: true };
     });
 
-    ipcMain.handle("delete-movement", async (_, id) => {
+    handleIpc("delete-movement", async (_, id, skipRecalculation = false) => {
         const mov = await dbGet("SELECT * FROM movements WHERE id = ?", [id]);
         if (!mov) return { success: false };
 
-        if (mov.type === 'revenue' || mov.type === 'expense') {
-            const account = await dbGet("SELECT balance FROM accounts WHERE id = ?", [mov.account_id]);
-            if (account) {
-                const newBalance = mov.type === 'expense' ? account.balance + mov.amount : account.balance - mov.amount;
-                await dbRun("UPDATE accounts SET balance = ? WHERE id = ?", [newBalance, mov.account_id]);
-            }
+        await dbRun("DELETE FROM movements WHERE id = ?", [id]);
+
+        if (!skipRecalculation) {
+            await recalculateAccountBalance(mov.account_id);
         }
 
-        return await dbRun("DELETE FROM movements WHERE id = ?", [id]);
+        return { success: true };
     });
 
-    ipcMain.handle("get-movements-for-review", async () => {
+    handleIpc("get-movements-for-review", async () => {
         return await dbAll(`
             SELECT m.*, c.name as category_name, acc.name as account_name
             FROM movements m
             LEFT JOIN categories c ON m.category_id = c.id
             JOIN accounts acc ON m.account_id = acc.id
-            WHERE m.category_id IS NULL 
-               OR m.confidence < 0.6 
+            WHERE (m.category_id IS NULL OR m.confidence < 0.6)
+              AND m.type NOT IN ('AC', 'FC')
             ORDER BY m.date DESC
             LIMIT 100
         `);
     });
 
-    ipcMain.handle("close-period", async (_, accountId, period) => {
-        const account = await dbGet("SELECT balance FROM accounts WHERE id = ?", [accountId]);
-        const balance = account ? account.balance : 0;
+    handleIpc("close-period", async (_, accountId, period) => {
+        // Calculate balance: AC + sum(Credit) - sum(Debit)
+        const ac = await dbGet("SELECT amount FROM movements WHERE account_id = ? AND period = ? AND type = 'AC'", [accountId, period]);
+        const startBalance = ac ? ac.amount : 0;
+
+        const movements = await dbAll("SELECT amount, type FROM movements WHERE account_id = ? AND period = ? AND type NOT IN ('AC', 'FC')", [accountId, period]);
+        const totalMovements = movements.reduce((acc, m) => {
+            // In the DB, revenues have type 'C' or 'AC', expenses have type 'D' or 'FC'?
+            // Wait, standard movements are 'C' (Revenue) and 'D' (Expense).
+            return acc + (m.type === 'C' ? m.amount : -m.amount);
+        }, 0);
+
+        const finalBalance = startBalance + totalMovements;
 
         await dbRun("DELETE FROM movements WHERE account_id = ? AND period = ? AND type = 'FC'", [accountId, period]);
 
         return await dbRun(
             "INSERT INTO movements (account_id, description, amount, period, date, type, order_index) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [accountId, "Fechamento de Conta", balance, period, new Date().toISOString(), 'FC', 999]
+            [accountId, "Fechamento de Conta", finalBalance, period, new Date().toISOString(), 'FC', 999]
         );
     });
 
     // -- Keywords Handlers --
-    ipcMain.handle("get-keywords", async () => {
+    handleIpc("get-keywords", async () => {
         return await dbAll(`
             SELECT k.*, c.name as category_name, c.type as category_type
             FROM keywords k 
@@ -164,19 +216,19 @@ export function setupAPI() {
         `);
     });
 
-    ipcMain.handle("add-keyword", async (_, keyword, category_id) => {
+    handleIpc("add-keyword", async (_, keyword, category_id) => {
         return await dbRun(
             "INSERT INTO keywords (keyword, category_id) VALUES (?, ?)", 
             [keyword, category_id]
         );
     });
 
-    ipcMain.handle("delete-keyword", async (_, id) => {
+    handleIpc("delete-keyword", async (_, id) => {
         return await dbRun("DELETE FROM keywords WHERE id = ?", [id]);
     });
 
     // -- Bills Handlers (Contas a Pagar/Receber) --
-    ipcMain.handle("get-bills", async (_, type, status = 'pending') => {
+    handleIpc("get-bills", async (_, type, status = 'pending') => {
         let query = `
             SELECT b.*, c.name as category_name 
             FROM bills b 
@@ -192,7 +244,7 @@ export function setupAPI() {
         return await dbAll(query, params);
     });
 
-    ipcMain.handle("add-bill", async (_, bill) => {
+    handleIpc("add-bill", async (_, bill) => {
         const { description, amount, due_date, type, category_id, is_recurring, total_installments, current_installment } = bill;
         return await dbRun(
             "INSERT INTO bills (description, amount, due_date, type, category_id, is_recurring, total_installments, current_installment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -200,11 +252,11 @@ export function setupAPI() {
         );
     });
 
-    ipcMain.handle("delete-bill", async (_, id) => {
+    handleIpc("delete-bill", async (_, id) => {
         return await dbRun("DELETE FROM bills WHERE id = ?", [id]);
     });
 
-    ipcMain.handle("pay-bill", async (_, { billId, accountId, paymentDate }) => {
+    handleIpc("pay-bill", async (_, { billId, accountId, paymentDate }) => {
         const bill = await dbGet("SELECT * FROM bills WHERE id = ?", [billId]);
         if (!bill) throw new Error("Bill not found");
 
@@ -213,17 +265,13 @@ export function setupAPI() {
 
         // 2. Add movement to account
         const period = paymentDate.substring(0, 7);
-        
-        const account = await dbGet("SELECT balance FROM accounts WHERE id = ?", [accountId]);
-        if (account) {
-            const newBalance = bill.type === 'D' ? account.balance - bill.amount : account.balance + bill.amount;
-            await dbRun("UPDATE accounts SET balance = ? WHERE id = ?", [newBalance, accountId]);
-        }
 
         await dbRun(
             "INSERT INTO movements (account_id, category_id, description, amount, period, date, type, order_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [accountId, bill.category_id, bill.description, (bill.type === 'D' ? -bill.amount : bill.amount), period, paymentDate, bill.type, 2]
+            [accountId, bill.category_id, bill.description, bill.amount, period, paymentDate, bill.type, 2]
         );
+
+        await recalculateAccountBalance(accountId);
 
         // 3. Handle recurring/installments
         if (bill.is_recurring) {
@@ -250,7 +298,7 @@ export function setupAPI() {
 
 
     // -- Keyword Rules Handlers --
-    ipcMain.handle("get-keyword-rules", async () => {
+    handleIpc("get-keyword-rules", async () => {
         return await dbAll(`
             SELECT kr.*, c.name as category_name
             FROM keyword_rules kr
@@ -259,7 +307,7 @@ export function setupAPI() {
         `);
     });
 
-    ipcMain.handle("add-keyword-rule", async (_, rule) => {
+    handleIpc("add-keyword-rule", async (_, rule) => {
         const { keyword, category_id, priority, created_by_user } = rule;
         return await dbRun(
             "INSERT INTO keyword_rules (keyword, category_id, priority, created_by_user) VALUES (?, ?, ?, ?)",
@@ -267,12 +315,12 @@ export function setupAPI() {
         );
     });
 
-    ipcMain.handle("delete-keyword-rule", async (_, id) => {
+    handleIpc("delete-keyword-rule", async (_, id) => {
         return await dbRun("DELETE FROM keyword_rules WHERE id = ?", [id]);
     });
 
     // -- Investments Handlers --
-    ipcMain.handle("get-assets", async () => {
+    handleIpc("get-assets", async () => {
         return await dbAll(`
             SELECT a.*, 
                    COALESCE(SUM(CASE WHEN ie.type = 'deposit' THEN ie.amount ELSE -ie.amount END), 0) as total_invested
@@ -283,7 +331,7 @@ export function setupAPI() {
         `);
     });
 
-    ipcMain.handle("add-asset", async (_, asset) => {
+    handleIpc("add-asset", async (_, asset) => {
         const { name, type, objective_value } = asset;
         return await dbRun(
             "INSERT INTO assets (name, type, objective_value) VALUES (?, ?, ?)",
@@ -291,12 +339,12 @@ export function setupAPI() {
         );
     });
 
-    ipcMain.handle("delete-asset", async (_, id) => {
+    handleIpc("delete-asset", async (_, id) => {
         await dbRun("DELETE FROM investment_entries WHERE asset_id = ?", [id]);
         return await dbRun("DELETE FROM assets WHERE id = ?", [id]);
     });
 
-    ipcMain.handle("get-investment-entries", async (_, assetId) => {
+    handleIpc("get-investment-entries", async (_, assetId) => {
         return await dbAll(`
             SELECT ie.*, acc.name as account_name
             FROM investment_entries ie
@@ -306,38 +354,31 @@ export function setupAPI() {
         `, [assetId]);
     });
 
-    ipcMain.handle("add-investment-entry", async (_, entry) => {
+    handleIpc("add-investment-entry", async (_, entry) => {
         const { account_id, asset_id, type, amount, date, description } = entry;
         
-        // Update account balance
-        const account = await dbGet("SELECT balance FROM accounts WHERE id = ?", [account_id]);
-        if (account) {
-            const newBalance = type === 'deposit' ? account.balance - amount : account.balance + amount;
-            await dbRun("UPDATE accounts SET balance = ? WHERE id = ?", [newBalance, account_id]);
-        }
-
-        return await dbRun(
+        const result = await dbRun(
             "INSERT INTO investment_entries (account_id, asset_id, type, amount, date, description) VALUES (?, ?, ?, ?, ?, ?)",
             [account_id, asset_id, type, amount, date, description]
         );
+
+        await recalculateAccountBalance(account_id);
+
+        return result;
     });
 
-    ipcMain.handle("delete-investment-entry", async (_, id) => {
+    handleIpc("delete-investment-entry", async (_, id) => {
         const entry = await dbGet("SELECT * FROM investment_entries WHERE id = ?", [id]);
         if (!entry) return { success: false };
 
-        // Revert account balance
-        const account = await dbGet("SELECT balance FROM accounts WHERE id = ?", [entry.account_id]);
-        if (account) {
-            const newBalance = entry.type === 'deposit' ? account.balance + entry.amount : account.balance - entry.amount;
-            await dbRun("UPDATE accounts SET balance = ? WHERE id = ?", [newBalance, entry.account_id]);
-        }
+        await dbRun("DELETE FROM investment_entries WHERE id = ?", [id]);
+        await recalculateAccountBalance(entry.account_id);
 
-        return await dbRun("DELETE FROM investment_entries WHERE id = ?", [id]);
+        return { success: true };
     });
 
     // -- Settings Handlers --
-    ipcMain.handle("get-settings", async () => {
+    handleIpc("get-settings", async () => {
         const rows = await dbAll("SELECT * FROM settings");
         const settings = {};
         rows.forEach(row => {
@@ -346,12 +387,12 @@ export function setupAPI() {
         return settings;
     });
 
-    ipcMain.handle("update-setting", async (_, key, value) => {
+    handleIpc("update-setting", async (_, key, value) => {
         const strValue = typeof value === 'boolean' ? String(value) : value;
         return await dbRun("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [key, strValue]);
     });
 
-    ipcMain.handle("check-due-bills", async () => {
+    handleIpc("check-due-bills", async () => {
         const today = new Date();
         const nextThreeDays = new Date();
         nextThreeDays.setDate(today.getDate() + 3);
@@ -366,5 +407,62 @@ export function setupAPI() {
             WHERE b.status = 'pending' AND b.due_date <= ? AND b.due_date >= ?
             ORDER BY b.due_date ASC
         `, [nextThreeDaysStr, todayStr]);
+    });
+
+    handleIpc("recategorize-movements", async () => {
+        const rules = await dbAll("SELECT * FROM keyword_rules ORDER BY priority DESC");
+        const legacyKeywords = await dbAll("SELECT * FROM keywords");
+        const movements = await dbAll("SELECT * FROM movements WHERE (category_id IS NULL OR confidence < 0.9) AND type NOT IN ('AC', 'FC')");
+
+        let updatedCount = 0;
+        for (const mov of movements) {
+            const desc = mov.description.toUpperCase();
+            
+            // Try Rules first (Priority)
+            let match = rules.find(r => desc.includes(r.keyword.toUpperCase()));
+            let confidence = 0.9;
+            let ruleId = match ? match.id : null;
+
+            // Fallback to legacy
+            if (!match) {
+                const legacyMatch = legacyKeywords.find(k => desc.includes(k.keyword.toUpperCase()));
+                if (legacyMatch) {
+                    match = legacyMatch;
+                    confidence = 0.7;
+                }
+            }
+            
+            if (match && match.category_id !== mov.category_id) {
+                await dbRun(
+                    "UPDATE movements SET category_id = ?, classification_source = 'keyword', classification_rule_id = ?, confidence = ? WHERE id = ?",
+                    [match.category_id, ruleId, confidence, mov.id]
+                );
+                updatedCount++;
+            }
+        }
+        return { updatedCount };
+    });
+
+    handleIpc("get-dashboard-data", async (_, period) => {
+        return await dbAll(`
+            SELECT m.type, m.category_id, c.name as category_name, SUM(ABS(m.amount)) as total
+            FROM movements m
+            LEFT JOIN categories c ON m.category_id = c.id
+            WHERE m.period = ? AND m.type IN ('C', 'D')
+            GROUP BY m.type, m.category_id, c.name
+        `, [period]);
+    });
+
+    handleIpc("get-dashboard-evolution", async (_, periods) => {
+        const placeholders = periods.map(() => '?').join(',');
+        return await dbAll(`
+            SELECT 
+                period, 
+                SUM(CASE WHEN type = 'D' THEN ABS(amount) ELSE 0 END) as total_expense,
+                SUM(CASE WHEN type = 'C' THEN ABS(amount) ELSE 0 END) as total_revenue
+            FROM movements
+            WHERE period IN (${placeholders}) AND type IN ('C', 'D')
+            GROUP BY period
+        `, periods);
     });
 }

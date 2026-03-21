@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { ToastService } from './toast.service';
 
 export interface Account {
   id?: number;
@@ -96,6 +97,7 @@ declare global {
       addAccount: (account: Partial<Account>) => Promise<any>;
       deleteAccount: (id: number) => Promise<any>;
       updateAccountBalance: (id: number, balance: number) => Promise<any>;
+      updateAccountName: (id: number, name: string) => Promise<any>;
 
       getCategories: () => Promise<Category[]>;
       addCategory: (category: Partial<Category>) => Promise<any>;
@@ -103,10 +105,11 @@ declare global {
 
       getMovements: (accountId: number, period: string) => Promise<Movement[]>;
       getMovementsForReview: () => Promise<Movement[]>;
-      addMovement: (movement: Partial<Movement>) => Promise<any>;
-      updateMovement: (id: number, movement: Partial<Movement>) => Promise<any>;
-      deleteMovement: (id: number) => Promise<any>;
+      addMovement: (movement: Partial<Movement>, skipRecalculation?: boolean) => Promise<any>;
+      updateMovement: (id: number, movement: Partial<Movement>, skipRecalculation?: boolean) => Promise<any>;
+      deleteMovement: (id: number, skipRecalculation?: boolean) => Promise<any>;
       closePeriod: (accountId: number, period: string) => Promise<any>;
+      recalculateBalance: (accountId: number) => Promise<any>;
 
       // Keywords
       getKeywords: () => Promise<Keyword[]>;
@@ -131,6 +134,12 @@ declare global {
       getInvestmentEntries: (assetId: number) => Promise<InvestmentEntry[]>;
       addInvestmentEntry: (entry: Partial<InvestmentEntry>) => Promise<any>;
       deleteInvestmentEntry: (id: number) => Promise<any>;
+
+      // Dashboard
+      getDashboardData: (period: string) => Promise<any[]>;
+      getDashboardEvolution: (periods: string[]) => Promise<any[]>;
+      
+      recategorizeMovements: () => Promise<{ updatedCount: number }>;
     };
   }
 }
@@ -140,126 +149,158 @@ declare global {
 })
 export class DatabaseService {
 
+  toastService = inject(ToastService);
+
   constructor() { }
 
+  private async handleApi<T>(apiPromise: Promise<T>): Promise<T> {
+    try {
+      return await apiPromise;
+    } catch (err: any) {
+      console.error(err);
+      this.toastService.error(err.message || 'Erro ao comunicar com o servidor');
+      throw err;
+    }
+  }
+
+  async getDashboardData(period: string): Promise<any[]> {
+    return this.handleApi(window.api.getDashboardData(period));
+  }
+
+  async getDashboardEvolution(periods: string[]): Promise<any[]> {
+    return this.handleApi(window.api.getDashboardEvolution(periods));
+  }
+
   async getAccounts(): Promise<Account[]> {
-    return window.api.getAccounts();
+    return this.handleApi(window.api.getAccounts());
   }
 
   async addAccount(account: Partial<Account>): Promise<any> {
-    return window.api.addAccount(account);
+    return this.handleApi(window.api.addAccount(account));
   }
 
   async deleteAccount(id: number): Promise<any> {
-      return window.api.deleteAccount(id);
+      return this.handleApi(window.api.deleteAccount(id));
   }
   
   async updateAccountBalance(id: number, balance: number): Promise<any> {
-      return window.api.updateAccountBalance(id, balance);
+      return this.handleApi(window.api.updateAccountBalance(id, balance));
   }
 
   async getCategories(): Promise<Category[]> {
-    return window.api.getCategories();
+    return this.handleApi(window.api.getCategories());
   }
   
   async addCategory(category: Partial<Category>): Promise<any> {
-    return window.api.addCategory(category);
+    return this.handleApi(window.api.addCategory(category));
   }
 
   async deleteCategory(id: number): Promise<any> {
-    return window.api.deleteCategory(id);
+    return this.handleApi(window.api.deleteCategory(id));
   }
 
   async getMovements(accountId: number, period: string): Promise<Movement[]> {
-    return window.api.getMovements(accountId, period);
+    return this.handleApi(window.api.getMovements(accountId, period));
   }
 
   async getMovementsForReview(): Promise<Movement[]> {
-    return window.api.getMovementsForReview();
+    return this.handleApi(window.api.getMovementsForReview());
   }
 
-  async addMovement(movement: Partial<Movement>): Promise<any> {
-    return window.api.addMovement(movement);
+  async addMovement(movement: Partial<Movement>, skipRecalculation?: boolean): Promise<any> {
+    return this.handleApi(window.api.addMovement(movement, skipRecalculation));
   }
 
-  async updateMovement(id: number, movement: Partial<Movement>): Promise<any> {
-    return window.api.updateMovement(id, movement);
+  async updateMovement(id: number, movement: Partial<Movement>, skipRecalculation?: boolean): Promise<any> {
+    return this.handleApi(window.api.updateMovement(id, movement, skipRecalculation));
   }
 
-  async deleteMovement(id: number): Promise<any> {
-    return window.api.deleteMovement(id);
+  async deleteMovement(id: number, skipRecalculation?: boolean): Promise<any> {
+    return this.handleApi(window.api.deleteMovement(id, skipRecalculation));
   }
 
   async closePeriod(accountId: number, period: string): Promise<any> {
-    return window.api.closePeriod(accountId, period);
+    return this.handleApi(window.api.closePeriod(accountId, period));
+  }
+
+  async recalculateBalance(accountId: number): Promise<any> {
+    return this.handleApi(window.api.recalculateBalance(accountId));
   }
 
   // Keywords
   async getKeywords(): Promise<Keyword[]> {
-    return window.api.getKeywords();
+    return this.handleApi(window.api.getKeywords());
   }
 
   async addKeyword(keyword: string, categoryId: number): Promise<any> {
-    return window.api.addKeyword(keyword, categoryId);
+    return this.handleApi(window.api.addKeyword(keyword, categoryId));
   }
 
   async deleteKeyword(id: number): Promise<any> {
-    return window.api.deleteKeyword(id);
+    return this.handleApi(window.api.deleteKeyword(id));
   }
 
   // Keyword Rules
   async getKeywordRules(): Promise<KeywordRule[]> {
-    return window.api.getKeywordRules();
+    return this.handleApi(window.api.getKeywordRules());
   }
 
   async addKeywordRule(rule: Partial<KeywordRule>): Promise<any> {
-    return window.api.addKeywordRule(rule);
+    return this.handleApi(window.api.addKeywordRule(rule));
   }
 
   async deleteKeywordRule(id: number): Promise<any> {
-    return window.api.deleteKeywordRule(id);
+    return this.handleApi(window.api.deleteKeywordRule(id));
   }
 
   // Bills
   async getBills(type?: 'C' | 'D', status?: 'pending' | 'paid'): Promise<Bill[]> {
-    return window.api.getBills(type, status);
+    return this.handleApi(window.api.getBills(type, status));
   }
 
   async addBill(bill: Partial<Bill>): Promise<any> {
-    return window.api.addBill(bill);
+    return this.handleApi(window.api.addBill(bill));
   }
 
   async deleteBill(id: number): Promise<any> {
-    return window.api.deleteBill(id);
+    return this.handleApi(window.api.deleteBill(id));
   }
 
   async payBill(data: { billId: number, accountId: number, paymentDate: string }): Promise<any> {
-    return window.api.payBill(data);
+    return this.handleApi(window.api.payBill(data));
   }
 
   // Investments
   async getAssets(): Promise<Asset[]> {
-    return window.api.getAssets();
+    return this.handleApi(window.api.getAssets());
   }
 
   async addAsset(asset: Partial<Asset>): Promise<any> {
-    return window.api.addAsset(asset);
+    return this.handleApi(window.api.addAsset(asset));
   }
 
   async deleteAsset(id: number): Promise<any> {
-    return window.api.deleteAsset(id);
+    return this.handleApi(window.api.deleteAsset(id));
   }
 
   async getInvestmentEntries(assetId: number): Promise<InvestmentEntry[]> {
-    return window.api.getInvestmentEntries(assetId);
+    return this.handleApi(window.api.getInvestmentEntries(assetId));
   }
 
   async addInvestmentEntry(entry: Partial<InvestmentEntry>): Promise<any> {
-    return window.api.addInvestmentEntry(entry);
+    return this.handleApi(window.api.addInvestmentEntry(entry));
   }
 
   async deleteInvestmentEntry(id: number): Promise<any> {
-    return window.api.deleteInvestmentEntry(id);
+    return this.handleApi(window.api.deleteInvestmentEntry(id));
+  }
+
+  async updateAccountName(id: number, name: string): Promise<any> {
+    return this.handleApi(window.api.updateAccountName(id, name));
+  }
+
+  async recategorizeMovements(): Promise<{ updatedCount: number }> {
+    return this.handleApi(window.api.recategorizeMovements());
   }
 
 }

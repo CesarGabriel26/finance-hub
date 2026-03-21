@@ -85,7 +85,7 @@ export class MovementsComponent implements OnInit {
       account_id: accId,
       category_id: this.nmCategoryId(),
       description: desc,
-      amount: this.nmType() === 'D' ? -amount : amount,
+      amount: amount,
       period: this.selectedPeriod(),
       date: new Date().toISOString(),
       type: this.nmType(),
@@ -148,6 +148,8 @@ export class MovementsComponent implements OnInit {
       priority: 10,
       created_by_user: true
     });
+
+    await this.db.recategorizeMovements();
 
     this.showLearningPrompt.set(false);
     this.editingMovement.set(null);

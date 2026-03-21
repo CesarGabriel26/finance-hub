@@ -2,7 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService, Account } from '../../services/database.service';
-import { LucideAngularModule, Plus, Trash2 } from 'lucide-angular';
+import { LucideAngularModule, Plus, Trash2, Edit2, Check, X } from 'lucide-angular';
 
 @Component({
   selector: 'app-accounts',
@@ -15,9 +15,13 @@ export class AccountsComponent implements OnInit {
   accounts = signal<Account[]>([]);
   newAccountName = signal('');
   newAccountBalance = signal(0);
+  editingAccount = signal<Account | null>(null);
 
   readonly PlusIcon = Plus;
   readonly TrashIcon = Trash2;
+  readonly EditIcon = Edit2;
+  readonly CheckIcon = Check;
+  readonly XIcon = X;
 
   constructor(private db: DatabaseService) { }
 
@@ -45,5 +49,22 @@ export class AccountsComponent implements OnInit {
       await this.db.deleteAccount(id);
       this.loadAccounts();
     }
+  }
+
+  startEdit(account: Account) {
+    this.editingAccount.set({ ...account });
+  }
+
+  cancelEdit() {
+    this.editingAccount.set(null);
+  }
+
+  async saveEdit() {
+    const edit = this.editingAccount();
+    if (!edit || !edit.id || !edit.name.trim()) return;
+
+    await this.db.updateAccountName(edit.id, edit.name.trim());
+    this.editingAccount.set(null);
+    this.loadAccounts();
   }
 }

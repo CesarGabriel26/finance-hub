@@ -12,13 +12,13 @@ contextBridge.exposeInMainWorld('api', {
     addCategory: (category) => ipcRenderer.invoke('add-category', category),
     deleteCategory: (id) => ipcRenderer.invoke('delete-category', id),
 
-    // Movements
     getMovements: (accountId, period) => ipcRenderer.invoke('get-movements', accountId, period),
     getMovementsForReview: () => ipcRenderer.invoke('get-movements-for-review'),
-    addMovement: (movement) => ipcRenderer.invoke('add-movement', movement),
-    updateMovement: (id, movement) => ipcRenderer.invoke('update-movement', id, movement),
-    deleteMovement: (id) => ipcRenderer.invoke('delete-movement', id),
+    addMovement: (movement, skipRecalculation) => ipcRenderer.invoke('add-movement', movement, skipRecalculation),
+    updateMovement: (id, movement, skipRecalculation) => ipcRenderer.invoke('update-movement', id, movement, skipRecalculation),
+    deleteMovement: (id, skipRecalculation) => ipcRenderer.invoke('delete-movement', id, skipRecalculation),
     closePeriod: (accountId, period) => ipcRenderer.invoke('close-period', accountId, period),
+    recalculateBalance: (accountId) => ipcRenderer.invoke('recalculate-balance', accountId),
 
     // Keywords
     getKeywords: () => ipcRenderer.invoke('get-keywords'),
@@ -44,9 +44,22 @@ contextBridge.exposeInMainWorld('api', {
     addInvestmentEntry: (entry) => ipcRenderer.invoke('add-investment-entry', entry),
     deleteInvestmentEntry: (id) => ipcRenderer.invoke('delete-investment-entry', id),
     
+    // Dashboard
+    getDashboardData: (period) => ipcRenderer.invoke('get-dashboard-data', period),
+    getDashboardEvolution: (periods) => ipcRenderer.invoke('get-dashboard-evolution', periods),
+    
     // Settings
     getSettings: () => ipcRenderer.invoke('get-settings'),
     updateSetting: (key, value) => ipcRenderer.invoke('update-setting', key, value),
     setAutoStart: (enabled) => ipcRenderer.invoke('set-auto-start', enabled),
     checkDueBills: () => ipcRenderer.invoke('check-due-bills'),
+
+    recategorizeMovements: () => ipcRenderer.invoke('recategorize-movements'),
+
+    // Auto Update
+    checkUpdate: () => ipcRenderer.invoke('check-update'),
+    startUpdateDownload: () => ipcRenderer.invoke('start-update-download'),
+    installUpdate: () => ipcRenderer.invoke('install-update'),
+    onUpdateEvent: (callback) => ipcRenderer.on('update-event', (_event, data) => callback(data)),
+    removeUpdateEvent: () => ipcRenderer.removeAllListeners('update-event'),
 });
