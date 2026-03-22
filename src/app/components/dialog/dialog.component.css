@@ -1,0 +1,8 @@
+:host {
+  display: block;
+}
+
+/* Custom shadow for buttons to match the vibe */
+.shadow-opacity-20 {
+  --tw-shadow-color: inherit;
+}

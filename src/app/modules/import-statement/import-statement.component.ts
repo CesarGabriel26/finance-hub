@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService, Account, Movement, Category, Keyword } from '../../services/database.service';
+import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, FileUp, CheckCircle, AlertCircle, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-angular';
 import { Ofx } from 'ofx-data-extractor';
 import { DeepSearch } from '../../utils/object.utils';
@@ -65,7 +66,7 @@ export class ImportStatementComponent implements OnInit {
   keywordRules = signal<any[]>([]);
   categories = signal<Category[]>([]);
 
-  constructor(private db: DatabaseService) { }
+  constructor(private db: DatabaseService, private dialog: DialogService) { }
 
   async ngOnInit() {
     const [accs, cats, keys, rules] = await Promise.all([
@@ -258,7 +259,7 @@ export class ImportStatementComponent implements OnInit {
     if (bankName) {
       let account = this.accounts().find(a => a.name.includes(bankName) || a.name === bankName);
       if (!account) {
-        if (confirm(`O banco '${bankName}' não foi encontrado. Deseja criar uma nova conta automaticamente?`)) {
+        if (await this.dialog.confirm(`O banco '${bankName}' não foi encontrado. Deseja criar uma nova conta automaticamente?`, 'warning', 'Banco não encontrado')) {
           const res = await this.db.addAccount({ name: bankName, balance: 0 });
           const newAccs = await this.db.getAccounts();
           this.accounts.set(newAccs);
@@ -378,7 +379,7 @@ export class ImportStatementComponent implements OnInit {
     const account = this.accounts().find(a => a.id == accId);
     const accountName = account ? account.name : 'conta selecionada';
 
-    if (!confirm(`Deseja importar ${this.allMovements().length} movimentações para a conta "${accountName}"?`)) {
+    if (!await this.dialog.confirm(`Deseja importar ${this.allMovements().length} movimentações para a conta "${accountName}"?`, 'info', 'Confirmar Importação')) {
       return;
     }
 
@@ -415,12 +416,13 @@ export class ImportStatementComponent implements OnInit {
 
         // 4. Conditional closing (Suggestion)
         if (statement.isComplete) {
-          if (confirm(`O período ${statement.period} parece completo. Deseja fechá-lo agora?`)) {
+          if (await this.dialog.confirm(`O período ${statement.period} parece completo. Deseja fechá-lo agora?`, 'info', 'Fechar Período')) {
             await this.db.closePeriod(accId, statement.period);
           }
         }
       }
 
+      await this.dialog.success('Dados importados com sucesso!');
       this.importStatus.set('success');
       this.parsedStatements.set([]);
     } catch (err) {

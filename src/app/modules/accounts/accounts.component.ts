@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService, Account } from '../../services/database.service';
+import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2, Edit2, Check, X } from 'lucide-angular';
 
 @Component({
@@ -23,7 +24,7 @@ export class AccountsComponent implements OnInit {
   readonly CheckIcon = Check;
   readonly XIcon = X;
 
-  constructor(private db: DatabaseService) { }
+  constructor(private db: DatabaseService, private dialog: DialogService) { }
 
   ngOnInit(): void {
     this.loadAccounts();
@@ -45,7 +46,7 @@ export class AccountsComponent implements OnInit {
   }
 
   async deleteAccount(id: number) {
-    if (confirm('Tem certeza que deseja excluir esta conta? Isso pode quebrar movimentos associados se o banco não usar CASCADE.')) {
+    if (await this.dialog.confirm('Tem certeza que deseja excluir esta conta? Isso pode quebrar movimentos associados se o banco não usar CASCADE.', 'warning', 'Excluir Conta')) {
       await this.db.deleteAccount(id);
       this.loadAccounts();
     }

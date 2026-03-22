@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService, Category } from '../../services/database.service';
+import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2 } from 'lucide-angular';
 
 @Component({
@@ -19,7 +20,7 @@ export class CategoriesComponent implements OnInit {
   readonly PlusIcon = Plus;
   readonly TrashIcon = Trash2;
 
-  constructor(private db: DatabaseService) { }
+  constructor(private db: DatabaseService, private dialog: DialogService) { }
 
   ngOnInit(): void {
     this.loadCategories();
@@ -41,7 +42,7 @@ export class CategoriesComponent implements OnInit {
   }
 
   async deleteCategory(id: number) {
-    if (confirm('Tem certeza que deseja excluir esta categoria?')) {
+    if (await this.dialog.confirm('Tem certeza que deseja excluir esta categoria?', 'warning', 'Excluir Categoria')) {
       await this.db.deleteCategory(id);
       this.loadCategories();
     }

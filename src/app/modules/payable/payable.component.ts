@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService, Bill, Account, Category } from '../../services/database.service';
+import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2, CheckCircle, Calendar, CreditCard, Repeat, Layers } from 'lucide-angular';
 
 @Component({
@@ -38,7 +39,7 @@ export class PayableComponent implements OnInit {
   readonly RepeatIcon = Repeat;
   readonly LayersIcon = Layers;
 
-  constructor(private db: DatabaseService) {}
+  constructor(private db: DatabaseService, private dialog: DialogService) {}
 
   async ngOnInit() {
     this.refresh();
@@ -59,7 +60,7 @@ export class PayableComponent implements OnInit {
 
   async addBill() {
     if (!this.nbDescription || !this.nbAmount || !this.nbDueDate) {
-        alert('Preencha os campos obrigatórios.');
+        await this.dialog.warning('Preencha os campos obrigatórios.', 'Campos Obrigatórios');
         return;
     }
 
@@ -90,7 +91,7 @@ export class PayableComponent implements OnInit {
   }
 
   async deleteBill(id: number) {
-    if (confirm('Excluir esta conta?')) {
+    if (await this.dialog.confirm('Excluir esta conta?', 'warning', 'Excluir Conta')) {
       await this.db.deleteBill(id);
       this.refresh();
     }

@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService, Movement, Account, Category } from '../../services/database.service';
+import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Lock, Edit2, Brain, Check, X, Info } from 'lucide-angular';
 
 @Component({
@@ -41,7 +42,7 @@ export class MovementsComponent implements OnInit {
   readonly XIcon = X;
   readonly InfoIcon = Info;
 
-  constructor(private db: DatabaseService) { }
+  constructor(private db: DatabaseService, private dialog: DialogService) { }
 
   async ngOnInit() {
     const [accs, cats] = await Promise.all([
@@ -100,10 +101,10 @@ export class MovementsComponent implements OnInit {
 
   async deleteMovement(id: number, type: string) {
     if (type === 'AC' || type === 'FC') {
-      alert('Não é possível excluir abertura ou fechamento de conta diretamente.');
+      await this.dialog.warning('Não é possível excluir abertura ou fechamento de conta diretamente.', 'Ação não permitida');
       return;
     }
-    if (confirm('Excluir este movimento? O saldo da conta será recalculado.')) {
+    if (await this.dialog.confirm('Excluir este movimento? O saldo da conta será recalculado.', 'warning', 'Excluir Movimento')) {
       await this.db.deleteMovement(id);
       this.loadMovements();
     }
@@ -162,7 +163,7 @@ export class MovementsComponent implements OnInit {
 
   async closePeriod() {
     if (!this.selectedAccountId()) return;
-    if (confirm('Deseja fechar o mês? Isso vai gerar o registro de Fechamento (FC).')) {
+    if (await this.dialog.confirm('Deseja fechar o mês? Isso vai gerar o registro de Fechamento (FC).', 'info', 'Fechar Período')) {
       await this.db.closePeriod(this.selectedAccountId()!, this.selectedPeriod());
       this.loadMovements();
     }

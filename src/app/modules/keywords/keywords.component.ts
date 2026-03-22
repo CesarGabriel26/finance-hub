@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService, Category, Keyword } from '../../services/database.service';
+import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2, Search, Tag } from 'lucide-angular';
 
 @Component({
@@ -25,7 +26,7 @@ export class KeywordsComponent implements OnInit {
   readonly SearchIcon = Search;
   readonly TagIcon = Tag;
 
-  constructor(private db: DatabaseService) {}
+  constructor(private db: DatabaseService, private dialog: DialogService) {}
 
   async ngOnInit() {
     await this.loadData();
@@ -58,7 +59,7 @@ export class KeywordsComponent implements OnInit {
   }
 
   async deleteKeyword(id: number) {
-    if (confirm('Tem certeza que deseja excluir esta palavra-chave?')) {
+    if (await this.dialog.confirm('Tem certeza que deseja excluir esta palavra-chave?', 'warning', 'Excluir Palavra-chave')) {
       await this.db.deleteKeyword(id);
       await this.loadData();
     }

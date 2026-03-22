@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService, Movement, Category } from '../../services/database.service';
+import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Check, Edit2, Trash2, AlertCircle, Brain, Info, X, Wallet } from 'lucide-angular';
 
 @Component({
@@ -27,7 +28,7 @@ export class ReviewComponent implements OnInit {
   readonly XIcon = X;
   readonly WalletIcon = Wallet;
 
-  constructor(private db: DatabaseService) {}
+  constructor(private db: DatabaseService, private dialog: DialogService) {}
 
   async ngOnInit() {
     await this.loadData();
@@ -70,7 +71,7 @@ export class ReviewComponent implements OnInit {
   }
 
   async deleteMovement(id: number) {
-    if (confirm('Excluir este movimento?')) {
+    if (await this.dialog.confirm('Excluir este movimento?', 'warning', 'Excluir Movimento')) {
       await this.db.deleteMovement(id);
       await this.loadData();
     }

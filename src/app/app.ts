@@ -2,11 +2,12 @@ import { Component, signal, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ToastComponent } from './components/toast/toast.component';
 import { UpdateModalComponent } from './components/update-modal/update-modal.component';
+import { DialogComponent } from './components/dialog/dialog.component';
 import { UpdateService } from './services/update.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastComponent, UpdateModalComponent],
+  imports: [RouterOutlet, ToastComponent, UpdateModalComponent, DialogComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Plus, TrendingUp, Wallet, Target, Trash2, ArrowRight, History, Landmark, Info, X, TrendingDown, Calendar, Percent, Lightbulb, Zap } from 'lucide-angular';
 import { DatabaseService, Asset, InvestmentEntry, Account } from '../../services/database.service';
+import { DialogService } from '../../services/dialog.service';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 
@@ -213,6 +214,7 @@ export class InvestmentsComponent implements OnInit {
   });
 
   private db = inject(DatabaseService);
+  private dialog = inject(DialogService);
 
   constructor() {}
 
@@ -257,7 +259,7 @@ export class InvestmentsComponent implements OnInit {
 
   async deleteAsset(id: number, event: Event) {
     event.stopPropagation();
-    if (confirm('Tem certeza que deseja excluir este investimento? Todos os lançamentos serão removidos.')) {
+    if (await this.dialog.confirm('Tem certeza que deseja excluir este investimento? Todos os lançamentos serão removidos.', 'error', 'Excluir Investimento')) {
       await this.db.deleteAsset(id);
       if (this.selectedAsset()?.id === id) {
         this.selectedAsset.set(null);
@@ -291,7 +293,7 @@ export class InvestmentsComponent implements OnInit {
   }
 
   async deleteEntry(id: number) {
-    if (confirm('Excluir este lançamento?')) {
+    if (await this.dialog.confirm('Excluir este lançamento?', 'warning', 'Excluir Lançamento')) {
       await this.db.deleteInvestmentEntry(id);
       this.loadData();
       if (this.selectedAsset()) {
