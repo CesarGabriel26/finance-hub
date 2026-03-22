@@ -1,133 +1,259 @@
 <div class="space-y-6">
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+  <!-- Header & Filters -->
+  <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-gray-900">Dashboard</h1>
-      <p class="text-gray-500 mt-1">Visão geral das suas finanças</p>
+      <h1 class="text-3xl font-bold tracking-tight text-text">Dashboard</h1>
+      <p class="text-textMuted mt-1">Visão geral das suas finanças</p>
     </div>
     
-    <div class="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-gray-100 shadow-sm">
-      <select [(ngModel)]="selectedMonth" (change)="onPeriodChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer">
-        <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
-      </select>
-      <div class="w-px h-4 bg-gray-200"></div>
-      <select [(ngModel)]="selectedYear" (change)="onPeriodChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer">
-        <option *ngFor="let y of years()" [value]="y">{{ y }}</option>
-      </select>
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Period Selector -->
+      <div class="flex items-center gap-2 bg-card p-1.5 rounded-xl border border-gray-100 shadow-sm">
+        <select [(ngModel)]="selectedMonth" (change)="onFilterChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-text">
+          <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+        </select>
+        <div class="w-px h-4 bg-gray-200"></div>
+        <select [(ngModel)]="selectedYear" (change)="onFilterChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-text">
+          <option *ngFor="let y of years()" [value]="y">{{ y }}</option>
+        </select>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex items-center gap-2 bg-card p-1.5 rounded-xl border border-gray-100 shadow-sm">
+        <lucide-icon [img]="Filter" class="w-4 h-4 text-textMuted ml-2"></lucide-icon>
+        <select [(ngModel)]="filterType" (change)="onFilterChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted">
+          <option value="ALL">Todos os Tipos</option>
+          <option value="C">Receitas</option>
+          <option value="D">Despesas</option>
+        </select>
+        <div class="w-px h-4 bg-gray-200"></div>
+        <select [(ngModel)]="filterAccountId" (change)="onFilterChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted max-w-[120px]">
+          <option [ngValue]="null">Todas as Contas</option>
+          <option *ngFor="let acc of accounts()" [ngValue]="acc.id">{{ acc.name }}</option>
+        </select>
+        <div class="w-px h-4 bg-gray-200"></div>
+        <select [(ngModel)]="filterCategoryId" (change)="onFilterChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted max-w-[120px]">
+          <option [ngValue]="null">Todas as Categorias</option>
+          <ng-container *ngFor="let cat of categories()">
+            <option *ngIf="filterType() === 'ALL' || cat.type === filterType()" [ngValue]="cat.id">{{ cat.name }}</option>
+          </ng-container>
+        </select>
+      </div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
-    <!-- Balance -->
-    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 p-5">
-      <dt class="truncate text-sm font-medium text-gray-500 uppercase tracking-wider">Saldo Geral</dt>
-      <dd class="mt-2 text-3xl font-extrabold tracking-tight text-blue-600">
-        {{ totalBalance() | currency:'BRL' }}
-      </dd>
+  <!-- Loading Skeleton -->
+  <div *ngIf="isLoading()" class="animate-pulse space-y-6 w-full">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div class="h-32 bg-gray-200 rounded-xl"></div>
+      <div class="h-32 bg-gray-200 rounded-xl"></div>
+      <div class="h-32 bg-gray-200 rounded-xl"></div>
     </div>
-
-    <!-- Revenue -->
-    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 p-5">
-      <dt class="truncate text-sm font-medium text-gray-500 uppercase tracking-wider">Receitas do Mês</dt>
-      <dd class="mt-2 text-3xl font-extrabold tracking-tight text-emerald-600">
-        {{ totalRevenue() | currency:'BRL' }}
-      </dd>
-    </div>
-
-    <!-- Expenses -->
-    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 p-5">
-      <dt class="truncate text-sm font-medium text-gray-500 uppercase tracking-wider">Despesas do Mês</dt>
-      <dd class="mt-2 text-3xl font-extrabold tracking-tight text-red-600">
-        {{ totalExpense() | currency:'BRL' }}
-      </dd>
+    <div class="h-16 bg-primary/10 rounded-xl"></div>
+    <div class="h-[400px] bg-gray-200 rounded-xl"></div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="h-[400px] bg-gray-200 rounded-xl"></div>
+      <div class="h-[400px] bg-gray-200 rounded-xl"></div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Chart Growth -->
-    <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px]">
-      <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center">
-        <span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
-        Evolução de Gastos (6 Meses)
-      </h2>
-      <div class="flex-1 relative">
-        <canvas baseChart
-                [type]="'line'"
-                [datasets]="lineChartDatasets"
-                [labels]="lineChartLabels"
-                [options]="lineChartOptions">
-        </canvas>
+  <!-- Content -->
+  <div *ngIf="!isLoading()" class="space-y-6 w-full">
+    
+    <!-- Top Cards -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <!-- Balance -->
+      <div class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
+        <div class="absolute top-5 right-5 p-2 bg-primary/10 text-primary rounded-lg group-hover:scale-110 transition-transform">
+          <lucide-icon [img]="Wallet" class="w-5 h-5"></lucide-icon>
+        </div>
+        <dt class="truncate text-sm font-medium text-textMuted uppercase tracking-wider">Saldo Geral</dt>
+        <dd class="mt-2 text-3xl font-extrabold tracking-tight text-primary">
+          {{ totalBalance() | currency:'BRL' }}
+        </dd>
+      </div>
+
+      <!-- Revenue -->
+      <div class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
+        <div class="absolute top-5 right-5 p-2 bg-success/10 text-success rounded-lg group-hover:scale-110 transition-transform">
+          <lucide-icon [img]="TrendingUp" class="w-5 h-5"></lucide-icon>
+        </div>
+        <dt class="truncate text-sm font-medium text-textMuted uppercase tracking-wider">Receitas do Período</dt>
+        <dd class="mt-2 text-3xl font-extrabold tracking-tight text-success">
+          {{ totalRevenue() | currency:'BRL' }}
+        </dd>
+        <div class="mt-2 flex items-center text-sm">
+          <ng-container *ngIf="getVariation(totalRevenue(), prevTotalRevenue()) as v">
+            <span *ngIf="v.hasData" [class.text-success]="v.isPositive" [class.text-danger]="!v.isPositive" class="flex items-center font-medium">
+              <lucide-icon *ngIf="v.isPositive" [img]="ArrowUpRight" class="w-4 h-4 mr-1"></lucide-icon>
+              <lucide-icon *ngIf="!v.isPositive" [img]="ArrowDownRight" class="w-4 h-4 mr-1"></lucide-icon>
+              {{ v.value | number:'1.0-0' }}% 
+            </span>
+            <span *ngIf="v.hasData" class="text-textMuted ml-2">vs mês passado</span>
+            <span *ngIf="!v.hasData" class="text-gray-400 italic">Sem dados anteriores</span>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Expenses -->
+      <div class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
+        <div class="absolute top-5 right-5 p-2 bg-danger/10 text-danger rounded-lg group-hover:scale-110 transition-transform">
+          <lucide-icon [img]="TrendingDown" class="w-5 h-5"></lucide-icon>
+        </div>
+        <dt class="truncate text-sm font-medium text-textMuted uppercase tracking-wider">Despesas do Período</dt>
+        <dd class="mt-2 text-3xl font-extrabold tracking-tight text-danger">
+          {{ totalExpense() | currency:'BRL' }}
+        </dd>
+        <div class="mt-2 flex items-center text-sm">
+          <ng-container *ngIf="getVariation(totalExpense(), prevTotalExpense()) as v">
+            <span *ngIf="v.hasData" [class.text-danger]="v.isPositive" [class.text-success]="!v.isPositive" class="flex items-center font-medium">
+              <lucide-icon *ngIf="v.isPositive" [img]="ArrowUpRight" class="w-4 h-4 mr-1"></lucide-icon>
+              <lucide-icon *ngIf="!v.isPositive" [img]="ArrowDownRight" class="w-4 h-4 mr-1"></lucide-icon>
+              {{ v.value | number:'1.0-0' }}% 
+            </span>
+            <span *ngIf="v.hasData" class="text-textMuted ml-2">vs mês passado</span>
+            <span *ngIf="!v.hasData" class="text-gray-400 italic">Sem dados anteriores</span>
+          </ng-container>
+        </div>
       </div>
     </div>
 
-    <!-- Chart Sect -->
-    <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px]">
-      <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center">
-        <span class="w-2 h-2 rounded-full bg-rose-500 mr-2"></span>
-        Despesas por Categoria
-      </h2>
-      
-      <div class="flex-1 relative flex items-center justify-center">
-        <canvas *ngIf="pieChartLabels.length > 0; else noData"
-                baseChart
-                [type]="'pie'"
-                [datasets]="pieChartDatasets"
-                [labels]="pieChartLabels"
-                [options]="pieChartOptions"
-                [legend]="pieChartLegend">
-        </canvas>
-        <ng-template #noData>
-          <div class="text-center text-gray-400 flex flex-col items-center">
-            <svg class="h-12 w-12 mb-2 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <p class="text-sm">Nenhuma despesa registrada neste mês.</p>
+    <!-- Insights -->
+    <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
+      <div class="p-2 bg-primary/10 text-primary rounded-full shrink-0">
+        <lucide-icon [img]="AlertCircle" class="w-5 h-5"></lucide-icon>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+        <div>
+          <span class="block text-sm font-medium text-text">Análise de Gastos</span>
+          <span class="block text-sm text-textMuted">{{ insightExpenseTrend() }}</span>
+        </div>
+        <div>
+          <span class="block text-sm font-medium text-text">Destaque do Mês</span>
+          <span class="block text-sm text-textMuted">{{ insightTopCategory() }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts: Evolution -->
+    <div class="bg-card shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg font-bold text-text flex items-center">
+          <lucide-icon [img]="Activity" class="w-5 h-5 text-primary mr-2"></lucide-icon>
+          Evolução
+        </h2>
+        <div class="flex items-center gap-1 bg-bg p-1 rounded-lg border border-gray-100">
+          <button (click)="onEvolutionPeriodChange(6)" [class.bg-card]="evolutionPeriod() === 6" [class.shadow-sm]="evolutionPeriod() === 6" class="px-3 py-1 text-xs font-medium rounded-md transition-all text-textMuted hover:text-text">6 Meses</button>
+          <button (click)="onEvolutionPeriodChange(12)" [class.bg-card]="evolutionPeriod() === 12" [class.shadow-sm]="evolutionPeriod() === 12" class="px-3 py-1 text-xs font-medium rounded-md transition-all text-textMuted hover:text-text">12 Meses</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[250px] lg:h-[300px]">
+        <div class="relative w-full h-full flex flex-col">
+          <h3 class="text-sm font-semibold text-textMuted mb-2 truncate text-center">Despesas</h3>
+          <div class="flex-1 relative">
+            <canvas baseChart [type]="'line'" [datasets]="lineChartDatasets" [labels]="lineChartLabels" [options]="lineChartOptions"></canvas>
           </div>
-        </ng-template>
-      </div>
-    </div>
-  </div>
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-    <!-- Chart Growth Revenue -->
-    <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px]">
-      <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>
-        Evolução de Receitas (6 Meses)
-      </h2>
-      <div class="flex-1 relative">
-        <canvas baseChart
-                [type]="'line'"
-                [datasets]="lineChartRevenueDatasets"
-                [labels]="lineChartRevenueLabels"
-                [options]="lineChartRevenueOptions">
-        </canvas>
+        </div>
+        <div class="relative w-full h-full flex flex-col">
+          <h3 class="text-sm font-semibold text-textMuted mb-2 truncate text-center">Receitas</h3>
+          <div class="flex-1 relative">
+            <canvas baseChart [type]="'line'" [datasets]="lineChartRevenueDatasets" [labels]="lineChartRevenueLabels" [options]="lineChartRevenueOptions"></canvas>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Chart Sect Revenue -->
-    <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px]">
-      <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>
-        Receitas por Categoria
-      </h2>
+    <!-- Charts & Lists: Categories & Recent -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       
-      <div class="flex-1 relative flex items-center justify-center">
-        <canvas *ngIf="pieChartRevenueLabels.length > 0; else noDataRevenue"
-                baseChart
-                [type]="'pie'"
-                [datasets]="pieChartRevenueDatasets"
-                [labels]="pieChartRevenueLabels"
-                [options]="pieChartRevenueOptions"
-                [legend]="pieChartRevenueLegend">
-        </canvas>
-        <ng-template #noDataRevenue>
-          <div class="text-center text-gray-400 flex flex-col items-center">
-            <svg class="h-12 w-12 mb-2 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <p class="text-sm">Nenhuma receita registrada neste mês.</p>
+      <!-- Chart Breakdown -->
+      <div class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px]">
+        <h2 class="text-lg font-bold text-text mb-6 flex items-center">
+          <lucide-icon [img]="List" class="w-5 h-5 text-secondary mr-2"></lucide-icon>
+          Comparativo por Categoria
+        </h2>
+        
+        <div class="flex-1 relative flex items-center justify-center">
+          <div class="w-full flex h-full gap-4">
+            <!-- Expenses Pie -->
+            <div class="flex-1 flex flex-col items-center relative">
+              <h3 class="text-sm font-semibold text-textMuted mb-2 truncate w-full text-center">Despesas</h3>
+              <div class="flex-1 w-full relative">
+                <canvas *ngIf="pieChartLabels.length > 0; else noDataPie"
+                        (chartClick)="expenseChartClicked($event)"
+                        baseChart
+                        [type]="'pie'"
+                        [datasets]="pieChartDatasets"
+                        [labels]="pieChartLabels"
+                        [options]="pieChartOptions"
+                        [legend]="pieChartLegend">
+                </canvas>
+                <ng-template #noDataPie>
+                  <div class="text-center text-textMuted absolute inset-0 flex flex-col items-center justify-center">
+                    <p class="text-sm">Sem despesas.</p>
+                  </div>
+                </ng-template>
+              </div>
+            </div>
+            
+            <div class="w-px bg-gray-100 hidden sm:block"></div>
+            
+            <!-- Revenues Pie -->
+            <div class="flex-1 flex flex-col items-center relative hidden sm:flex">
+              <h3 class="text-sm font-semibold text-textMuted mb-2 truncate w-full text-center">Receitas</h3>
+              <div class="flex-1 w-full relative">
+                <canvas *ngIf="pieChartRevenueLabels.length > 0; else noDataPieRev"
+                        (chartClick)="revenueChartClicked($event)"
+                        baseChart
+                        [type]="'pie'"
+                        [datasets]="pieChartRevenueDatasets"
+                        [labels]="pieChartRevenueLabels"
+                        [options]="pieChartRevenueOptions"
+                        [legend]="pieChartRevenueLegend">
+                </canvas>
+                <ng-template #noDataPieRev>
+                  <div class="text-center text-textMuted absolute inset-0 flex flex-col items-center justify-center">
+                    <p class="text-sm">Sem receitas.</p>
+                  </div>
+                </ng-template>
+              </div>
+            </div>
           </div>
-        </ng-template>
+        </div>
       </div>
+
+      <!-- Recent Transactions -->
+      <div class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px] overflow-hidden">
+        <h2 class="text-lg font-bold text-text mb-6 flex items-center">
+          <lucide-icon [img]="List" class="w-5 h-5 text-textMuted mr-2"></lucide-icon>
+          Últimas Transações
+        </h2>
+        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <div *ngIf="recentMovements().length === 0" class="text-center text-textMuted mt-10">
+            Nenhuma transação encontrada.
+          </div>
+          <div class="space-y-4">
+            <div *ngFor="let m of recentMovements()" class="flex items-center justify-between p-3 bg-bg rounded-lg hover:bg-gray-100 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" [class.bg-success/10]="m.type === 'C'" [class.text-success]="m.type === 'C'" [class.bg-danger/10]="m.type === 'D'" [class.text-danger]="m.type === 'D'">
+                  <lucide-icon *ngIf="m.type === 'C'" [img]="ArrowUpRight" class="w-5 h-5"></lucide-icon>
+                  <lucide-icon *ngIf="m.type === 'D'" [img]="ArrowDownRight" class="w-5 h-5"></lucide-icon>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-text border-none truncate max-w-[150px]" [title]="m.description">{{ m.description }}</p>
+                  <p class="text-xs text-textMuted">{{ m.date | date:'dd/MM/yyyy' }} &bull; {{ m.category_name || 'Sem categoria' }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-sm font-bold" [class.text-success]="m.type === 'C'" [class.text-danger]="m.type === 'D'">
+                  {{ m.type === 'C' ? '+' : '-' }} {{ m.amount | currency:'BRL' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>

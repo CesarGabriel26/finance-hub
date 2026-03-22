@@ -87,6 +87,8 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 name TEXT NOT NULL,
                 type TEXT,
                 objective_value REAL,
+                index_type TEXT,
+                index_percentage REAL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`);
 
@@ -111,6 +113,45 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                         db.run("ALTER TABLE movements ADD COLUMN classification_source TEXT CHECK(classification_source IN ('manual', 'keyword', 'imported'))");
                         db.run("ALTER TABLE movements ADD COLUMN classification_rule_id INTEGER");
                         db.run("ALTER TABLE movements ADD COLUMN confidence REAL");
+                    }
+                }
+            });
+
+            db.run(`CREATE TABLE IF NOT EXISTS asset_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                asset_id INTEGER NOT NULL,
+                date DATE NOT NULL,
+                value REAL NOT NULL,
+                type TEXT NOT NULL CHECK(type IN ('saldo', 'aporte')),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (asset_id) REFERENCES assets(id)
+            )`);
+
+            db.run(`CREATE TABLE IF NOT EXISTS market_rates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date DATE NOT NULL UNIQUE,
+                cdi REAL,
+                selic REAL,
+                ipca REAL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`);
+
+            db.all("PRAGMA table_info(assets)", (err, columns) => {
+                if (columns) {
+                    if (!columns.find(c => c.name === 'current_value')) {
+                        db.run("ALTER TABLE assets ADD COLUMN current_value REAL DEFAULT 0");
+                    }
+                    if (!columns.find(c => c.name === 'benchmark')) {
+                        db.run("ALTER TABLE assets ADD COLUMN benchmark TEXT");
+                    }
+                    if (!columns.find(c => c.name === 'status')) {
+                        db.run("ALTER TABLE assets ADD COLUMN status TEXT DEFAULT 'active'");
+                    }
+                    if (!columns.find(c => c.name === 'index_type')) {
+                        db.run("ALTER TABLE assets ADD COLUMN index_type TEXT");
+                    }
+                    if (!columns.find(c => c.name === 'index_percentage')) {
+                        db.run("ALTER TABLE assets ADD COLUMN index_percentage REAL");
                     }
                 }
             });

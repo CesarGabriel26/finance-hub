@@ -75,6 +75,21 @@ export interface Asset {
   type?: string;
   objective_value?: number;
   total_invested?: number;
+  current_value?: number;
+  benchmark?: string;
+  index_type?: 'CDI' | 'SELIC' | 'IPCA' | 'FIXO' | null;
+  index_percentage?: number | null;
+  status?: string;
+  created_at?: string;
+  is_estimated?: boolean;
+}
+
+export interface AssetHistory {
+  id?: number;
+  asset_id: number;
+  date: string;
+  value: number;
+  type: 'saldo' | 'aporte';
   created_at?: string;
 }
 
@@ -130,14 +145,16 @@ declare global {
       // Investments
       getAssets: () => Promise<Asset[]>;
       addAsset: (asset: Partial<Asset>) => Promise<any>;
+      updateAsset: (id: number, asset: Partial<Asset>) => Promise<any>;
       deleteAsset: (id: number) => Promise<any>;
       getInvestmentEntries: (assetId: number) => Promise<InvestmentEntry[]>;
       addInvestmentEntry: (entry: Partial<InvestmentEntry>) => Promise<any>;
       deleteInvestmentEntry: (id: number) => Promise<any>;
 
       // Dashboard
-      getDashboardData: (period: string) => Promise<any[]>;
-      getDashboardEvolution: (periods: string[]) => Promise<any[]>;
+      getDashboardData: (period: string, filters?: any) => Promise<any[]>;
+      getDashboardEvolution: (periods: string[], filters?: any) => Promise<any[]>;
+      getRecentMovements: (limit?: number, filters?: any) => Promise<Movement[]>;
       
       recategorizeMovements: () => Promise<{ updatedCount: number }>;
     };
@@ -163,12 +180,16 @@ export class DatabaseService {
     }
   }
 
-  async getDashboardData(period: string): Promise<any[]> {
-    return this.handleApi(window.api.getDashboardData(period));
+  async getDashboardData(period: string, filters?: any): Promise<any[]> {
+    return this.handleApi(window.api.getDashboardData(period, filters));
   }
 
-  async getDashboardEvolution(periods: string[]): Promise<any[]> {
-    return this.handleApi(window.api.getDashboardEvolution(periods));
+  async getDashboardEvolution(periods: string[], filters?: any): Promise<any[]> {
+    return this.handleApi(window.api.getDashboardEvolution(periods, filters));
+  }
+
+  async getRecentMovements(limit: number = 5, filters?: any): Promise<Movement[]> {
+    return this.handleApi(window.api.getRecentMovements(limit, filters));
   }
 
   async getAccounts(): Promise<Account[]> {
@@ -277,6 +298,10 @@ export class DatabaseService {
 
   async addAsset(asset: Partial<Asset>): Promise<any> {
     return this.handleApi(window.api.addAsset(asset));
+  }
+
+  async updateAsset(id: number, asset: Partial<Asset>): Promise<any> {
+    return this.handleApi(window.api.updateAsset(id, asset));
   }
 
   async deleteAsset(id: number): Promise<any> {

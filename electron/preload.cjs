@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
     addAccount: (account) => ipcRenderer.invoke('add-account', account),
     deleteAccount: (id) => ipcRenderer.invoke('delete-account', id),
     updateAccountBalance: (id, balance) => ipcRenderer.invoke('update-account-balance', id, balance),
+    updateAccountName: (id, name) => ipcRenderer.invoke('update-account-name', id, name),
     
     // Categories
     getCategories: () => ipcRenderer.invoke('get-categories'),
@@ -39,14 +40,16 @@ contextBridge.exposeInMainWorld('api', {
     // Investments
     getAssets: () => ipcRenderer.invoke('get-assets'),
     addAsset: (asset) => ipcRenderer.invoke('add-asset', asset),
+    updateAsset: (id, asset) => ipcRenderer.invoke('update-asset', id, asset),
     deleteAsset: (id) => ipcRenderer.invoke('delete-asset', id),
     getInvestmentEntries: (assetId) => ipcRenderer.invoke('get-investment-entries', assetId),
     addInvestmentEntry: (entry) => ipcRenderer.invoke('add-investment-entry', entry),
     deleteInvestmentEntry: (id) => ipcRenderer.invoke('delete-investment-entry', id),
     
     // Dashboard
-    getDashboardData: (period) => ipcRenderer.invoke('get-dashboard-data', period),
-    getDashboardEvolution: (periods) => ipcRenderer.invoke('get-dashboard-evolution', periods),
+    getDashboardData: (period, filters) => ipcRenderer.invoke('get-dashboard-data', period, filters),
+    getDashboardEvolution: (periods, filters) => ipcRenderer.invoke('get-dashboard-evolution', periods, filters),
+    getRecentMovements: (limit, filters) => ipcRenderer.invoke('get-recent-movements', limit, filters),
     
     // Settings
     getSettings: () => ipcRenderer.invoke('get-settings'),

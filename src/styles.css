@@ -1,3 +1,47 @@
 /* You can add global styles to this file, and also import other style files */
-
 @import "tailwindcss";
+
+@config "../tailwind.config.js";
+
+@layer components {
+  /* Cards */
+  .card {
+    @apply bg-card rounded-2xl shadow-sm border border-slate-200 p-6;
+  }
+
+  /* Hover variants for cards */
+  .card-hover {
+    @apply hover:shadow-md transition-all;
+  }
+
+  /* Botões */
+  .btn-primary {
+    @apply bg-primary text-white px-4 py-2 rounded-lg font-medium transition-colors hover:bg-blue-700;
+  }
+
+  .btn-secondary {
+    @apply bg-white border border-slate-200 text-slate-900 px-4 py-2 rounded-lg font-medium transition-colors hover:bg-slate-50;
+  }
+
+  /* Padrões de UI (Valores) */
+  .text-positive {
+    @apply text-success font-medium;
+  }
+
+  .text-negative {
+    @apply text-danger font-medium;
+  }
+
+  .text-neutral {
+    @apply text-slate-500 font-medium;
+  }
+}
+
+@layer base {
+  /* Preparar para modo escuro futuro */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* Adicionar variáveis para o modo dark aqui no futuro */
+    }
+  }
+}

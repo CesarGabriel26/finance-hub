@@ -12,6 +12,8 @@ function handleIpc(channel, handler) {
     });
 }
 
+let memoryRatesCache = null;
+let memoryRatesDate = null;
 
 async function recalculateAccountBalance(accountId) {
     // Obter o primeiro AC
@@ -321,7 +323,7 @@ export function setupAPI() {
 
     // -- Investments Handlers --
     handleIpc("get-assets", async () => {
-        return await dbAll(`
+        const assets = await dbAll(`
             SELECT a.*, 
                    COALESCE(SUM(CASE WHEN ie.type = 'deposit' THEN ie.amount ELSE -ie.amount END), 0) as total_invested
             FROM assets a
@@ -329,17 +331,28 @@ export function setupAPI() {
             GROUP BY a.id
             ORDER BY a.name
         `);
+
+        return assets;
     });
 
     handleIpc("add-asset", async (_, asset) => {
-        const { name, type, objective_value } = asset;
+        const { name, type, objective_value, benchmark, index_type, index_percentage } = asset;
         return await dbRun(
-            "INSERT INTO assets (name, type, objective_value) VALUES (?, ?, ?)",
-            [name, type, objective_value]
+            "INSERT INTO assets (name, type, objective_value, benchmark, index_type, index_percentage, current_value, status) VALUES (?, ?, ?, ?, ?, ?, 0, 'active')",
+            [name, type, objective_value, benchmark || null, index_type || null, index_percentage || null]
+        );
+    });
+
+    handleIpc("update-asset", async (_, id, asset) => {
+        const { name, type, objective_value, benchmark, index_type, index_percentage, status } = asset;
+        return await dbRun(
+            "UPDATE assets SET name = ?, type = ?, objective_value = ?, benchmark = ?, index_type = ?, index_percentage = ?, status = ? WHERE id = ?",
+            [name, type, objective_value, benchmark || null, index_type || null, index_percentage || null, status || 'active', id]
         );
     });
 
     handleIpc("delete-asset", async (_, id) => {
+        await dbRun("DELETE FROM asset_history WHERE asset_id = ?", [id]);
         await dbRun("DELETE FROM investment_entries WHERE asset_id = ?", [id]);
         return await dbRun("DELETE FROM assets WHERE id = ?", [id]);
     });
@@ -443,26 +456,57 @@ export function setupAPI() {
         return { updatedCount };
     });
 
-    handleIpc("get-dashboard-data", async (_, period) => {
-        return await dbAll(`
+    handleIpc("get-dashboard-data", async (_, period, filters = {}) => {
+        let query = `
             SELECT m.type, m.category_id, c.name as category_name, SUM(ABS(m.amount)) as total
             FROM movements m
             LEFT JOIN categories c ON m.category_id = c.id
             WHERE m.period = ? AND m.type IN ('C', 'D')
-            GROUP BY m.type, m.category_id, c.name
-        `, [period]);
+        `;
+        let params = [period];
+        if (filters.accountId) { query += ` AND m.account_id = ?`; params.push(filters.accountId); }
+        if (filters.categoryId) { query += ` AND m.category_id = ?`; params.push(filters.categoryId); }
+        if (filters.type) { query += ` AND m.type = ?`; params.push(filters.type); }
+        
+        query += ` GROUP BY m.type, m.category_id, c.name`;
+        return await dbAll(query, params);
     });
 
-    handleIpc("get-dashboard-evolution", async (_, periods) => {
+    handleIpc("get-dashboard-evolution", async (_, periods, filters = {}) => {
         const placeholders = periods.map(() => '?').join(',');
-        return await dbAll(`
+        let query = `
             SELECT 
                 period, 
                 SUM(CASE WHEN type = 'D' THEN ABS(amount) ELSE 0 END) as total_expense,
                 SUM(CASE WHEN type = 'C' THEN ABS(amount) ELSE 0 END) as total_revenue
-            FROM movements
+            FROM movements m
             WHERE period IN (${placeholders}) AND type IN ('C', 'D')
-            GROUP BY period
-        `, periods);
+        `;
+        let params = [...periods];
+        if (filters.accountId) { query += ` AND m.account_id = ?`; params.push(filters.accountId); }
+        if (filters.categoryId) { query += ` AND m.category_id = ?`; params.push(filters.categoryId); }
+        if (filters.type) { query += ` AND m.type = ?`; params.push(filters.type); }
+
+        query += ` GROUP BY period`;
+        return await dbAll(query, params);
+    });
+
+    handleIpc("get-recent-movements", async (_, limit = 5, filters = {}) => {
+        let query = `
+            SELECT m.*, c.name as category_name, acc.name as account_name
+            FROM movements m
+            LEFT JOIN categories c ON m.category_id = c.id
+            LEFT JOIN accounts acc ON m.account_id = acc.id
+            WHERE m.type IN ('C', 'D')
+        `;
+        let params = [];
+        if (filters.accountId) { query += ` AND m.account_id = ?`; params.push(filters.accountId); }
+        if (filters.categoryId) { query += ` AND m.category_id = ?`; params.push(filters.categoryId); }
+        if (filters.type) { query += ` AND m.type = ?`; params.push(filters.type); }
+        if (filters.period) { query += ` AND m.period = ?`; params.push(filters.period); }
+
+        query += ` ORDER BY m.date DESC LIMIT ?`;
+        params.push(limit);
+        return await dbAll(query, params);
     });
 }
