@@ -2,17 +2,39 @@
     display: block;
 }
 
-.animate-slide-down {
-    animation: slideDown 0.3s ease-out;
+.animate-in {
+    animation: fadeIn 0.7s ease-out;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Scrollbar for the timeline if needed */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #E2E8F0;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #CBD5E1;
+}
+
+/* Feature Card Hover Effects */
+.group\/feature:hover img {
+    transform: scale(1.05);
+    transition: transform 0.5s ease-out;
+}
+
+.group\/feature img {
+    transition: transform 0.5s ease-out;
 }

@@ -66,9 +66,9 @@ export class InvestmentsComponent implements OnInit {
   simulatedContribution = signal<number | null>(null);
 
   analysis = computed(() => {
-    const entries = this.allEntries();
+    const selected = this.selectedAsset();
+    const entries = this.allEntries().filter(e => !selected || e.asset_id === selected.id);
     const stats = this.monthlyStats();
-    const assets = this.assets();
     
     // 1. Group by month
     const depositsByMonth: { [key: string]: number } = {};
@@ -84,8 +84,11 @@ export class InvestmentsComponent implements OnInit {
         : 0;
 
     // 2. Projections
+    const objective = selected ? (selected.objective_value || 0) : this.totalObjective();
+    const totalInvested = selected ? (selected.total_invested || 0) : this.totalInvested();
+    
     const currentContribution = this.simulatedContribution() ?? averageContribution;
-    const remainingToGoal = Math.max(0, this.totalObjective() - this.totalInvested());
+    const remainingToGoal = Math.max(0, objective - totalInvested);
     const monthsToGoal = currentContribution > 0 ? Math.ceil(remainingToGoal / currentContribution) : Infinity;
     
     const targetDate = new Date();
@@ -105,34 +108,44 @@ export class InvestmentsComponent implements OnInit {
 
     // 4. Consistency
     let consecutiveMonths = 0;
-    const sortedMonths = Object.keys(depositsByMonth).sort().reverse();
-    // Check from current or last month
     let checkMonth = new Date();
-    while (true) {
-        const p = checkMonth.toISOString().substring(0, 7);
-        if (depositsByMonth[p] > 0) {
-            consecutiveMonths++;
-            checkMonth.setMonth(checkMonth.getMonth() - 1);
-        } else {
-            // Se falhou o mês atual mas teve no anterior, continua? 
-            // Vamos considerar apenas se houver investimento no mês.
-            break;
+    // Start checking from the most recent month with deposits in HISTORY, not just this month
+    const sortedDepositMonths = Object.keys(depositsByMonth).sort().reverse();
+    
+    if (sortedDepositMonths.length > 0) {
+        // Find if we have a deposit in the current month or last month to start the streak
+        const nowP = new Date().toISOString().substring(0, 7);
+        const lastP = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().substring(0, 7);
+        
+        let streakCheckDate = new Date();
+        if (depositsByMonth[nowP] === 0 && depositsByMonth[lastP] > 0) {
+            streakCheckDate.setMonth(streakCheckDate.getMonth() - 1);
+        }
+
+        while (true) {
+            const p = streakCheckDate.toISOString().substring(0, 7);
+            if (depositsByMonth[p] > 0) {
+                consecutiveMonths++;
+                streakCheckDate.setMonth(streakCheckDate.getMonth() - 1);
+            } else {
+                break;
+            }
         }
     }
 
     // 5. Insights
     const insights: string[] = [];
-    if (investedPercentage > 0 && investedPercentage < 20) {
+    if (!selected && investedPercentage > 0 && investedPercentage < 20) {
         insights.push("Você está investindo abaixo do recomendado (20%). Tente aumentar seus aportes.");
     }
     if (currentMonthDeposit < lastMonthDeposit && lastMonthDeposit > 0) {
-        insights.push("Seus aportes caíram em relação ao mês passado.");
+        insights.push(`${selected ? 'Os aportes neste ativo' : 'Seus aportes totais'} caíram em relação ao mês passado.`);
     }
     if (averageContribution > 0 && monthsToGoal !== Infinity) {
-        insights.push(`Mantendo a média, você atingirá seu objetivo total em aproximadamente ${monthsToGoal} meses.`);
+        insights.push(`Mantendo a média, você atingirá o objetivo ${selected ? 'deste ativo' : 'total'} em aproximadamente ${monthsToGoal} meses.`);
     }
     if (consecutiveMonths >= 3) {
-        insights.push(`Incrível! Você mantém consistência há ${consecutiveMonths} meses.`);
+        insights.push(`Incrível! Você mantém consistência ${selected ? 'neste ativo ' : ''}há ${consecutiveMonths} meses.`);
     }
 
     return {
@@ -182,16 +195,18 @@ export class InvestmentsComponent implements OnInit {
         values.push(deposits[p] || 0);
     }
 
+    const isAssetSelected = !!this.selectedAsset();
+
     return {
         labels,
         datasets: [{
             data: values,
-            label: 'Aportes',
-            borderColor: '#3B82F6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            label: isAssetSelected ? 'Aportes no Ativo' : 'Aportes Globais',
+            borderColor: isAssetSelected ? '#10B981' : '#3B82F6',
+            backgroundColor: isAssetSelected ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
             fill: true,
             tension: 0.4,
-            pointBackgroundColor: '#3B82F6',
+            pointBackgroundColor: isAssetSelected ? '#10B981' : '#3B82F6',
             pointRadius: 4
         }]
     };
@@ -219,10 +234,16 @@ export class InvestmentsComponent implements OnInit {
   }
 
   async selectAsset(asset: Asset) {
-    this.selectedAsset.set(asset);
-    if (asset.id) {
-      const entries = await this.db.getInvestmentEntries(asset.id);
-      this.entries.set(entries);
+    if (this.selectedAsset()?.id === asset.id) {
+        this.selectedAsset.set(null);
+        this.entries.set([]);
+    } else {
+        this.selectedAsset.set(asset);
+        this.simulatedContribution.set(null); // Reset simulation for new asset
+        if (asset.id) {
+            const entries = await this.db.getInvestmentEntries(asset.id);
+            this.entries.set(entries);
+        }
     }
   }
 

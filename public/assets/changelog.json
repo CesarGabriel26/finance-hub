@@ -1,69 +1,81 @@
 {
     "1.0.0": {
         "date": "2026-03-20",
-        "notes": [
-            "Lançamento da versão 1.0.0",
-            "Implementação do sistema de investimentos",
-            "Implementação do sistema de contas",
-            "Implementação do sistema de categorias",
-            "Implementação do sistema de palavras-chave",
-            "Implementação do sistema de regras de palavras-chave",
-            "Implementação do sistema de lançamentos",
-            "Implementação do sistema de contas a pagar e receber",
-            "Implementação do sistema de dashboard",
-            "Implementação do sistema de evolução",
-            "Implementação do sistema de lançamentos recentes",
-            "Implementação do sistema de recategorização de lançamentos",
-            "Versão parcialmente instável",
-            "Pode dar aviso de segurança do Windows (app não assinado)"
+        "features": [
+            {
+                "title": "Lançamento Inicial",
+                "description": "Primeira versão estável do Finance Hub com as funcionalidades principais para controle financeiro.",
+                "steps": [
+                    "Gestão de Contas Bancárias e Saldos",
+                    "Controle de Categorias por tipo (Crédito/Débito)",
+                    "Sistema de Palavras-chave para automação de lançamentos",
+                    "Gestão de Contas a Pagar e Receber",
+                    "Dashboard de visão geral e evolução financeira",
+                    "Recategorização em massa de transações"
+                ]
+            }
         ]
     },
     "1.0.1": {
         "date": "2026-03-21",
-        "notes": [
-            "Correção de bugs",
-            "Melhorias na interface",
-            "Melhorias na performance",
-            "Implementação do sistema de atualização",
-            "Melhorias no sistema de investimentos",
-            "Melhorias no sistema de contas",
-            "Melhorias no sistema de categorias",
-            "Melhorias no sistema de palavras-chave",
-            "Melhorias no sistema de regras de palavras-chave",
-            "Melhorias no sistema de lançamentos",
-            "Melhorias no sistema de contas a pagar e receber",
-            "Melhorias no sistema de dashboard",
-            "Melhorias no sistema de evolução",
-            "Melhorias no sistema de lançamentos recentes",
-            "Melhorias no sistema de recategorização de lançamentos",
-            "Correção bug de soma de saldo e gastos"
+        "features": [
+            {
+                "title": "Correção e Performance",
+                "description": "Melhorias focadas na estabilidade do sistema e experiência do usuário.",
+                "steps": [
+                    "Correção no cálculo de soma de saldo e gastos",
+                    "Implementação do sistema de atualização automática",
+                    "Otimização da interface para carregamento mais rápido",
+                    "Melhorias no sistema de lançamentos e regras"
+                ]
+            }
         ]
     },
     "1.0.2": {
         "date": "2026-03-21",
-        "notes": [
-            "Implementação de um novo Design System moderno e consistente com Tailwind CSS",
-            "Padronização de componentes principais (cartões e botões)",
-            "Melhorias significativas no Dashboard com novos cartões de resumo e indicadores de comparação",
-            "Gráficos aprimorados com linhas suavizadas e dicas interativas detalhadas",
-            "Implementação de insights financeiros automáticos (tendências de gastos e análise de categorias)",
-            "Lógica de filtros globais no Dashboard (por conta, categoria e tipo de movimento)",
-            "Lista de transações recentes integrada no Dashboard",
-            "Sincronização entre Electron e Angular para melhor performance",
-            "Infraestrutura para cache de indicadores de mercado (CDI, Selic, IPCA)"
+        "features": [
+            {
+                "title": "Design System Moderno",
+                "description": "Interface completamente renovada com Tailwind CSS, focada em clareza e estética premium.",
+                "steps": [
+                    "Padronização de componentes (botões, cards, diálogos)",
+                    "Novo layout para o Dashboard com indicadores de comparação"
+                ]
+            },
+            {
+                "title": "Inteligência & Mercado",
+                "description": "Integração de dados externos e análise automática de comportamento.",
+                "steps": [
+                    "Sistema de insights financeiros automáticos",
+                    "Filtros dinâmicos por conta e categoria no Dashboard",
+                    "Cache de indicadores (CDI, Selic, IPCA) para cálculos offline"
+                ]
+            }
         ]
     },
     "1.0.3": {
+        "latest": true,
         "date": "2026-03-22",
-        "notes": [
-            "Evolução do módulo de investimentos com foco em planejamento e comportamento financeiro",
-            "Cálculo automático de média mensal de aportes e percentual da renda investida",
-            "Projeção de tempo estimado (meses e data prevista) para atingir metas de patrimônio",
-            "Indicador de consistência de aportes e análise de tendência mensal",
-            "Gráfico de evolução de aportes integrado ao detalhamento de ativos",
-            "Ferramenta de simulação de cenários para recalcular metas com diferentes valores de aporte",
-            "Sistema de insights automáticos para comportamento de investimento",
-            "Possibilidade de configurar saldo inicial ao criar um novo ativo para facilitar a migração"
+        "features": [
+            {
+                "title": "Evolução do Módulo de Investimentos",
+                "description": "O Finance Hub agora ajuda você a planejar seu futuro, analisando sua consistência e tempo para atingir metas.",
+                "steps": [
+                    "Abra o módulo de Investimentos e veja o resumo global de seus ativos.",
+                    "Selecione um ativo específico para ver métricas como 'Aporte Médio' e 'Tempo para a Meta'.",
+                    "Confira o gráfico de 'Tendência de Aportes' para monitorar sua consistência mensal.",
+                    "Use o Simulador de Cenários (no card colorido) para descobrir quanto tempo leva para atingir sua meta se você aumentar o aporte mensal."
+                ],
+                "image": "assets/imgs/changelog/investments-v103.png"
+            },
+            {
+                "title": "Facilidade na Migração",
+                "description": "Adicionada a opção de saldo inicial para novos ativos.",
+                "steps": [
+                    "Ao criar um ativo, preencha o campo 'Saldo Inicial' se ele já tiver dinheiro investido.",
+                    "Isso evita que você precise registrar todos os depósitos passados manualmente."
+                ]
+            }
         ]
     }
 }

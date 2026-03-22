@@ -104,15 +104,36 @@
         </div>
 
         <!-- Trend Chart -->
-        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
-          <div class="flex items-center justify-between mb-6">
+        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm transition-all"
+             [class.ring-2]="selectedAsset()" [class.ring-emerald-100]="selectedAsset()">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-                <h3 class="text-lg font-black text-gray-900">Tendência de Aportes</h3>
+                <h3 class="text-lg font-black text-gray-900 flex items-center gap-2">
+                    Tendência de Aportes
+                    @if (selectedAsset()) {
+                        <span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] rounded-lg border border-emerald-100 animate-pulse">
+                            ATIVO: {{ selectedAsset()?.name }}
+                        </span>
+                    } @else {
+                        <span class="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] rounded-lg border border-blue-100">
+                            GERAL
+                        </span>
+                    }
+                </h3>
                 <p class="text-xs text-gray-400">Evolução dos seus investimentos mensalmente</p>
             </div>
-            <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full">
-                <lucide-icon [name]="TrendingUpIcon" size="14"></lucide-icon>
-                <span class="text-[10px] font-black uppercase">Consistência: {{ analysis().consecutiveMonths }} meses</span>
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full h-8">
+                    <lucide-icon [name]="TrendingUpIcon" size="14"></lucide-icon>
+                    <span class="text-[10px] font-black uppercase whitespace-nowrap">Consistência: {{ analysis().consecutiveMonths }} meses</span>
+                </div>
+                @if (selectedAsset()) {
+                    <button (click)="selectedAsset.set(null)" 
+                            class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full h-8 transition-all group">
+                        <lucide-icon [name]="XIcon" size="14" class="group-hover:rotate-90 transition-transform"></lucide-icon>
+                        <span class="text-[10px] font-black uppercase">Limpar</span>
+                    </button>
+                }
             </div>
           </div>
           <div class="h-[240px] w-full">
@@ -129,12 +150,18 @@
       <div class="space-y-6">
         
         <!-- Simulation Tool -->
-        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-[32px] text-white shadow-lg shadow-blue-500/20">
+        <div class="bg-gradient-to-br transition-all duration-500 p-6 rounded-[32px] text-white shadow-lg"
+             [class]="selectedAsset() ? 'from-emerald-600 to-teal-700 shadow-emerald-500/20' : 'from-blue-600 to-indigo-700 shadow-blue-500/20'">
           <div class="flex items-center gap-3 mb-6">
              <div class="p-2 bg-white/10 rounded-xl">
                 <lucide-icon [name]="TargetIcon" size="20"></lucide-icon>
              </div>
-             <h3 class="font-bold">Simular Cenários</h3>
+             <div>
+                <h3 class="font-bold leading-tight">Simular Cenários</h3>
+                <p class="text-[9px] font-bold opacity-60 uppercase tracking-widest">
+                    {{ selectedAsset() ? 'Foco: ' + selectedAsset()?.name : 'Visão Consolidada' }}
+                </p>
+             </div>
           </div>
           
           <div class="space-y-4">
@@ -205,6 +232,8 @@
         @for (asset of assets(); track asset.id) {
           <div (click)="selectAsset(asset)"
                [class.border-blue-500]="selectedAsset()?.id === asset.id"
+               [class.ring-2]="selectedAsset()?.id === asset.id"
+               [class.ring-blue-100]="selectedAsset()?.id === asset.id"
                class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md cursor-pointer transition-all group relative overflow-hidden">
             
             <div class="flex items-center justify-between mb-4">
