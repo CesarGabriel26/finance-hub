@@ -82,6 +82,7 @@ export interface Asset {
   status?: string;
   created_at?: string;
   is_estimated?: boolean;
+  initial_balance?: number;
 }
 
 export interface AssetHistory {
@@ -148,8 +149,10 @@ declare global {
       updateAsset: (id: number, asset: Partial<Asset>) => Promise<any>;
       deleteAsset: (id: number) => Promise<any>;
       getInvestmentEntries: (assetId: number) => Promise<InvestmentEntry[]>;
+      getAllInvestmentEntries: () => Promise<InvestmentEntry[]>;
       addInvestmentEntry: (entry: Partial<InvestmentEntry>) => Promise<any>;
       deleteInvestmentEntry: (id: number) => Promise<any>;
+      getMonthlyStats: (months?: number) => Promise<any[]>;
 
       // Dashboard
       getDashboardData: (period: string, filters?: any) => Promise<any[]>;
@@ -312,12 +315,20 @@ export class DatabaseService {
     return this.handleApi(window.api.getInvestmentEntries(assetId));
   }
 
+  async getAllInvestmentEntries(): Promise<InvestmentEntry[]> {
+    return this.handleApi(window.api.getAllInvestmentEntries());
+  }
+
   async addInvestmentEntry(entry: Partial<InvestmentEntry>): Promise<any> {
     return this.handleApi(window.api.addInvestmentEntry(entry));
   }
 
   async deleteInvestmentEntry(id: number): Promise<any> {
     return this.handleApi(window.api.deleteInvestmentEntry(id));
+  }
+
+  async getMonthlyStats(months: number = 12): Promise<any[]> {
+    return this.handleApi(window.api.getMonthlyStats(months));
   }
 
   async updateAccountName(id: number, name: string): Promise<any> {

@@ -143,17 +143,12 @@
       </div>
 
       <div class="flex items-center space-x-4">
-        <!-- <button class="p-2 rounded-full hover:bg-gray-100 text-gray-400 transition-colors relative cursor-pointer">
-          <div class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
-          <lucide-icon [img]="ShieldAlertIcon" class="w-5 h-5"></lucide-icon>
-        </button>
-        <button class="p-2 rounded-full hover:bg-gray-100 text-gray-400 transition-colors relative cursor-pointer">
-          <div class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
-          <lucide-icon [img]="BellIcon" class="w-5 h-5"></lucide-icon>
-        </button> -->
-        <!-- <div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold border border-indigo-200 shadow-lg cursor-pointer hover:scale-105 transition-transform">
-          AD
-        </div> -->
+        @if (currentVersion()) {
+          <a routerLink="/changelog" 
+             class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100 hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
+            v{{ currentVersion() }}
+          </a>
+        }
       </div>
     </header>
 

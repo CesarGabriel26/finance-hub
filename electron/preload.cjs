@@ -43,8 +43,10 @@ contextBridge.exposeInMainWorld('api', {
     updateAsset: (id, asset) => ipcRenderer.invoke('update-asset', id, asset),
     deleteAsset: (id) => ipcRenderer.invoke('delete-asset', id),
     getInvestmentEntries: (assetId) => ipcRenderer.invoke('get-investment-entries', assetId),
+    getAllInvestmentEntries: () => ipcRenderer.invoke('get-all-investment-entries'),
     addInvestmentEntry: (entry) => ipcRenderer.invoke('add-investment-entry', entry),
     deleteInvestmentEntry: (id) => ipcRenderer.invoke('delete-investment-entry', id),
+    getMonthlyStats: (months) => ipcRenderer.invoke('get-monthly-stats', months),
     
     // Dashboard
     getDashboardData: (period, filters) => ipcRenderer.invoke('get-dashboard-data', period, filters),

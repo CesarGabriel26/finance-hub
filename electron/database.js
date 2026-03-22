@@ -153,6 +153,9 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                     if (!columns.find(c => c.name === 'index_percentage')) {
                         db.run("ALTER TABLE assets ADD COLUMN index_percentage REAL");
                     }
+                    if (!columns.find(c => c.name === 'initial_balance')) {
+                        db.run("ALTER TABLE assets ADD COLUMN initial_balance REAL DEFAULT 0");
+                    }
                 }
             });
 

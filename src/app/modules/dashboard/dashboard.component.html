@@ -5,15 +5,17 @@
       <h1 class="text-3xl font-bold tracking-tight text-text">Dashboard</h1>
       <p class="text-textMuted mt-1">Visão geral das suas finanças</p>
     </div>
-    
+
     <div class="flex flex-wrap items-center gap-2">
       <!-- Period Selector -->
       <div class="flex items-center gap-2 bg-card p-1.5 rounded-xl border border-gray-100 shadow-sm">
-        <select [(ngModel)]="selectedMonth" (change)="onFilterChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-text">
+        <select [(ngModel)]="selectedMonth" (change)="onFilterChange()"
+          class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-text">
           <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
         </select>
         <div class="w-px h-4 bg-gray-200"></div>
-        <select [(ngModel)]="selectedYear" (change)="onFilterChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-text">
+        <select [(ngModel)]="selectedYear" (change)="onFilterChange()"
+          class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-text">
           <option *ngFor="let y of years()" [value]="y">{{ y }}</option>
         </select>
       </div>
@@ -21,21 +23,25 @@
       <!-- Filters -->
       <div class="flex items-center gap-2 bg-card p-1.5 rounded-xl border border-gray-100 shadow-sm">
         <lucide-icon [img]="Filter" class="w-4 h-4 text-textMuted ml-2"></lucide-icon>
-        <select [(ngModel)]="filterType" (change)="onFilterChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted">
+        <select [(ngModel)]="filterType" (change)="onFilterChange()"
+          class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted">
           <option value="ALL">Todos os Tipos</option>
           <option value="C">Receitas</option>
           <option value="D">Despesas</option>
         </select>
         <div class="w-px h-4 bg-gray-200"></div>
-        <select [(ngModel)]="filterAccountId" (change)="onFilterChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted max-w-[120px]">
+        <select [(ngModel)]="filterAccountId" (change)="onFilterChange()"
+          class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted max-w-[120px]">
           <option [ngValue]="null">Todas as Contas</option>
           <option *ngFor="let acc of accounts()" [ngValue]="acc.id">{{ acc.name }}</option>
         </select>
         <div class="w-px h-4 bg-gray-200"></div>
-        <select [(ngModel)]="filterCategoryId" (change)="onFilterChange()" class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted max-w-[120px]">
+        <select [(ngModel)]="filterCategoryId" (change)="onFilterChange()"
+          class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted max-w-[120px]">
           <option [ngValue]="null">Todas as Categorias</option>
           <ng-container *ngFor="let cat of categories()">
-            <option *ngIf="filterType() === 'ALL' || cat.type === filterType()" [ngValue]="cat.id">{{ cat.name }}</option>
+            <option *ngIf="filterType() === 'ALL' || cat.type === filterType()" [ngValue]="cat.id">{{ cat.name }}
+            </option>
           </ng-container>
         </select>
       </div>
@@ -59,12 +65,14 @@
 
   <!-- Content -->
   <div *ngIf="!isLoading()" class="space-y-6 w-full">
-    
+
     <!-- Top Cards -->
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
       <!-- Balance -->
-      <div class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
-        <div class="absolute top-5 right-5 p-2 bg-primary/10 text-primary rounded-lg group-hover:scale-110 transition-transform">
+      <div
+        class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
+        <div
+          class="absolute top-5 right-5 p-2 bg-primary/10 text-primary rounded-lg group-hover:scale-110 transition-transform">
           <lucide-icon [img]="Wallet" class="w-5 h-5"></lucide-icon>
         </div>
         <dt class="truncate text-sm font-medium text-textMuted uppercase tracking-wider">Saldo Geral</dt>
@@ -74,8 +82,10 @@
       </div>
 
       <!-- Revenue -->
-      <div class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
-        <div class="absolute top-5 right-5 p-2 bg-success/10 text-success rounded-lg group-hover:scale-110 transition-transform">
+      <div
+        class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
+        <div
+          class="absolute top-5 right-5 p-2 bg-success/10 text-success rounded-lg group-hover:scale-110 transition-transform">
           <lucide-icon [img]="TrendingUp" class="w-5 h-5"></lucide-icon>
         </div>
         <dt class="truncate text-sm font-medium text-textMuted uppercase tracking-wider">Receitas do Período</dt>
@@ -84,10 +94,11 @@
         </dd>
         <div class="mt-2 flex items-center text-sm">
           <ng-container *ngIf="getVariation(totalRevenue(), prevTotalRevenue()) as v">
-            <span *ngIf="v.hasData" [class.text-success]="v.isPositive" [class.text-danger]="!v.isPositive" class="flex items-center font-medium">
+            <span *ngIf="v.hasData" [class.text-success]="v.isPositive" [class.text-danger]="!v.isPositive"
+              class="flex items-center font-medium">
               <lucide-icon *ngIf="v.isPositive" [img]="ArrowUpRight" class="w-4 h-4 mr-1"></lucide-icon>
               <lucide-icon *ngIf="!v.isPositive" [img]="ArrowDownRight" class="w-4 h-4 mr-1"></lucide-icon>
-              {{ v.value | number:'1.0-0' }}% 
+              {{ v.value | number:'1.0-0' }}%
             </span>
             <span *ngIf="v.hasData" class="text-textMuted ml-2">vs mês passado</span>
             <span *ngIf="!v.hasData" class="text-gray-400 italic">Sem dados anteriores</span>
@@ -96,8 +107,10 @@
       </div>
 
       <!-- Expenses -->
-      <div class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
-        <div class="absolute top-5 right-5 p-2 bg-danger/10 text-danger rounded-lg group-hover:scale-110 transition-transform">
+      <div
+        class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
+        <div
+          class="absolute top-5 right-5 p-2 bg-danger/10 text-danger rounded-lg group-hover:scale-110 transition-transform">
           <lucide-icon [img]="TrendingDown" class="w-5 h-5"></lucide-icon>
         </div>
         <dt class="truncate text-sm font-medium text-textMuted uppercase tracking-wider">Despesas do Período</dt>
@@ -106,10 +119,11 @@
         </dd>
         <div class="mt-2 flex items-center text-sm">
           <ng-container *ngIf="getVariation(totalExpense(), prevTotalExpense()) as v">
-            <span *ngIf="v.hasData" [class.text-danger]="v.isPositive" [class.text-success]="!v.isPositive" class="flex items-center font-medium">
+            <span *ngIf="v.hasData" [class.text-danger]="v.isPositive" [class.text-success]="!v.isPositive"
+              class="flex items-center font-medium">
               <lucide-icon *ngIf="v.isPositive" [img]="ArrowUpRight" class="w-4 h-4 mr-1"></lucide-icon>
               <lucide-icon *ngIf="!v.isPositive" [img]="ArrowDownRight" class="w-4 h-4 mr-1"></lucide-icon>
-              {{ v.value | number:'1.0-0' }}% 
+              {{ v.value | number:'1.0-0' }}%
             </span>
             <span *ngIf="v.hasData" class="text-textMuted ml-2">vs mês passado</span>
             <span *ngIf="!v.hasData" class="text-gray-400 italic">Sem dados anteriores</span>
@@ -119,7 +133,8 @@
     </div>
 
     <!-- Insights -->
-    <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
+    <div
+      class="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
       <div class="p-2 bg-primary/10 text-primary rounded-full shrink-0">
         <lucide-icon [img]="AlertCircle" class="w-5 h-5"></lucide-icon>
       </div>
@@ -143,21 +158,29 @@
           Evolução
         </h2>
         <div class="flex items-center gap-1 bg-bg p-1 rounded-lg border border-gray-100">
-          <button (click)="onEvolutionPeriodChange(6)" [class.bg-card]="evolutionPeriod() === 6" [class.shadow-sm]="evolutionPeriod() === 6" class="px-3 py-1 text-xs font-medium rounded-md transition-all text-textMuted hover:text-text">6 Meses</button>
-          <button (click)="onEvolutionPeriodChange(12)" [class.bg-card]="evolutionPeriod() === 12" [class.shadow-sm]="evolutionPeriod() === 12" class="px-3 py-1 text-xs font-medium rounded-md transition-all text-textMuted hover:text-text">12 Meses</button>
+          <button (click)="onEvolutionPeriodChange(6)" [class.bg-card]="evolutionPeriod() === 6"
+            [class.shadow-sm]="evolutionPeriod() === 6"
+            class="px-3 py-1 text-xs font-medium rounded-md transition-all text-textMuted hover:text-text">6
+            Meses</button>
+          <button (click)="onEvolutionPeriodChange(12)" [class.bg-card]="evolutionPeriod() === 12"
+            [class.shadow-sm]="evolutionPeriod() === 12"
+            class="px-3 py-1 text-xs font-medium rounded-md transition-all text-textMuted hover:text-text">12
+            Meses</button>
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[250px] lg:h-[300px]">
         <div class="relative w-full h-full flex flex-col min-w-0">
           <h3 class="text-sm font-semibold text-textMuted mb-2 truncate text-center">Despesas</h3>
           <div class="flex-1 relative min-h-0">
-            <canvas baseChart [type]="'line'" [datasets]="lineChartDatasets" [labels]="lineChartLabels" [options]="lineChartOptions"></canvas>
+            <canvas baseChart [type]="'line'" [datasets]="lineChartDatasets" [labels]="lineChartLabels"
+              [options]="lineChartOptions"></canvas>
           </div>
         </div>
         <div class="relative w-full h-full flex flex-col min-w-0">
           <h3 class="text-sm font-semibold text-textMuted mb-2 truncate text-center">Receitas</h3>
           <div class="flex-1 relative min-h-0">
-            <canvas baseChart [type]="'line'" [datasets]="lineChartRevenueDatasets" [labels]="lineChartRevenueLabels" [options]="lineChartRevenueOptions"></canvas>
+            <canvas baseChart [type]="'line'" [datasets]="lineChartRevenueDatasets" [labels]="lineChartRevenueLabels"
+              [options]="lineChartRevenueOptions"></canvas>
           </div>
         </div>
       </div>
@@ -165,65 +188,59 @@
 
     <!-- Charts & Lists: Categories & Recent -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
+
       <!-- Chart Breakdown -->
-      <div class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col min-h-[400px] h-fit">
+      <div
+        class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col min-h-[400px] h-fit">
         <h2 class="text-lg font-bold text-text mb-6 flex items-center">
           <lucide-icon [img]="List" class="w-5 h-5 text-secondary mr-2"></lucide-icon>
-          Comparativo por Categoria
+          Gastos por Categoria
         </h2>
-        
-        <div class="flex-1 relative flex items-center justify-center">
-          <div class="w-full flex h-full gap-4">
-            <!-- Expenses Pie -->
-            <div class="flex-1 flex flex-col items-center relative min-w-0">
-              <h3 class="text-sm font-semibold text-textMuted mb-2 truncate w-full text-center">Despesas</h3>
-              <div class="flex-1 w-full relative min-h-0">
-                <canvas *ngIf="pieChartLabels.length > 0; else noDataPie"
-                        (chartClick)="expenseChartClicked($event)"
-                        baseChart
-                        [type]="'pie'"
-                        [datasets]="pieChartDatasets"
-                        [labels]="pieChartLabels"
-                        [options]="pieChartOptions"
-                        [legend]="pieChartLegend">
-                </canvas>
-                <ng-template #noDataPie>
-                  <div class="text-center text-textMuted absolute inset-0 flex flex-col items-center justify-center">
-                    <p class="text-sm">Sem despesas.</p>
-                  </div>
-                </ng-template>
+
+        <!-- Expenses Pie -->
+        <div class="flex-1 flex flex-col items-center relative min-w-0">
+          <h3 class="text-sm font-semibold text-textMuted mb-2 truncate w-full text-center">Despesas</h3>
+          <div class="flex-1 w-full relative min-h-0">
+            <canvas *ngIf="pieChartLabels.length > 0; else noDataPie" (chartClick)="expenseChartClicked($event)"
+              baseChart [type]="'pie'" [datasets]="pieChartDatasets" [labels]="pieChartLabels"
+              [options]="pieChartOptions" [legend]="pieChartLegend">
+            </canvas>
+            <ng-template #noDataPie>
+              <div class="text-center text-textMuted absolute inset-0 flex flex-col items-center justify-center">
+                <p class="text-sm">Sem despesas.</p>
               </div>
-            </div>
-            
-            <div class="w-px bg-gray-100 hidden sm:block"></div>
-            
-            <!-- Revenues Pie -->
-            <div class="flex-1 flex flex-col items-center relative hidden sm:flex min-w-0">
-              <h3 class="text-sm font-semibold text-textMuted mb-2 truncate w-full text-center">Receitas</h3>
-              <div class="flex-1 w-full relative min-h-0">
-                <canvas *ngIf="pieChartRevenueLabels.length > 0; else noDataPieRev"
-                        (chartClick)="revenueChartClicked($event)"
-                        baseChart
-                        [type]="'pie'"
-                        [datasets]="pieChartRevenueDatasets"
-                        [labels]="pieChartRevenueLabels"
-                        [options]="pieChartRevenueOptions"
-                        [legend]="pieChartRevenueLegend">
-                </canvas>
-                <ng-template #noDataPieRev>
-                  <div class="text-center text-textMuted absolute inset-0 flex flex-col items-center justify-center">
-                    <p class="text-sm">Sem receitas.</p>
-                  </div>
-                </ng-template>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col min-h-[400px] h-fit">
+        <h2 class="text-lg font-bold text-text mb-6 flex items-center">
+          <lucide-icon [img]="List" class="w-5 h-5 text-secondary mr-2"></lucide-icon>
+          Receita por Categoria
+        </h2>
+
+        <!-- Revenues Pie -->
+        <div class="flex-1 flex flex-col items-center relative hidden sm:flex min-w-0">
+          <h3 class="text-sm font-semibold text-textMuted mb-2 truncate w-full text-center">Receitas</h3>
+          <div class="flex-1 w-full relative min-h-0">
+            <canvas *ngIf="pieChartRevenueLabels.length > 0; else noDataPieRev"
+              (chartClick)="revenueChartClicked($event)" baseChart [type]="'pie'" [datasets]="pieChartRevenueDatasets"
+              [labels]="pieChartRevenueLabels" [options]="pieChartRevenueOptions" [legend]="pieChartRevenueLegend">
+            </canvas>
+            <ng-template #noDataPieRev>
+              <div class="text-center text-textMuted absolute inset-0 flex flex-col items-center justify-center">
+                <p class="text-sm">Sem receitas.</p>
               </div>
-            </div>
+            </ng-template>
           </div>
         </div>
       </div>
 
       <!-- Recent Transactions -->
-      <div class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px] overflow-hidden">
+      <div
+        class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px] overflow-hidden">
         <h2 class="text-lg font-bold text-text mb-6 flex items-center">
           <lucide-icon [img]="List" class="w-5 h-5 text-textMuted mr-2"></lucide-icon>
           Últimas Transações
@@ -233,15 +250,20 @@
             Nenhuma transação encontrada.
           </div>
           <div class="space-y-4">
-            <div *ngFor="let m of recentMovements()" class="flex items-center justify-between p-3 bg-bg rounded-lg hover:bg-gray-100 transition-colors">
+            <div *ngFor="let m of recentMovements()"
+              class="flex items-center justify-between p-3 bg-bg rounded-lg hover:bg-gray-100 transition-colors">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center" [class.bg-success/10]="m.type === 'C'" [class.text-success]="m.type === 'C'" [class.bg-danger/10]="m.type === 'D'" [class.text-danger]="m.type === 'D'">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center"
+                  [class.bg-success/10]="m.type === 'C'" [class.text-success]="m.type === 'C'"
+                  [class.bg-danger/10]="m.type === 'D'" [class.text-danger]="m.type === 'D'">
                   <lucide-icon *ngIf="m.type === 'C'" [img]="ArrowUpRight" class="w-5 h-5"></lucide-icon>
                   <lucide-icon *ngIf="m.type === 'D'" [img]="ArrowDownRight" class="w-5 h-5"></lucide-icon>
                 </div>
                 <div>
-                  <p class="text-sm font-semibold text-text border-none truncate max-w-[150px]" [title]="m.description">{{ m.description }}</p>
-                  <p class="text-xs text-textMuted">{{ m.date | date:'dd/MM/yyyy' }} &bull; {{ m.category_name || 'Sem categoria' }}</p>
+                  <p class="text-sm font-semibold text-text border-none truncate max-w-[150px]" [title]="m.description">
+                    {{ m.description }}</p>
+                  <p class="text-xs text-textMuted">{{ m.date | date:'dd/MM/yyyy' }} &bull; {{ m.category_name || 'Sem
+                    categoria' }}</p>
                 </div>
               </div>
               <div class="text-right">

@@ -325,7 +325,7 @@ export function setupAPI() {
     handleIpc("get-assets", async () => {
         const assets = await dbAll(`
             SELECT a.*, 
-                   COALESCE(SUM(CASE WHEN ie.type = 'deposit' THEN ie.amount ELSE -ie.amount END), 0) as total_invested
+                   (a.initial_balance + COALESCE(SUM(CASE WHEN ie.type = 'deposit' THEN ie.amount ELSE -ie.amount END), 0)) as total_invested
             FROM assets a
             LEFT JOIN investment_entries ie ON a.id = ie.asset_id
             GROUP BY a.id
@@ -336,18 +336,19 @@ export function setupAPI() {
     });
 
     handleIpc("add-asset", async (_, asset) => {
-        const { name, type, objective_value, benchmark, index_type, index_percentage } = asset;
+        const { name, type, objective_value, benchmark, index_type, index_percentage, initial_balance } = asset;
+        const initialVal = initial_balance || 0;
         return await dbRun(
-            "INSERT INTO assets (name, type, objective_value, benchmark, index_type, index_percentage, current_value, status) VALUES (?, ?, ?, ?, ?, ?, 0, 'active')",
-            [name, type, objective_value, benchmark || null, index_type || null, index_percentage || null]
+            "INSERT INTO assets (name, type, objective_value, benchmark, index_type, index_percentage, initial_balance, current_value, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')",
+            [name, type, objective_value, benchmark || null, index_type || null, index_percentage || null, initialVal, initialVal]
         );
     });
 
     handleIpc("update-asset", async (_, id, asset) => {
-        const { name, type, objective_value, benchmark, index_type, index_percentage, status } = asset;
+        const { name, type, objective_value, benchmark, index_type, index_percentage, initial_balance, status } = asset;
         return await dbRun(
-            "UPDATE assets SET name = ?, type = ?, objective_value = ?, benchmark = ?, index_type = ?, index_percentage = ?, status = ? WHERE id = ?",
-            [name, type, objective_value, benchmark || null, index_type || null, index_percentage || null, status || 'active', id]
+            "UPDATE assets SET name = ?, type = ?, objective_value = ?, benchmark = ?, index_type = ?, index_percentage = ?, initial_balance = ?, status = ? WHERE id = ?",
+            [name, type, objective_value, benchmark || null, index_type || null, index_percentage || null, initial_balance || 0, status || 'active', id]
         );
     });
 
@@ -508,5 +509,26 @@ export function setupAPI() {
         query += ` ORDER BY m.date DESC LIMIT ?`;
         params.push(limit);
         return await dbAll(query, params);
+    });
+
+    handleIpc("get-all-investment-entries", async () => {
+        return await dbAll(`
+            SELECT ie.*, acc.name as account_name, a.name as asset_name
+            FROM investment_entries ie
+            JOIN accounts acc ON ie.account_id = acc.id
+            JOIN assets a ON ie.asset_id = a.id
+            ORDER BY ie.date DESC
+        `);
+    });
+
+    handleIpc("get-monthly-stats", async (_, months = 12) => {
+        return await dbAll(`
+            SELECT period, SUM(amount) as total_revenue
+            FROM movements
+            WHERE type = 'C'
+            GROUP BY period
+            ORDER BY period DESC
+            LIMIT ?
+        `, [months]);
     });
 }

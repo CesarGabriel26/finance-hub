@@ -1,0 +1,69 @@
+{
+    "1.0.0": {
+        "date": "2026-03-20",
+        "notes": [
+            "Lançamento da versão 1.0.0",
+            "Implementação do sistema de investimentos",
+            "Implementação do sistema de contas",
+            "Implementação do sistema de categorias",
+            "Implementação do sistema de palavras-chave",
+            "Implementação do sistema de regras de palavras-chave",
+            "Implementação do sistema de lançamentos",
+            "Implementação do sistema de contas a pagar e receber",
+            "Implementação do sistema de dashboard",
+            "Implementação do sistema de evolução",
+            "Implementação do sistema de lançamentos recentes",
+            "Implementação do sistema de recategorização de lançamentos",
+            "Versão parcialmente instável",
+            "Pode dar aviso de segurança do Windows (app não assinado)"
+        ]
+    },
+    "1.0.1": {
+        "date": "2026-03-21",
+        "notes": [
+            "Correção de bugs",
+            "Melhorias na interface",
+            "Melhorias na performance",
+            "Implementação do sistema de atualização",
+            "Melhorias no sistema de investimentos",
+            "Melhorias no sistema de contas",
+            "Melhorias no sistema de categorias",
+            "Melhorias no sistema de palavras-chave",
+            "Melhorias no sistema de regras de palavras-chave",
+            "Melhorias no sistema de lançamentos",
+            "Melhorias no sistema de contas a pagar e receber",
+            "Melhorias no sistema de dashboard",
+            "Melhorias no sistema de evolução",
+            "Melhorias no sistema de lançamentos recentes",
+            "Melhorias no sistema de recategorização de lançamentos",
+            "Correção bug de soma de saldo e gastos"
+        ]
+    },
+    "1.0.2": {
+        "date": "2026-03-21",
+        "notes": [
+            "Implementação de um novo Design System moderno e consistente com Tailwind CSS",
+            "Padronização de componentes principais (cartões e botões)",
+            "Melhorias significativas no Dashboard com novos cartões de resumo e indicadores de comparação",
+            "Gráficos aprimorados com linhas suavizadas e dicas interativas detalhadas",
+            "Implementação de insights financeiros automáticos (tendências de gastos e análise de categorias)",
+            "Lógica de filtros globais no Dashboard (por conta, categoria e tipo de movimento)",
+            "Lista de transações recentes integrada no Dashboard",
+            "Sincronização entre Electron e Angular para melhor performance",
+            "Infraestrutura para cache de indicadores de mercado (CDI, Selic, IPCA)"
+        ]
+    },
+    "1.0.3": {
+        "date": "2026-03-22",
+        "notes": [
+            "Evolução do módulo de investimentos com foco em planejamento e comportamento financeiro",
+            "Cálculo automático de média mensal de aportes e percentual da renda investida",
+            "Projeção de tempo estimado (meses e data prevista) para atingir metas de patrimônio",
+            "Indicador de consistência de aportes e análise de tendência mensal",
+            "Gráfico de evolução de aportes integrado ao detalhamento de ativos",
+            "Ferramenta de simulação de cenários para recalcular metas com diferentes valores de aporte",
+            "Sistema de insights automáticos para comportamento de investimento",
+            "Possibilidade de configurar saldo inicial ao criar um novo ativo para facilitar a migração"
+        ]
+    }
+}

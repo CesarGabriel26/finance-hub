@@ -54,6 +54,144 @@
       </div>
     </div>
 
+    <!-- Analysis & Projections Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Performance & Insights -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Key Metrics Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Avg Contribution -->
+          <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                <lucide-icon [name]="PercentIcon" size="18"></lucide-icon>
+              </div>
+              <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Aporte Médio</span>
+            </div>
+            <h4 class="text-xl font-black text-gray-900">{{ analysis().averageContribution | currency:'BRL' }}</h4>
+            <p class="text-[10px] text-gray-400 mt-1 uppercase font-bold">Base: últimos 6 meses</p>
+          </div>
+
+          <!-- Time to Goal -->
+          <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                <lucide-icon [name]="CalendarIcon" size="18"></lucide-icon>
+              </div>
+              <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Meta em</span>
+            </div>
+            <h4 class="text-xl font-black text-gray-900">
+               {{ analysis().monthsToGoal === Infinity ? '--' : analysis().monthsToGoal + ' meses' }}
+            </h4>
+            <p class="text-[10px] text-gray-400 mt-1 uppercase font-bold">
+                Previsão: {{ analysis().monthsToGoal === Infinity ? 'Sem aportes' : analysis().targetDate | date:'MMMM/yyyy' }}
+            </p>
+          </div>
+
+          <!-- Invested % -->
+          <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="p-2 bg-rose-50 text-rose-600 rounded-xl">
+                <lucide-icon [name]="ZapIcon" size="18"></lucide-icon>
+              </div>
+              <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">% da Renda</span>
+            </div>
+            <h4 class="text-xl font-black text-gray-900">{{ analysis().investedPercentage | number:'1.1-1' }}%</h4>
+            <p class="text-[10px] text-gray-400 mt-1 uppercase font-bold">Investido neste mês</p>
+          </div>
+        </div>
+
+        <!-- Trend Chart -->
+        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+                <h3 class="text-lg font-black text-gray-900">Tendência de Aportes</h3>
+                <p class="text-xs text-gray-400">Evolução dos seus investimentos mensalmente</p>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full">
+                <lucide-icon [name]="TrendingUpIcon" size="14"></lucide-icon>
+                <span class="text-[10px] font-black uppercase">Consistência: {{ analysis().consecutiveMonths }} meses</span>
+            </div>
+          </div>
+          <div class="h-[240px] w-full">
+            <canvas baseChart
+                    [data]="chartData()"
+                    [options]="chartOptions"
+                    [type]="'line'">
+            </canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulation & Insights -->
+      <div class="space-y-6">
+        
+        <!-- Simulation Tool -->
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-[32px] text-white shadow-lg shadow-blue-500/20">
+          <div class="flex items-center gap-3 mb-6">
+             <div class="p-2 bg-white/10 rounded-xl">
+                <lucide-icon [name]="TargetIcon" size="20"></lucide-icon>
+             </div>
+             <h3 class="font-bold">Simular Cenários</h3>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="space-y-2">
+                <label class="text-[10px] font-black text-blue-100 uppercase tracking-widest leading-none">Aporte Mensal Previsto</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-blue-300">R$</span>
+                    <input type="number" 
+                           [ngModel]="simulatedContribution() ?? analysis().averageContribution"
+                           (ngModelChange)="simulatedContribution.set($event)"
+                           class="w-full h-12 pl-12 pr-4 bg-white/10 border-none rounded-2xl font-black text-white placeholder:text-blue-300 focus:ring-2 focus:ring-white/30 transition-all">
+                </div>
+            </div>
+            
+            <div class="pt-4 border-t border-white/10">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <p class="text-[10px] font-bold text-blue-100 uppercase">Novo tempo estimado</p>
+                        <h4 class="text-2xl font-black">{{ analysis().monthsToGoal === Infinity ? '--' : analysis().monthsToGoal + ' meses' }}</h4>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-bold text-blue-100 uppercase">Restante</p>
+                        <p class="font-bold">{{ analysis().remainingToGoal | currency:'BRL' }}</p>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Automated Insights -->
+        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="p-2 bg-amber-50 text-amber-600 rounded-xl">
+               <lucide-icon [name]="LightbulbIcon" size="20"></lucide-icon>
+            </div>
+            <h3 class="font-bold text-gray-900">Insights do Sistema</h3>
+          </div>
+          
+          <div class="space-y-3">
+            @for (insight of analysis().insights; track insight) {
+                <div class="flex gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                    <div class="text-blue-500 mt-0.5">
+                        <lucide-icon [name]="InfoIcon" size="16"></lucide-icon>
+                    </div>
+                    <p class="text-xs font-medium text-gray-600 leading-relaxed">{{ insight }}</p>
+                </div>
+            } @empty {
+                <div class="py-8 text-center">
+                    <p class="text-xs text-gray-400">Continue aportando para gerar mais insights.</p>
+                </div>
+            }
+          </div>
+        </div>
+      </div>
+
+    </div>
+
     <!-- Assets List -->
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
       
@@ -204,6 +342,12 @@
           <div class="space-y-2">
             <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Objetivo (Opcional)</label>
             <input type="number" [(ngModel)]="newAsset.objective_value" placeholder="R$ 0,00"
+                   class="w-full h-14 px-6 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all text-xl">
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Saldo Inicial (Valor já investido)</label>
+            <input type="number" [(ngModel)]="newAsset.initial_balance" placeholder="R$ 0,00"
                    class="w-full h-14 px-6 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all text-xl">
           </div>
 

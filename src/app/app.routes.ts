@@ -66,6 +66,10 @@ export const routes: Routes = [
       {
         path: 'settings',
         component: SettingsComponent
+      },
+      {
+        path: 'changelog',
+        loadComponent: () => import('./modules/changelog/changelog.component').then(m => m.ChangelogComponent)
       }
     ]
   }

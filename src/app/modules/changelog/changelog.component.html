@@ -1,0 +1,50 @@
+<div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+  
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-[24px] bg-blue-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/20">
+        <lucide-icon [name]="HistoryIcon" size="32"></lucide-icon>
+      </div>
+      <div>
+        <h1 class="text-4xl font-black text-gray-900 tracking-tight leading-none">Changelog</h1>
+        <p class="text-gray-500 mt-2 font-medium">Acompanhe a evolução e as novidades do Finance Hub</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="space-y-12 relative before:absolute before:inset-0 before:ml-8 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-blue-100 before:via-gray-100 before:to-transparent">
+    
+    @for (release of changelogData(); track release.version) {
+      <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+        
+        <!-- Icon Dot -->
+        <div class="flex items-center justify-center w-16 h-16 rounded-full border-4 border-white bg-blue-600 group-hover:bg-blue-700 text-white shadow-xl shadow-blue-500/10 absolute left-0 md:left-1/2 md:-ml-8 transition-colors duration-300 z-10">
+          <lucide-icon [name]="TagIcon" size="24" class="group-hover:scale-110 transition-transform"></lucide-icon>
+        </div>
+
+        <!-- Content Card -->
+        <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-3xl font-black text-gray-900 tracking-tight">v{{ release.version }}</h3>
+            <div class="flex items-center gap-2 px-4 py-1.5 bg-gray-50 text-gray-400 rounded-full border border-gray-100">
+              <lucide-icon [name]="CalendarIcon" size="14"></lucide-icon>
+              <span class="text-[10px] font-black uppercase tracking-widest">{{ release.date | date:'longDate' }}</span>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            @for (note of release.notes; track note) {
+              <div class="flex items-start gap-4 p-4 rounded-3xl bg-gray-50/50 hover:bg-gray-50 transition-colors group/note">
+                <div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400 group-hover/note:bg-blue-600 transition-colors shrink-0"></div>
+                <p class="text-sm font-medium text-gray-600 leading-relaxed">{{ note }}</p>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+  </div>
+</div>
