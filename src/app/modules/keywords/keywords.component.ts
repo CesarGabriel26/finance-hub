@@ -1,7 +1,10 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DatabaseService, Category, Keyword } from '../../services/database.service';
+import { KeywordService } from '../../services/keyword.service';
+import { CategoryService } from '../../services/category.service';
+import { MovementService } from '../../services/movement.service';
+import { Category, Keyword } from '../../models/database.models';
 import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2, Search, Tag } from 'lucide-angular';
 
@@ -26,7 +29,12 @@ export class KeywordsComponent implements OnInit {
   readonly SearchIcon = Search;
   readonly TagIcon = Tag;
 
-  constructor(private db: DatabaseService, private dialog: DialogService) {}
+  constructor(
+    private keywordService: KeywordService,
+    private categoryService: CategoryService,
+    private movementService: MovementService,
+    private dialog: DialogService
+  ) {}
 
   async ngOnInit() {
     await this.loadData();
@@ -34,8 +42,8 @@ export class KeywordsComponent implements OnInit {
 
   async loadData() {
     const [k, c] = await Promise.all([
-      this.db.getKeywords(),
-      this.db.getCategories()
+      this.keywordService.getKeywords(),
+      this.categoryService.getCategories()
     ]);
     this.keywords.set(k);
     this.categories.set(c);
@@ -48,19 +56,19 @@ export class KeywordsComponent implements OnInit {
   async addKeyword() {
     if (!this.newKeyword().trim() || !this.selectedCategoryId()) return;
 
-    await this.db.addKeyword(
+    await this.keywordService.addKeyword(
       this.newKeyword().trim(), 
       this.selectedCategoryId()!
     );
 
-    await this.db.recategorizeMovements();
+    await this.movementService.recategorizeMovements();
     this.newKeyword.set('');
     await this.loadData();
   }
 
   async deleteKeyword(id: number) {
     if (await this.dialog.confirm('Tem certeza que deseja excluir esta palavra-chave?', 'warning', 'Excluir Palavra-chave')) {
-      await this.db.deleteKeyword(id);
+      await this.keywordService.deleteKeyword(id);
       await this.loadData();
     }
   }

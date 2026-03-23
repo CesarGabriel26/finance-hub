@@ -33,6 +33,30 @@ const autoLauncher = new AutoLaunch({
     path: app.getPath("exe"),
 });
 
+// Prevent window from being destroyed on close
+function setupWindowCloseHandler() {
+    mainWindow.on("close", (event) => {
+        if (!isQuitting) {
+            event.preventDefault();
+            mainWindow.hide();
+        }
+    });
+
+    mainWindow.on('closed', () => {
+        mainWindow = null;
+    });
+}
+
+function showWindow() {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+        createWindow();
+        setupWindowCloseHandler();
+    } else {
+        mainWindow.show();
+        mainWindow.focus();
+    }
+}
+
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1024,
@@ -51,20 +75,12 @@ function createWindow() {
         mainWindow.loadFile(path.join(__dirname, "../dist/finance-hub/browser/index.html"));
         Menu.setApplicationMenu(null);
     }
-
-    // mainWindow.on("close", (event) => {
-    //     if (!isQuitting) {
-    //         event.preventDefault();
-    //         mainWindow.hide();
-    //     }
-    //     return false;
-    // });
 }
 
 function createTray() {
     tray = new Tray(iconPath);
     const contextMenu = Menu.buildFromTemplate([
-        { label: 'Abrir Finance Hub', click: () => mainWindow.show() },
+        { label: 'Abrir Finance Hub', click: () => showWindow() },
         { type: 'separator' },
         { label: 'Sair', click: () => {
             isQuitting = true;
@@ -73,7 +89,7 @@ function createTray() {
     ]);
     tray.setToolTip('Finance Hub');
     tray.setContextMenu(contextMenu);
-    tray.on('double-click', () => mainWindow.show());
+    tray.on('double-click', () => showWindow());
 }
 
 async function checkDueBillsAndNotify() {
@@ -119,7 +135,8 @@ async function checkDueBillsAndNotify() {
 
 app.whenReady().then(async () => {
     createWindow();
-    // createTray();
+    setupWindowCloseHandler();
+    createTray();
     setupAPI();
 
     // Setup auto-start setting handler
@@ -171,17 +188,13 @@ app.whenReady().then(async () => {
     setInterval(checkDueBillsAndNotify, 6 * 60 * 60 * 1000);
 
     app.on("activate", () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            createWindow();
-        } else {
-            mainWindow.show();
-        }
+        showWindow();
     });
 });
 
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
-        app.quit(); // Handled by tray/isQuitting
+        // app.quit(); // Handled by tray/isQuitting
     }
 });
 

@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
-import { DatabaseService, Movement, Account, Category } from '../../services/database.service';
+import { DashboardService } from '../../services/dashboard.service';
+import { AccountService } from '../../services/account.service';
+import { CategoryService } from '../../services/category.service';
+import { Movement, Account, Category } from '../../models/database.models';
 import { LucideAngularModule, TrendingUp, TrendingDown, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Filter, Search, List, Activity, AlertCircle } from 'lucide-angular';
 
 @Component({
@@ -199,16 +202,21 @@ export class DashboardComponent implements OnInit {
     }
   ];
 
-  constructor(private db: DatabaseService, private cdr: ChangeDetectorRef) { }
+  constructor(
+    private dashboardService: DashboardService,
+    private accountService: AccountService,
+    private categoryService: CategoryService,
+    private cdr: ChangeDetectorRef
+  ) { }
 
   async ngOnInit(): Promise<void> {
     const currentYear = new Date().getFullYear();
     this.years.set([currentYear - 2, currentYear - 1, currentYear, currentYear + 1]);
     
     // Load metadata for filters
-    const accs = await this.db.getAccounts();
+    const accs = await this.accountService.getAccounts();
     this.accounts.set(accs);
-    const cats = await this.db.getCategories();
+    const cats = await this.categoryService.getCategories();
     this.categories.set(cats);
 
     await this.loadData();
@@ -231,7 +239,7 @@ export class DashboardComponent implements OnInit {
       const filters = this.getFilters();
 
       // Current Month
-      const dbData = await this.db.getDashboardData(monthStr, filters);
+      const dbData = await this.dashboardService.getDashboardData(monthStr, filters);
       
       // Previous Month
       let pMonth = this.selectedMonth() - 1;
@@ -241,7 +249,7 @@ export class DashboardComponent implements OnInit {
         pYear--;
       }
       const prevMonthStr = `${pYear}-${pMonth.toString().padStart(2, '0')}`;
-      const prevDbData = await this.db.getDashboardData(prevMonthStr, filters);
+      const prevDbData = await this.dashboardService.getDashboardData(prevMonthStr, filters);
 
       // Total balance (only considers account filter if set)
       let balance = 0;
@@ -254,74 +262,36 @@ export class DashboardComponent implements OnInit {
       this.totalBalance.set(balance);
 
       // Process Data
-      let expensesByCategory: { [key: string]: number } = {};
-      let revenuesByCategory: { [key: string]: number } = {};
-      let revenues = 0;
-      let expenses = 0;
-      let highestCat = { name: '', amount: 0 };
+      const processed = this.dashboardService.processDashboardData(dbData);
+      const prevProcessed = this.dashboardService.processDashboardData(prevDbData);
 
-      for (const row of dbData) {
-        if (row.type === 'C') {
-          revenues += row.total;
-          const catName = row.category_name || 'Outros';
-          revenuesByCategory[catName] = (revenuesByCategory[catName] || 0) + row.total;
-        } else if (row.type === 'D') {
-          expenses += row.total;
-          const catName = row.category_name || 'Outros';
-          expensesByCategory[catName] = (expensesByCategory[catName] || 0) + row.total;
-          if (row.total > highestCat.amount) {
-            highestCat = { name: catName, amount: row.total };
-          }
-        }
-      }
-
-      this.totalRevenue.set(revenues);
-      this.totalExpense.set(expenses);
-      this.pieChartLabels = Object.keys(expensesByCategory);
+      this.totalRevenue.set(processed.revenues);
+      this.totalExpense.set(processed.expenses);
+      this.pieChartLabels = Object.keys(processed.expensesByCategory);
       this.pieChartDatasets = [{
-        data: Object.values(expensesByCategory),
+        data: Object.values(processed.expensesByCategory),
         backgroundColor: this.pieChartDatasets[0].backgroundColor
       }];
-      this.pieChartRevenueLabels = Object.keys(revenuesByCategory);
+      this.pieChartRevenueLabels = Object.keys(processed.revenuesByCategory);
       this.pieChartRevenueDatasets = [{
-        data: Object.values(revenuesByCategory),
+        data: Object.values(processed.revenuesByCategory),
         backgroundColor: this.pieChartRevenueDatasets[0].backgroundColor
       }];
 
       // Process Previous
-      let prevRevenues = 0;
-      let prevExpenses = 0;
-      for (const row of prevDbData) {
-        if (row.type === 'C') prevRevenues += row.total;
-        else if (row.type === 'D') prevExpenses += row.total;
-      }
-      this.prevTotalRevenue.set(prevRevenues);
-      this.prevTotalExpense.set(prevExpenses);
+      this.prevTotalRevenue.set(prevProcessed.revenues);
+      this.prevTotalExpense.set(prevProcessed.expenses);
 
       // Generate Insights
-      let expenseTrendInsight = "Seus gastos estão estáveis.";
-      if (prevExpenses > 0) {
-        const increase = ((expenses - prevExpenses) / prevExpenses) * 100;
-        if (increase > 5) {
-          expenseTrendInsight = `Você gastou ${increase.toFixed(0)}% a mais este mês.`;
-        } else if (increase < -5) {
-          expenseTrendInsight = `Parabéns! Você economizou ${Math.abs(increase).toFixed(0)}% este mês.`;
-        }
-      }
-      this.insightExpenseTrend.set(expenseTrendInsight);
-
-      if (highestCat.name && expenses > 0) {
-        const perc = (highestCat.amount / expenses) * 100;
-        this.insightTopCategory.set(`Maior gasto: ${highestCat.name} (${perc.toFixed(0)}% do total)`);
-      } else {
-        this.insightTopCategory.set(`Nenhum gasto registrado neste mês.`);
-      }
+      const insights = this.dashboardService.generateInsights(processed.expenses, prevProcessed.expenses, processed.highestCat);
+      this.insightExpenseTrend.set(insights.expenseTrendInsight);
+      this.insightTopCategory.set(insights.topCategoryInsight);
 
       await this.loadEvolutionData(filters);
 
       // Recent Movements
       const f = { ...filters, period: monthStr };
-      const recents = await this.db.getRecentMovements(6, f);
+      const recents = await this.dashboardService.getRecentMovements(6, f);
       this.recentMovements.set(recents);
 
     } catch (e) {
@@ -334,18 +304,9 @@ export class DashboardComponent implements OnInit {
 
   async loadEvolutionData(filters: any) {
     const periodsCount = this.evolutionPeriod();
-    const now = new Date(this.selectedYear(), this.selectedMonth() - 1, 1);
-    const labels: string[] = [];
-    const periods: string[] = [];
+    const { labels, periods } = this.dashboardService.getEvolutionPeriods(this.selectedYear(), this.selectedMonth(), periodsCount);
 
-    for (let i = periodsCount - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const period = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-      labels.push(d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
-      periods.push(period);
-    }
-
-    const evolutionData = await this.db.getDashboardEvolution(periods, filters);
+    const evolutionData = await this.dashboardService.getDashboardEvolution(periods, filters);
 
     const pointsExpense = periods.map(p => {
       const match = evolutionData.find(row => row.period === p);

@@ -2,7 +2,9 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Plus, TrendingUp, Wallet, Target, Trash2, ArrowRight, History, Landmark, Info, X, TrendingDown, Calendar, Percent, Lightbulb, Zap } from 'lucide-angular';
-import { DatabaseService, Asset, InvestmentEntry, Account } from '../../services/database.service';
+import { InvestmentService } from '../../services/investment.service';
+import { AccountService } from '../../services/account.service';
+import { Asset, InvestmentEntry, Account } from '../../models/database.models';
 import { DialogService } from '../../services/dialog.service';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
@@ -67,100 +69,14 @@ export class InvestmentsComponent implements OnInit {
   simulatedContribution = signal<number | null>(null);
 
   analysis = computed(() => {
-    const selected = this.selectedAsset();
-    const entries = this.allEntries().filter(e => !selected || e.asset_id === selected.id);
-    const stats = this.monthlyStats();
-    
-    // 1. Group by month
-    const depositsByMonth: { [key: string]: number } = {};
-    entries.filter(e => e.type === 'deposit').forEach(e => {
-        const month = e.date.substring(0, 7);
-        depositsByMonth[month] = (depositsByMonth[month] || 0) + e.amount;
-    });
-
-    const months = Object.keys(depositsByMonth).sort().reverse();
-    const last6Months = months.slice(0, 6);
-    const averageContribution = last6Months.length > 0 
-        ? last6Months.reduce((sum, m) => sum + depositsByMonth[m], 0) / last6Months.length 
-        : 0;
-
-    // 2. Projections
-    const objective = selected ? (selected.objective_value || 0) : this.totalObjective();
-    const totalInvested = selected ? (selected.total_invested || 0) : this.totalInvested();
-    
-    const currentContribution = this.simulatedContribution() ?? averageContribution;
-    const remainingToGoal = Math.max(0, objective - totalInvested);
-    const monthsToGoal = currentContribution > 0 ? Math.ceil(remainingToGoal / currentContribution) : Infinity;
-    
-    const targetDate = new Date();
-    if (monthsToGoal !== Infinity && monthsToGoal > 0) {
-        targetDate.setMonth(targetDate.getMonth() + monthsToGoal);
-    }
-
-    // 3. Current Month Analysis
-    const currentMonth = new Date().toISOString().substring(0, 7);
-    const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().substring(0, 7);
-    
-    const currentMonthDeposit = depositsByMonth[currentMonth] || 0;
-    const lastMonthDeposit = depositsByMonth[lastMonth] || 0;
-    
-    const currentMonthRevenue = stats.find(s => s.period === currentMonth)?.total_revenue || 0;
-    const investedPercentage = currentMonthRevenue > 0 ? (currentMonthDeposit / currentMonthRevenue) * 100 : 0;
-
-    // 4. Consistency
-    let consecutiveMonths = 0;
-    let checkMonth = new Date();
-    // Start checking from the most recent month with deposits in HISTORY, not just this month
-    const sortedDepositMonths = Object.keys(depositsByMonth).sort().reverse();
-    
-    if (sortedDepositMonths.length > 0) {
-        // Find if we have a deposit in the current month or last month to start the streak
-        const nowP = new Date().toISOString().substring(0, 7);
-        const lastP = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().substring(0, 7);
-        
-        let streakCheckDate = new Date();
-        if (depositsByMonth[nowP] === 0 && depositsByMonth[lastP] > 0) {
-            streakCheckDate.setMonth(streakCheckDate.getMonth() - 1);
-        }
-
-        while (true) {
-            const p = streakCheckDate.toISOString().substring(0, 7);
-            if (depositsByMonth[p] > 0) {
-                consecutiveMonths++;
-                streakCheckDate.setMonth(streakCheckDate.getMonth() - 1);
-            } else {
-                break;
-            }
-        }
-    }
-
-    // 5. Insights
-    const insights: string[] = [];
-    if (!selected && investedPercentage > 0 && investedPercentage < 20) {
-        insights.push("Você está investindo abaixo do recomendado (20%). Tente aumentar seus aportes.");
-    }
-    if (currentMonthDeposit < lastMonthDeposit && lastMonthDeposit > 0) {
-        insights.push(`${selected ? 'Os aportes neste ativo' : 'Seus aportes totais'} caíram em relação ao mês passado.`);
-    }
-    if (averageContribution > 0 && monthsToGoal !== Infinity) {
-        insights.push(`Mantendo a média, você atingirá o objetivo ${selected ? 'deste ativo' : 'total'} em aproximadamente ${monthsToGoal} meses.`);
-    }
-    if (consecutiveMonths >= 3) {
-        insights.push(`Incrível! Você mantém consistência ${selected ? 'neste ativo ' : ''}há ${consecutiveMonths} meses.`);
-    }
-
-    return {
-        averageContribution,
-        remainingToGoal,
-        monthsToGoal,
-        targetDate,
-        investedPercentage,
-        consecutiveMonths,
-        insights,
-        depositsByMonth,
-        currentMonthDeposit,
-        lastMonthDeposit
-    };
+    return this.investmentService.calculateAnalysis(
+      this.selectedAsset(),
+      this.allEntries(),
+      this.monthlyStats(),
+      this.totalObjective(),
+      this.totalInvested(),
+      this.simulatedContribution()
+    );
   });
 
   // Chart configuration
@@ -184,17 +100,7 @@ export class InvestmentsComponent implements OnInit {
   };
 
   chartData = computed<ChartConfiguration<'line'>['data']>(() => {
-    const deposits = this.analysis().depositsByMonth;
-    const now = new Date();
-    const labels: string[] = [];
-    const values: number[] = [];
-
-    for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const p = d.toISOString().substring(0, 7);
-        labels.push(d.toLocaleDateString('pt-BR', { month: 'short' }));
-        values.push(deposits[p] || 0);
-    }
+    const { labels, values } = this.investmentService.getChartData(this.analysis().depositsByMonth);
 
     const isAssetSelected = !!this.selectedAsset();
 
@@ -213,7 +119,8 @@ export class InvestmentsComponent implements OnInit {
     };
   });
 
-  private db = inject(DatabaseService);
+  private investmentService = inject(InvestmentService);
+  private accountService = inject(AccountService);
   private dialog = inject(DialogService);
 
   constructor() {}
@@ -224,10 +131,10 @@ export class InvestmentsComponent implements OnInit {
 
   async loadData() {
     const [assets, accounts, allEntries, stats] = await Promise.all([
-      this.db.getAssets(),
-      this.db.getAccounts(),
-      this.db.getAllInvestmentEntries(),
-      this.db.getMonthlyStats(12)
+      this.investmentService.getAssets(),
+      this.accountService.getAccounts(),
+      this.investmentService.getAllInvestmentEntries(),
+      this.investmentService.getMonthlyStats(12)
     ]);
     this.assets.set(assets);
     this.accounts.set(accounts);
@@ -243,7 +150,7 @@ export class InvestmentsComponent implements OnInit {
         this.selectedAsset.set(asset);
         this.simulatedContribution.set(null); // Reset simulation for new asset
         if (asset.id) {
-            const entries = await this.db.getInvestmentEntries(asset.id);
+            const entries = await this.investmentService.getInvestmentEntries(asset.id);
             this.entries.set(entries);
         }
     }
@@ -251,7 +158,7 @@ export class InvestmentsComponent implements OnInit {
 
   async saveAsset() {
     if (!this.newAsset.name) return;
-    await this.db.addAsset(this.newAsset);
+    await this.investmentService.addAsset(this.newAsset);
     this.newAsset = { name: '', type: 'renda_fixa', objective_value: 0, initial_balance: 0 };
     this.showAssetModal.set(false);
     this.loadData();
@@ -260,7 +167,7 @@ export class InvestmentsComponent implements OnInit {
   async deleteAsset(id: number, event: Event) {
     event.stopPropagation();
     if (await this.dialog.confirm('Tem certeza que deseja excluir este investimento? Todos os lançamentos serão removidos.', 'error', 'Excluir Investimento')) {
-      await this.db.deleteAsset(id);
+      await this.investmentService.deleteAsset(id);
       if (this.selectedAsset()?.id === id) {
         this.selectedAsset.set(null);
       }
@@ -271,13 +178,13 @@ export class InvestmentsComponent implements OnInit {
   async saveEntry() {
     if (!this.newEntry.amount || !this.newEntry.account_id || !this.newEntry.asset_id) return;
     
-    await this.db.addInvestmentEntry(this.newEntry);
+    await this.investmentService.addInvestmentEntry(this.newEntry);
     this.showEntryModal.set(false);
     
     // Refresh
     this.loadData();
     if (this.selectedAsset()?.id === this.newEntry.asset_id) {
-      const entries = await this.db.getInvestmentEntries(this.newEntry.asset_id as number);
+      const entries = await this.investmentService.getInvestmentEntries(this.newEntry.asset_id as number);
       this.entries.set(entries);
     }
 
@@ -294,10 +201,10 @@ export class InvestmentsComponent implements OnInit {
 
   async deleteEntry(id: number) {
     if (await this.dialog.confirm('Excluir este lançamento?', 'warning', 'Excluir Lançamento')) {
-      await this.db.deleteInvestmentEntry(id);
+      await this.investmentService.deleteInvestmentEntry(id);
       this.loadData();
       if (this.selectedAsset()) {
-        const entries = await this.db.getInvestmentEntries(this.selectedAsset()!.id as number);
+        const entries = await this.investmentService.getInvestmentEntries(this.selectedAsset()!.id as number);
         this.entries.set(entries);
       }
     }

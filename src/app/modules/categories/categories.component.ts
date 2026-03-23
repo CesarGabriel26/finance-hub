@@ -1,7 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DatabaseService, Category } from '../../services/database.service';
+import { CategoryService } from '../../services/category.service';
+import { Category } from '../../models/database.models';
 import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2 } from 'lucide-angular';
 
@@ -20,19 +21,19 @@ export class CategoriesComponent implements OnInit {
   readonly PlusIcon = Plus;
   readonly TrashIcon = Trash2;
 
-  constructor(private db: DatabaseService, private dialog: DialogService) { }
+  constructor(private categoryService: CategoryService, private dialog: DialogService) { }
 
   ngOnInit(): void {
     this.loadCategories();
   }
 
   async loadCategories() {
-    this.categories.set(await this.db.getCategories())
+    this.categories.set(await this.categoryService.getCategories())
   }
 
   async addCategory() {
     if (!this.newCategoryName().trim()) return;
-    await this.db.addCategory({
+    await this.categoryService.addCategory({
       name: this.newCategoryName().trim(),
       type: this.newCategoryType()
     });
@@ -43,7 +44,7 @@ export class CategoriesComponent implements OnInit {
 
   async deleteCategory(id: number) {
     if (await this.dialog.confirm('Tem certeza que deseja excluir esta categoria?', 'warning', 'Excluir Categoria')) {
-      await this.db.deleteCategory(id);
+      await this.categoryService.deleteCategory(id);
       this.loadCategories();
     }
   }

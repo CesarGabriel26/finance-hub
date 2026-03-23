@@ -40,23 +40,23 @@ export function setupUpdater(mainWindow) {
 
     // Map autoUpdater events to mainWindow IPC
     autoUpdater.on('checking-for-update', () => {
-        if (mainWindow) mainWindow.webContents.send('update-event', { type: 'checking-for-update' });
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-event', { type: 'checking-for-update' });
     });
 
     autoUpdater.on('update-available', (info) => {
-        if (mainWindow) mainWindow.webContents.send('update-event', { type: 'update-available', info });
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-event', { type: 'update-available', info });
     });
 
     autoUpdater.on('update-not-available', (info) => {
-        if (mainWindow) mainWindow.webContents.send('update-event', { type: 'update-not-available', info });
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-event', { type: 'update-not-available', info });
     });
 
     autoUpdater.on('error', (err) => {
-        if (mainWindow) mainWindow.webContents.send('update-event', { type: 'error', error: err.message || err.toString() });
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-event', { type: 'error', error: err.message || err.toString() });
     });
 
     autoUpdater.on('download-progress', (progressObj) => {
-        if (mainWindow) mainWindow.webContents.send('update-event', { type: 'download-progress', progress: progressObj });
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-event', { type: 'download-progress', progress: progressObj });
     });
 
     autoUpdater.on('update-downloaded', (info) => {
@@ -64,7 +64,7 @@ export function setupUpdater(mainWindow) {
         // This way, when the app restarts, it knows it was updated from this version
         fs.writeFileSync(lastVersionPath, JSON.stringify({ version: currentVersion }), 'utf8');
         
-        if (mainWindow) mainWindow.webContents.send('update-event', { type: 'update-downloaded', info });
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-event', { type: 'update-downloaded', info });
     });
 }
 

@@ -1,7 +1,10 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DatabaseService, Bill, Account, Category } from '../../services/database.service';
+import { BillService } from '../../services/bill.service';
+import { AccountService } from '../../services/account.service';
+import { CategoryService } from '../../services/category.service';
+import { Bill, Account, Category } from '../../models/database.models';
 import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2, CheckCircle, Calendar, CreditCard, Repeat, Layers } from 'lucide-angular';
 
@@ -39,19 +42,24 @@ export class ReceivableComponent implements OnInit {
   readonly RepeatIcon = Repeat;
   readonly LayersIcon = Layers;
 
-  constructor(private db: DatabaseService, private dialog: DialogService) {}
+  constructor(
+    private billService: BillService,
+    private accountService: AccountService,
+    private categoryService: CategoryService,
+    private dialog: DialogService
+  ) {}
 
   async ngOnInit() {
     this.refresh();
-    this.accounts.set(await this.db.getAccounts());
-    this.categories.set(await this.db.getCategories());
+    this.accounts.set(await this.accountService.getAccounts());
+    this.categories.set(await this.categoryService.getCategories());
     if (this.accounts().length > 0) {
         this.selectedAccountId.set(this.accounts()[0].id!);
     }
   }
 
   async refresh() {
-    this.bills.set(await this.db.getBills('C', 'pending'));
+    this.bills.set(await this.billService.getBills('C', 'pending'));
   }
 
   revenueCategories() {
@@ -64,7 +72,7 @@ export class ReceivableComponent implements OnInit {
         return;
     }
 
-    await this.db.addBill({
+    await this.billService.addBill({
       description: this.nbDescription,
       amount: this.nbAmount,
       due_date: this.nbDueDate,
@@ -92,7 +100,7 @@ export class ReceivableComponent implements OnInit {
 
   async deleteBill(id: number) {
     if (await this.dialog.confirm('Excluir esta conta?', 'warning', 'Excluir Conta')) {
-      await this.db.deleteBill(id);
+      await this.billService.deleteBill(id);
       this.refresh();
     }
   }
@@ -106,7 +114,7 @@ export class ReceivableComponent implements OnInit {
     const bill = this.receivingBill();
     if (!bill || !this.selectedAccountId()) return;
 
-    await this.db.payBill({
+    await this.billService.payBill({
         billId: bill.id!,
         accountId: this.selectedAccountId()!,
         paymentDate: this.paymentDate
@@ -114,6 +122,6 @@ export class ReceivableComponent implements OnInit {
 
     this.receivingBill.set(null);
     this.refresh();
-    this.accounts.set(await this.db.getAccounts());
+    this.accounts.set(await this.accountService.getAccounts());
   }
 }

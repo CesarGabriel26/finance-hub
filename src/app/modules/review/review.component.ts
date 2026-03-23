@@ -1,7 +1,9 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DatabaseService, Movement, Category } from '../../services/database.service';
+import { MovementService } from '../../services/movement.service';
+import { CategoryService } from '../../services/category.service';
+import { Movement, Category } from '../../models/database.models';
 import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Check, Edit2, Trash2, AlertCircle, Brain, Info, X, Wallet } from 'lucide-angular';
 
@@ -28,7 +30,11 @@ export class ReviewComponent implements OnInit {
   readonly XIcon = X;
   readonly WalletIcon = Wallet;
 
-  constructor(private db: DatabaseService, private dialog: DialogService) {}
+  constructor(
+    private movementService: MovementService,
+    private categoryService: CategoryService,
+    private dialog: DialogService
+  ) {}
 
   async ngOnInit() {
     await this.loadData();
@@ -36,8 +42,8 @@ export class ReviewComponent implements OnInit {
 
   async loadData() {
     const [movs, cats] = await Promise.all([
-      this.db.getMovementsForReview(),
-      this.db.getCategories()
+      this.movementService.getMovementsForReview(),
+      this.categoryService.getCategories()
     ]);
     this.movements.set(movs);
     this.categories.set(cats);
@@ -45,7 +51,7 @@ export class ReviewComponent implements OnInit {
 
   async approve(mov: Movement) {
     if (!mov.id) return;
-    await this.db.updateMovement(mov.id, { 
+    await this.movementService.updateMovement(mov.id, { 
       classification_source: 'manual', 
       confidence: 1.0 
     });
@@ -60,7 +66,7 @@ export class ReviewComponent implements OnInit {
     const mov = this.editingMovement();
     if (!mov || !mov.id) return;
     
-    await this.db.updateMovement(mov.id, {
+    await this.movementService.updateMovement(mov.id, {
       category_id: mov.category_id,
       classification_source: 'manual',
       confidence: 1.0
@@ -72,7 +78,7 @@ export class ReviewComponent implements OnInit {
 
   async deleteMovement(id: number) {
     if (await this.dialog.confirm('Excluir este movimento?', 'warning', 'Excluir Movimento')) {
-      await this.db.deleteMovement(id);
+      await this.movementService.deleteMovement(id);
       await this.loadData();
     }
   }

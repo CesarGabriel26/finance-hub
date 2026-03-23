@@ -1,7 +1,11 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DatabaseService, Account, Movement, Category, Keyword } from '../../services/database.service';
+import { AccountService } from '../../services/account.service';
+import { CategoryService } from '../../services/category.service';
+import { KeywordService } from '../../services/keyword.service';
+import { MovementService } from '../../services/movement.service';
+import { Account, Movement, Category, Keyword } from '../../models/database.models';
 import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, FileUp, CheckCircle, AlertCircle, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-angular';
 import { Ofx } from 'ofx-data-extractor';
@@ -66,14 +70,20 @@ export class ImportStatementComponent implements OnInit {
   keywordRules = signal<any[]>([]);
   categories = signal<Category[]>([]);
 
-  constructor(private db: DatabaseService, private dialog: DialogService) { }
+  constructor(
+    private accountService: AccountService,
+    private categoryService: CategoryService,
+    private keywordService: KeywordService,
+    private movementService: MovementService,
+    private dialog: DialogService
+  ) { }
 
   async ngOnInit() {
     const [accs, cats, keys, rules] = await Promise.all([
-      this.db.getAccounts(),
-      this.db.getCategories(),
-      this.db.getKeywords(),
-      this.db.getKeywordRules()
+      this.accountService.getAccounts(),
+      this.categoryService.getCategories(),
+      this.keywordService.getKeywords(),
+      this.keywordService.getKeywordRules()
     ]);
     this.accounts.set(accs);
     this.categories.set(cats);
@@ -260,8 +270,8 @@ export class ImportStatementComponent implements OnInit {
       let account = this.accounts().find(a => a.name.includes(bankName) || a.name === bankName);
       if (!account) {
         if (await this.dialog.confirm(`O banco '${bankName}' não foi encontrado. Deseja criar uma nova conta automaticamente?`, 'warning', 'Banco não encontrado')) {
-          const res = await this.db.addAccount({ name: bankName, balance: 0 });
-          const newAccs = await this.db.getAccounts();
+          const res = await this.accountService.addAccount({ name: bankName, balance: 0 });
+          const newAccs = await this.accountService.getAccounts();
           this.accounts.set(newAccs);
           account = newAccs.find(a => a.id === res.id);
         }
@@ -386,7 +396,7 @@ export class ImportStatementComponent implements OnInit {
     try {
       for (const statement of this.parsedStatements()) {
         if (statement.initialBalance !== null && this.isAllowedToCreateAC(statement.period, 'import')) {
-          await this.db.addMovement({
+          await this.movementService.addMovement({
             account_id: accId,
             description: 'Abertura de Conta (Importado)',
             amount: statement.initialBalance,
@@ -397,7 +407,7 @@ export class ImportStatementComponent implements OnInit {
         }
 
         await Promise.all(statement.movements.map(m => 
-          this.db.addMovement({
+          this.movementService.addMovement({
             account_id: accId,
             description: m.description,
             amount: m.amount,
@@ -412,12 +422,12 @@ export class ImportStatementComponent implements OnInit {
         ));
 
         // Recalculate account definitive balance once after all batch inserts
-        await this.db.recalculateBalance(accId);
+        await this.accountService.recalculateBalance(accId);
 
         // 4. Conditional closing (Suggestion)
         if (statement.isComplete) {
           if (await this.dialog.confirm(`O período ${statement.period} parece completo. Deseja fechá-lo agora?`, 'info', 'Fechar Período')) {
-            await this.db.closePeriod(accId, statement.period);
+            await this.movementService.closePeriod(accId, statement.period);
           }
         }
       }

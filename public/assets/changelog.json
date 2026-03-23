@@ -54,7 +54,6 @@
         ]
     },
     "1.0.3": {
-        "latest": true,
         "date": "2026-03-22",
         "features": [
             {
@@ -74,6 +73,21 @@
                 "steps": [
                     "Ao criar um ativo, preencha o campo 'Saldo Inicial' se ele já tiver dinheiro investido.",
                     "Isso evita que você precise registrar todos os depósitos passados manualmente."
+                ]
+            }
+        ]
+    },
+    "1.0.3.1": {
+        "latest": true,
+        "date": "2026-03-23",
+        "features": [
+            {
+                "title": "Correção no Tray",
+                "description": "Corrigido erro crítico que fechava o aplicativo ao interagir com o ícone da bandeja após fechar a janela principal.",
+                "steps": [
+                    "Implementado comportamento de 'Ocultar ao Fechar' para manter o app rodando em segundo plano.",
+                    "Recriação automática da janela principal caso ela seja destruída inesperadamente.",
+                    "Melhoria na estabilidade das interações via bandeja (tray icon)."
                 ]
             }
         ]

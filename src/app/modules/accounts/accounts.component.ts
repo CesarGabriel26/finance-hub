@@ -1,7 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DatabaseService, Account } from '../../services/database.service';
+import { AccountService } from '../../services/account.service';
+import { Account } from '../../models/database.models';
 import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2, Edit2, Check, X } from 'lucide-angular';
 
@@ -24,19 +25,19 @@ export class AccountsComponent implements OnInit {
   readonly CheckIcon = Check;
   readonly XIcon = X;
 
-  constructor(private db: DatabaseService, private dialog: DialogService) { }
+  constructor(private accountService: AccountService, private dialog: DialogService) { }
 
   ngOnInit(): void {
     this.loadAccounts();
   }
 
   async loadAccounts() {
-    this.accounts.set(await this.db.getAccounts());
+    this.accounts.set(await this.accountService.getAccounts());
   }
 
   async addAccount() {
     if (!this.newAccountName().trim()) return;
-    await this.db.addAccount({
+    await this.accountService.addAccount({
       name: this.newAccountName().trim(),
       balance: this.newAccountBalance()
     });
@@ -47,7 +48,7 @@ export class AccountsComponent implements OnInit {
 
   async deleteAccount(id: number) {
     if (await this.dialog.confirm('Tem certeza que deseja excluir esta conta? Isso pode quebrar movimentos associados se o banco não usar CASCADE.', 'warning', 'Excluir Conta')) {
-      await this.db.deleteAccount(id);
+      await this.accountService.deleteAccount(id);
       this.loadAccounts();
     }
   }
@@ -64,7 +65,7 @@ export class AccountsComponent implements OnInit {
     const edit = this.editingAccount();
     if (!edit || !edit.id || !edit.name.trim()) return;
 
-    await this.db.updateAccountName(edit.id, edit.name.trim());
+    await this.accountService.updateAccountName(edit.id, edit.name.trim());
     this.editingAccount.set(null);
     this.loadAccounts();
   }

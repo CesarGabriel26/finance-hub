@@ -1,7 +1,11 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DatabaseService, Movement, Account, Category } from '../../services/database.service';
+import { MovementService } from '../../services/movement.service';
+import { AccountService } from '../../services/account.service';
+import { CategoryService } from '../../services/category.service';
+import { KeywordService } from '../../services/keyword.service';
+import { Movement, Account, Category } from '../../models/database.models';
 import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Lock, Edit2, Brain, Check, X, Info } from 'lucide-angular';
 
@@ -42,12 +46,18 @@ export class MovementsComponent implements OnInit {
   readonly XIcon = X;
   readonly InfoIcon = Info;
 
-  constructor(private db: DatabaseService, private dialog: DialogService) { }
+  constructor(
+    private movementService: MovementService,
+    private accountService: AccountService,
+    private categoryService: CategoryService,
+    private keywordService: KeywordService,
+    private dialog: DialogService
+  ) { }
 
   async ngOnInit() {
     const [accs, cats] = await Promise.all([
-      this.db.getAccounts(),
-      this.db.getCategories()
+      this.accountService.getAccounts(),
+      this.categoryService.getCategories()
     ]);
     this.accounts.set(accs);
     this.categories.set(cats);
@@ -60,7 +70,7 @@ export class MovementsComponent implements OnInit {
 
   async loadMovements() {
     if (!this.selectedAccountId() || !this.selectedPeriod()) return;
-    this.movements.set(await this.db.getMovements(this.selectedAccountId()!, this.selectedPeriod()));
+    this.movements.set(await this.movementService.getMovements(this.selectedAccountId()!, this.selectedPeriod()));
   }
 
   get expenseCategories() {
@@ -82,7 +92,7 @@ export class MovementsComponent implements OnInit {
 
     if (!accId || !amount || !desc) return;
 
-    await this.db.addMovement({
+    await this.movementService.addMovement({
       account_id: accId,
       category_id: this.nmCategoryId(),
       description: desc,
@@ -105,7 +115,7 @@ export class MovementsComponent implements OnInit {
       return;
     }
     if (await this.dialog.confirm('Excluir este movimento? O saldo da conta será recalculado.', 'warning', 'Excluir Movimento')) {
-      await this.db.deleteMovement(id);
+      await this.movementService.deleteMovement(id);
       this.loadMovements();
     }
   }
@@ -123,7 +133,7 @@ export class MovementsComponent implements OnInit {
     const wasAuto = original?.classification_source === 'keyword' || original?.classification_source === 'imported';
     const changed = original?.category_id !== mov.category_id || original?.amount !== mov.amount;
 
-    await this.db.updateMovement(mov.id, {
+    await this.movementService.updateMovement(mov.id, {
       category_id: mov.category_id,
       description: mov.description,
       amount: mov.amount,
@@ -143,14 +153,14 @@ export class MovementsComponent implements OnInit {
     const mov = this.editingMovement();
     if (!mov) return;
 
-    await this.db.addKeywordRule({
+    await this.keywordService.addKeywordRule({
       keyword: mov.description,
       category_id: mov.category_id!,
       priority: 10,
       created_by_user: true
     });
 
-    await this.db.recategorizeMovements();
+    await this.movementService.recategorizeMovements();
 
     this.showLearningPrompt.set(false);
     this.editingMovement.set(null);
@@ -164,7 +174,7 @@ export class MovementsComponent implements OnInit {
   async closePeriod() {
     if (!this.selectedAccountId()) return;
     if (await this.dialog.confirm('Deseja fechar o mês? Isso vai gerar o registro de Fechamento (FC).', 'info', 'Fechar Período')) {
-      await this.db.closePeriod(this.selectedAccountId()!, this.selectedPeriod());
+      await this.movementService.closePeriod(this.selectedAccountId()!, this.selectedPeriod());
       this.loadMovements();
     }
   }
