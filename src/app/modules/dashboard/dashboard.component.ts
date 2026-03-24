@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectorRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
@@ -6,8 +6,9 @@ import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
 import { DashboardService } from '../../services/dashboard.service';
 import { AccountService } from '../../services/account.service';
 import { CategoryService } from '../../services/category.service';
-import { Movement, Account, Category } from '../../models/database.models';
+import { Movement, Account, Category, Budget, Insight } from '../../models/database.models';
 import { LucideAngularModule, TrendingUp, TrendingDown, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Filter, Search, List, Activity, AlertCircle } from 'lucide-angular';
+import { BudgetService } from '../../services/budget.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,6 +18,9 @@ import { LucideAngularModule, TrendingUp, TrendingDown, DollarSign, Wallet, Arro
   styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent implements OnInit {
+  budgetService = inject(BudgetService)
+
+
   // Config
   readonly TrendingUp = TrendingUp;
   readonly TrendingDown = TrendingDown;
@@ -29,11 +33,12 @@ export class DashboardComponent implements OnInit {
   readonly List = List;
   readonly Activity = Activity;
   readonly AlertCircle = AlertCircle;
+  readonly Math = Math;
 
   // Period
   selectedMonth = signal(new Date().getMonth() + 1);
   selectedYear = signal(new Date().getFullYear());
-  
+
   months = [
     { value: 1, label: 'Janeiro' }, { value: 2, label: 'Fevereiro' }, { value: 3, label: 'Março' },
     { value: 4, label: 'Abril' }, { value: 5, label: 'Maio' }, { value: 6, label: 'Junho' },
@@ -62,9 +67,12 @@ export class DashboardComponent implements OnInit {
   prevTotalRevenue = signal(0);
   prevTotalExpense = signal(0);
 
-  // Insights
-  insightExpenseTrend = signal('');
-  insightTopCategory = signal('');
+  // Advanced Data
+  insights = signal<Insight[]>([]);
+  prediction7d = signal(0);
+  prediction30d = signal(0);
+  budgets = signal<Budget[]>([]);
+  processedData = signal<any>(null);
 
   // Recent Movements
   recentMovements = signal<Movement[]>([]);
@@ -115,8 +123,8 @@ export class DashboardComponent implements OnInit {
       x: { grid: { display: false } }
     },
     interaction: {
-       mode: 'index',
-       intersect: false,
+      mode: 'index',
+      intersect: false,
     },
   };
   public lineChartLabels: string[] = [];
@@ -180,8 +188,8 @@ export class DashboardComponent implements OnInit {
       x: { grid: { display: false } }
     },
     interaction: {
-       mode: 'index',
-       intersect: false,
+      mode: 'index',
+      intersect: false,
     },
   };
   public lineChartRevenueLabels: string[] = [];
@@ -204,15 +212,15 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private dashboardService: DashboardService,
-    private accountService: AccountService,
     private categoryService: CategoryService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private accountService: AccountService
   ) { }
 
   async ngOnInit(): Promise<void> {
     const currentYear = new Date().getFullYear();
     this.years.set([currentYear - 2, currentYear - 1, currentYear, currentYear + 1]);
-    
+
     // Load metadata for filters
     const accs = await this.accountService.getAccounts();
     this.accounts.set(accs);
@@ -238,20 +246,10 @@ export class DashboardComponent implements OnInit {
       const monthStr = `${this.selectedYear()}-${this.selectedMonth().toString().padStart(2, '0')}`;
       const filters = this.getFilters();
 
-      // Current Month
-      const dbData = await this.dashboardService.getDashboardData(monthStr, filters);
-      
-      // Previous Month
-      let pMonth = this.selectedMonth() - 1;
-      let pYear = this.selectedYear();
-      if (pMonth === 0) {
-        pMonth = 12;
-        pYear--;
-      }
-      const prevMonthStr = `${pYear}-${pMonth.toString().padStart(2, '0')}`;
-      const prevDbData = await this.dashboardService.getDashboardData(prevMonthStr, filters);
+      // Get Aggregated Data
+      const summary = await this.dashboardService.getAggregatedDashboardData(monthStr, filters);
 
-      // Total balance (only considers account filter if set)
+      // Total balance
       let balance = 0;
       if (this.filterAccountId()) {
         const acc = this.accounts().find(a => a.id == this.filterAccountId());
@@ -261,31 +259,29 @@ export class DashboardComponent implements OnInit {
       }
       this.totalBalance.set(balance);
 
-      // Process Data
-      const processed = this.dashboardService.processDashboardData(dbData);
-      const prevProcessed = this.dashboardService.processDashboardData(prevDbData);
+      // Set Signals
+      this.totalRevenue.set(summary.revenues);
+      this.totalExpense.set(summary.expenses);
+      this.prevTotalRevenue.set(summary.prevRevenues);
+      this.prevTotalExpense.set(summary.prevExpenses);
 
-      this.totalRevenue.set(processed.revenues);
-      this.totalExpense.set(processed.expenses);
-      this.pieChartLabels = Object.keys(processed.expensesByCategory);
+      this.insights.set(summary.insights);
+      this.prediction7d.set(summary.prediction7d);
+      this.prediction30d.set(summary.prediction30d);
+      this.budgets.set(summary.budgets);
+      this.processedData.set(summary);
+
+      // Pie Charts
+      this.pieChartLabels = Object.keys(summary.expensesByCategory);
       this.pieChartDatasets = [{
-        data: Object.values(processed.expensesByCategory),
+        data: Object.values(summary.expensesByCategory),
         backgroundColor: this.pieChartDatasets[0].backgroundColor
       }];
-      this.pieChartRevenueLabels = Object.keys(processed.revenuesByCategory);
+      this.pieChartRevenueLabels = Object.keys(summary.revenuesByCategory);
       this.pieChartRevenueDatasets = [{
-        data: Object.values(processed.revenuesByCategory),
+        data: Object.values(summary.revenuesByCategory),
         backgroundColor: this.pieChartRevenueDatasets[0].backgroundColor
       }];
-
-      // Process Previous
-      this.prevTotalRevenue.set(prevProcessed.revenues);
-      this.prevTotalExpense.set(prevProcessed.expenses);
-
-      // Generate Insights
-      const insights = this.dashboardService.generateInsights(processed.expenses, prevProcessed.expenses, processed.highestCat);
-      this.insightExpenseTrend.set(insights.expenseTrendInsight);
-      this.insightTopCategory.set(insights.topCategoryInsight);
 
       await this.loadEvolutionData(filters);
 

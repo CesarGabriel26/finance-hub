@@ -521,6 +521,34 @@ export function setupAPI() {
         `);
     });
 
+    // -- Budget Handlers --
+    handleIpc("get-budgets", async (_, month, year) => {
+        let query = `
+            SELECT b.*, c.name as category_name, c.type as category_type
+            FROM budgets b
+            JOIN categories c ON b.category_id = c.id
+        `;
+        let params = [];
+        if (month && year) {
+            query += " WHERE b.month = ? AND b.year = ?";
+            params.push(month, year);
+        }
+        query += " ORDER BY c.name ASC";
+        return await dbAll(query, params);
+    });
+
+    handleIpc("add-budget", async (_, budget) => {
+        const { category_id, monthly_limit, month, year, alert_threshold_percentage } = budget;
+        return await dbRun(
+            "INSERT OR REPLACE INTO budgets (category_id, monthly_limit, month, year, alert_threshold_percentage) VALUES (?, ?, ?, ?, ?)",
+            [category_id, monthly_limit, month, year, alert_threshold_percentage || 80]
+        );
+    });
+
+    handleIpc("delete-budget", async (_, id) => {
+        return await dbRun("DELETE FROM budgets WHERE id = ?", [id]);
+    });
+
     handleIpc("get-monthly-stats", async (_, months = 12) => {
         return await dbAll(`
             SELECT period, SUM(amount) as total_revenue

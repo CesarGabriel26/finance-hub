@@ -64,6 +64,10 @@ export const routes: Routes = [
         component: InvestmentsComponent
       },
       {
+        path: 'budgets',
+        loadComponent: () => import('./modules/budgets/budgets.component').then(m => m.BudgetsComponent)
+      },
+      {
         path: 'settings',
         component: SettingsComponent
       },

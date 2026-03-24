@@ -37,6 +37,7 @@
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "Finance Hub",
-    "include": "build/installer.nsh"
+    "include": "build/installer.nsh",
+    "artifactName": "${productName}"
   }
 }

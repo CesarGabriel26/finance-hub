@@ -28,6 +28,7 @@ export class PayableComponent implements OnInit {
   nbDueDate = new Date().toISOString().split('T')[0];
   nbCategoryId: number | null = null;
   nbIsRecurring = false;
+  nbRecurrenceClassification: 'fixed' | 'variable' | null = null;
   nbTotalInstallments = 1;
 
   // Payment fields
@@ -79,6 +80,7 @@ export class PayableComponent implements OnInit {
       type: 'D',
       category_id: this.nbCategoryId,
       is_recurring: this.nbIsRecurring,
+      recurrence_classification: this.nbIsRecurring ? this.nbRecurrenceClassification : null,
       total_installments: this.nbTotalInstallments,
       current_installment: 1,
       status: 'pending'
@@ -95,6 +97,7 @@ export class PayableComponent implements OnInit {
     this.nbDueDate = new Date().toISOString().split('T')[0];
     this.nbCategoryId = null;
     this.nbIsRecurring = false;
+    this.nbRecurrenceClassification = null;
     this.nbTotalInstallments = 1;
   }
 

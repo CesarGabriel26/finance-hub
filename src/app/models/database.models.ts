@@ -59,8 +59,9 @@ export interface Bill {
   category_name?: string;
   status: 'pending' | 'paid';
   is_recurring: boolean;
-  total_installments: number;
-  current_installment: number;
+  recurrence_classification?: 'fixed' | 'variable' | null;
+  total_installments?: number;
+  current_installment?: number;
   created_at?: string;
 }
 
@@ -99,6 +100,27 @@ export interface InvestmentEntry {
   description?: string;
   account_name?: string;
   created_at?: string;
+}
+
+export interface Budget {
+  id?: number;
+  category_id: number;
+  monthly_limit: number;
+  month: number;
+  year: number;
+  alert_threshold_percentage?: number;
+  category_name?: string;
+  category_type?: 'C' | 'D';
+  created_at?: string;
+}
+
+export interface Insight {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  severity: 'info' | 'warning' | 'critical';
+  priority: number;
 }
 
 declare global {
@@ -155,6 +177,11 @@ declare global {
       getRecentMovements: (limit?: number, filters?: any) => Promise<Movement[]>;
       
       recategorizeMovements: () => Promise<{ updatedCount: number }>;
+
+      // Budgets
+      getBudgets: (month?: number, year?: number) => Promise<Budget[]>;
+      addBudget: (budget: Partial<Budget>) => Promise<any>;
+      deleteBudget: (id: number) => Promise<any>;
     };
   }
 }

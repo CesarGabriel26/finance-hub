@@ -1,12 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from './database.service';
 import { Movement } from '../models/database.models';
+import { DataNotificationService } from './data-notification.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MovementService {
   private db = inject(DatabaseService);
+  private dataNotification = inject(DataNotificationService);
 
   async getMovements(accountId: number, period: string): Promise<Movement[]> {
     return this.db.handleApi<Movement[]>('getMovements', accountId, period);
@@ -17,15 +19,21 @@ export class MovementService {
   }
 
   async addMovement(movement: Partial<Movement>, skipRecalculation?: boolean): Promise<any> {
-    return this.db.handleApi('addMovement', movement, skipRecalculation);
+    const res = await this.db.handleApi('addMovement', movement, skipRecalculation);
+    this.dataNotification.notifyDataChange();
+    return res;
   }
 
   async updateMovement(id: number, movement: Partial<Movement>, skipRecalculation?: boolean): Promise<any> {
-    return this.db.handleApi('updateMovement', id, movement, skipRecalculation);
+    const res = await this.db.handleApi('updateMovement', id, movement, skipRecalculation);
+    this.dataNotification.notifyDataChange();
+    return res;
   }
 
   async deleteMovement(id: number, skipRecalculation?: boolean): Promise<any> {
-    return this.db.handleApi('deleteMovement', id, skipRecalculation);
+    const res = await this.db.handleApi('deleteMovement', id, skipRecalculation);
+    this.dataNotification.notifyDataChange();
+    return res;
   }
 
   async closePeriod(accountId: number, period: string): Promise<any> {

@@ -239,32 +239,62 @@
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-4">
                 <div class="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-50 transition-colors">
-                  <lucide-icon [name]="TrendingUpIcon" size="24"></lucide-icon>
+                  <lucide-icon [name]="getAssetTypeLabel(asset.type) === 'Cripto' ? WalletIcon : LandmarkIcon" size="24"></lucide-icon>
                 </div>
                 <div>
                   <h4 class="font-bold text-gray-900 leading-tight">{{ asset.name }}</h4>
-                  <span class="text-xs font-semibold text-blue-500 uppercase tracking-widest">{{ getAssetTypeLabel(asset.type) }}</span>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ getAssetTypeLabel(asset.type) }}</span>
+                    @let analysis = assetAnalysis().get(asset.id!);
+                    @if (analysis?.status) {
+                      <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter shadow-sm border"
+                            [class.bg-emerald-500]="analysis.status === 'ahead'"
+                            [class.text-white]="analysis.status === 'ahead'"
+                            [class.bg-blue-500]="analysis.status === 'on-track'"
+                            [class.text-white]="analysis.status === 'on-track'"
+                            [class.bg-amber-500]="analysis.status === 'delayed'"
+                            [class.text-white]="analysis.status === 'delayed'">
+                        {{ analysis.status }}
+                      </span>
+                    }
+                  </div>
                 </div>
               </div>
               
               <div class="text-right">
                 <p class="text-lg font-black text-gray-900">{{ (asset.total_invested || 0) | currency:'BRL' }}</p>
                 @if (asset.objective_value) {
-                  <p class="text-xs text-gray-400">Meta: {{ asset.objective_value | currency:'BRL' }}</p>
+                  @let analysis = assetAnalysis().get(asset.id!);
+                  <p class="text-[10px] font-bold text-gray-400">
+                    {{ analysis?.monthsToGoal === Infinity ? 'Sem Aportes' : (analysis?.monthsToGoal + ' meses p/ meta') }}
+                  </p>
                 }
               </div>
             </div>
 
             @if (asset.objective_value) {
+              @let analysis = assetAnalysis().get(asset.id!);
+              @let progress = calculateProgress(asset);
               <div class="space-y-1.5">
                 <div class="flex justify-between text-[10px] font-bold text-gray-500 uppercase">
-                  <span>Progresso</span>
-                  <span>{{ calculateProgress(asset) | number:'1.0-0' }}%</span>
+                  <span>Progresso do Objetivo</span>
+                  <span>{{ progress | number:'1.0-0' }}%</span>
                 </div>
                 <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                  <div class="h-full bg-blue-500 rounded-full transition-all duration-700" 
-                       [style.width.%]="calculateProgress(asset)"></div>
+                  <div class="h-full rounded-full transition-all duration-700" 
+                       [style.width.%]="progress"
+                       [class.bg-emerald-500]="analysis?.status === 'ahead'"
+                       [class.bg-blue-500]="analysis?.status === 'on-track'"
+                       [class.bg-amber-500]="analysis?.status === 'delayed'"
+                       [class.bg-gray-400]="!analysis?.status"></div>
                 </div>
+                
+                @if (analysis?.missingMonths > 0) {
+                  <p class="text-[9px] font-bold text-rose-500 flex items-center gap-1 uppercase mt-2">
+                    <lucide-icon [name]="AlertCircle" size="10"></lucide-icon>
+                    Inconsistência: {{ analysis.missingMonths }} meses sem aporte
+                  </p>
+                }
               </div>
             }
 

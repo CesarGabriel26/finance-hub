@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, Plus, TrendingUp, Wallet, Target, Trash2, ArrowRight, History, Landmark, Info, X, TrendingDown, Calendar, Percent, Lightbulb, Zap } from 'lucide-angular';
+import { LucideAngularModule, Plus, TrendingUp, Wallet, Target, Trash2, ArrowRight, History, Landmark, Info, X, TrendingDown, Calendar, Percent, Lightbulb, Zap, AlertCircle } from 'lucide-angular';
 import { InvestmentService } from '../../services/investment.service';
 import { AccountService } from '../../services/account.service';
 import { Asset, InvestmentEntry, Account } from '../../models/database.models';
@@ -33,6 +33,7 @@ export class InvestmentsComponent implements OnInit {
   readonly PercentIcon = Percent;
   readonly LightbulbIcon = Lightbulb;
   readonly ZapIcon = Zap;
+  readonly AlertCircle = AlertCircle;
   readonly Infinity = Infinity;
 
   // State
@@ -67,6 +68,7 @@ export class InvestmentsComponent implements OnInit {
   allEntries = signal<InvestmentEntry[]>([]);
   monthlyStats = signal<any[]>([]);
   simulatedContribution = signal<number | null>(null);
+  assetAnalysis = signal<Map<number, any>>(new Map());
 
   analysis = computed(() => {
     return this.investmentService.calculateAnalysis(
@@ -140,6 +142,21 @@ export class InvestmentsComponent implements OnInit {
     this.accounts.set(accounts);
     this.allEntries.set(allEntries);
     this.monthlyStats.set(stats);
+
+    // Calculate analysis for each asset
+    const analysisMap = new Map();
+    for (const asset of assets) {
+      const assetAnalysis = this.investmentService.calculateAnalysis(
+        asset,
+        allEntries,
+        stats,
+        asset.objective_value || 0,
+        asset.total_invested || 0,
+        null
+      );
+      analysisMap.set(asset.id, assetAnalysis);
+    }
+    this.assetAnalysis.set(analysisMap);
   }
 
   async selectAsset(asset: Asset) {

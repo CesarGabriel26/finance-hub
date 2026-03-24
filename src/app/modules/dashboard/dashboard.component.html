@@ -132,22 +132,87 @@
       </div>
     </div>
 
-    <!-- Insights -->
-    <div
-      class="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
-      <div class="p-2 bg-primary/10 text-primary rounded-full shrink-0">
-        <lucide-icon [img]="AlertCircle" class="w-5 h-5"></lucide-icon>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-        <div>
-          <span class="block text-sm font-medium text-text">Análise de Gastos</span>
-          <span class="block text-sm text-textMuted">{{ insightExpenseTrend() }}</span>
+    <!-- Intelligence & Predictions -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Predictions Card -->
+      <div class="lg:col-span-1 bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-50/50 rounded-full blur-2xl group-hover:bg-blue-100/50 transition-all"></div>
+        
+        <h3 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-6 flex items-center gap-2">
+          <div class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+          Projeção Inteligente
+        </h3>
+
+        <div class="space-y-6">
+          <div class="relative">
+            <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Saldo em 7 dias</p>
+            <div class="flex items-baseline gap-2">
+              <span class="text-2xl font-black tracking-tight" [class.text-rose-600]="prediction7d() < 0" [class.text-gray-900]="prediction7d() >= 0">
+                {{ prediction7d() | currency:'BRL' }}
+              </span>
+              @if (prediction7d() < totalBalance()) {
+                <span class="text-[10px] font-bold text-rose-500 flex items-center gap-0.5">
+                  <lucide-icon [name]="ArrowDownRight" size="10"></lucide-icon>
+                  {{ (totalBalance() - prediction7d()) | currency:'BRL' }}
+                </span>
+              }
+            </div>
+          </div>
+
+          <div class="relative">
+            <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Saldo em 30 dias</p>
+            <div class="flex items-baseline gap-2">
+              <span class="text-2xl font-black tracking-tight text-gray-900">
+                {{ prediction30d() | currency:'BRL' }}
+              </span>
+            </div>
+          </div>
         </div>
-        <div>
-          <span class="block text-sm font-medium text-text">Destaque do Mês</span>
-          <span class="block text-sm text-textMuted">{{ insightTopCategory() }}</span>
+
+        <div class="mt-8 pt-6 border-t border-gray-50">
+          <p class="text-[9px] font-bold text-gray-400 leading-relaxed">
+            * Baseado em suas contas a pagar e receber futuras cadastradas no sistema.
+          </p>
         </div>
       </div>
+
+      <!-- Smart Insights List -->
+      <div class="lg:col-span-2 bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+        <h3 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-6">Sugestões e Insights</h3>
+        
+        <div class="space-y-3">
+          @for (insight of insights(); track insight.id) {
+            <div class="flex items-start gap-4 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-50"
+                 [class.bg-rose-50/30]="insight.severity === 'critical'"
+                 [class.bg-amber-50/30]="insight.severity === 'warning'"
+                 [class.bg-blue-50/30]="insight.severity === 'info'">
+              
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                   [class.bg-white]="true"
+                   [class.text-rose-600]="insight.severity === 'critical'"
+                   [class.text-amber-500]="insight.severity === 'warning'"
+                   [class.text-blue-600]="insight.severity === 'info'">
+                @if (insight.severity === 'critical') { <lucide-icon [name]="AlertCircle" size="20"></lucide-icon> }
+                @else if (insight.severity === 'warning') { <lucide-icon [name]="Activity" size="20"></lucide-icon> }
+                @else { <lucide-icon [name]="DollarSign" size="20"></lucide-icon> }
+              </div>
+
+              <div class="flex-1">
+                <h4 class="text-sm font-black text-gray-900 mb-0.5">{{ insight.title }}</h4>
+                <p class="text-xs font-medium text-gray-500 leading-relaxed">{{ insight.description }}</p>
+              </div>
+            </div>
+          }
+
+          @if (insights().length === 0) {
+            <div class="py-10 text-center">
+              <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Tudo em ordem nas suas finanças!</p>
+            </div>
+          }
+        </div>
+      </div>
+
     </div>
 
     <!-- Charts: Evolution -->
@@ -212,6 +277,48 @@
             </ng-template>
           </div>
         </div>
+
+        <!-- Budget Quick View -->
+        @if (budgets().length > 0) {
+          <div class="mt-8 pt-6 border-t border-gray-50 w-full space-y-4">
+            <h3 class="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">Status de Orçamentos Críticos</h3>
+            <div class="space-y-4">
+              @for (b of budgets().slice(0, 3); track b.id) {
+                @let spent = (processedData()?.expensesByCategory?.[b.category_name || ''] || 0);
+                <div class="space-y-1.5">
+                  <div class="flex justify-between items-end">
+                    <span class="text-[11px] font-bold text-gray-700">{{ b.category_name }}</span>
+                    <span class="text-[10px] font-black" [class.text-rose-600]="spent > b.monthly_limit" [class.text-gray-900]="spent <= b.monthly_limit">
+                      @if (b.monthly_limit > 0) {
+                        {{ (spent / b.monthly_limit * 100) | number:'1.0-0' }}%
+                      } @else {
+                        Ilimitado
+                      }
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between h-8">
+                    <span class="text-[10px] font-black uppercase tracking-tighter"
+                          [class]="b.monthly_limit > 0 ? budgetService.getBudgetStatusColor(processedData()?.expensesByCategory?.[b.category_name || ''] || 0, b.monthly_limit) : 'text-gray-400'">
+                      @let currentSpent = processedData()?.expensesByCategory?.[b.category_name || ''] || 0;
+                      @let status = budgetService.calculateStatus(currentSpent, b.monthly_limit);
+                      {{ b.monthly_limit > 0 ? (status === 'exceeded' ? 'Excedido' : 'Monitorando') : 'Ilimitado' }}
+                    </span>
+                    <p class="text-[11px] font-black text-gray-900">{{ (processedData()?.expensesByCategory?.[b.category_name || ''] || 0) | currency:'BRL' }}</p>
+                  </div>
+
+                  @if (b.monthly_limit > 0) {
+                    @let currentSpent = processedData()?.expensesByCategory?.[b.category_name || ''] || 0;
+                    <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mt-1">
+                      <div class="h-full transition-all duration-700 rounded-full"
+                           [class]="budgetService.getBudgetProgressColor(currentSpent, b.monthly_limit)"
+                           [style.width.%]="Math.min((currentSpent / b.monthly_limit) * 100, 100)"></div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
       </div>
 
       <div

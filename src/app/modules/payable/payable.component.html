@@ -56,6 +56,18 @@
                 </span>
             </label>
 
+            <div *ngIf="nbIsRecurring" class="flex items-center gap-4 animate-in slide-in-from-left-2 duration-300">
+                <label class="text-xs font-bold text-gray-500 flex items-center gap-1 uppercase tracking-wider">
+                    Classificação:
+                </label>
+                <select [(ngModel)]="nbRecurrenceClassification"
+                    class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1 text-xs font-bold text-gray-700 focus:border-red-500 outline-none transition-colors">
+                    <option [ngValue]="null">Não Definido</option>
+                    <option value="fixed">Fixo (Aluguel, Assinaturas)</option>
+                    <option value="variable">Variável (Contas, Mercado)</option>
+                </select>
+            </div>
+
             <div class="flex items-center gap-4">
                 <label class="text-sm text-gray-500 flex items-center gap-1">
                     <lucide-icon [name]="LayersIcon" class="w-4 h-4"></lucide-icon>
@@ -135,10 +147,10 @@
                     </td>
                     <td class="px-6 py-4">
                         <div class="font-medium text-gray-900">{{bill.description}}</div>
-                        <div *ngIf="bill.total_installments > 1"
+                        <div *ngIf="(bill?.total_installments ?? 0) > 1"
                             class="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                             <lucide-icon [name]="LayersIcon" class="w-3 h-3"></lucide-icon>
-                            Parcela {{bill.current_installment}} de {{bill.total_installments}}
+                            Parcela {{bill?.current_installment}} de {{bill?.total_installments}}
                         </div>
                         <div *ngIf="bill.is_recurring" class="text-xs text-blue-600 flex items-center gap-1 mt-0.5">
                             <lucide-icon [name]="RepeatIcon" class="w-3 h-3"></lucide-icon>
@@ -146,10 +158,10 @@
                         </div>
                     </td>
                     <td class="px-6 py-4">
-                        <span class="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{{bill.category_name ||
+                        <span class="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{{bill?.category_name ||
                             'Diversos'}}</span>
                     </td>
-                    <td class="px-6 py-4 font-bold text-red-600">-{{bill.amount | currency:'BRL'}}</td>
+                    <td class="px-6 py-4 font-bold text-green-600">+{{bill?.amount | currency:'BRL'}}</td>
                     <td class="px-6 py-4">
                         <span
                             class="px-2 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100">Pendente</span>

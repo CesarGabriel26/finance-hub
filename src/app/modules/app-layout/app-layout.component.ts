@@ -66,6 +66,7 @@ export class AppLayoutComponent implements OnInit {
         { label: 'Contas Bancárias', route: '/accounts', icon: Wallet },
         { label: 'Contas a Pagar', route: '/payable', icon: ArrowDownCircle },
         { label: 'Contas a Receber', route: '/receivable', icon: ArrowUpCircle },
+        { label: 'Orçamentos', route: '/budgets', icon: List },
       ]
     },
 

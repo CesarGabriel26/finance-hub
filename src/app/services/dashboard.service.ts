@@ -1,12 +1,43 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { DatabaseService } from './database.service';
-import { Movement, Account, Category } from '../models/database.models';
+import { Movement, Account, Category, Budget, Insight } from '../models/database.models';
+import { BudgetService } from './budget.service';
+import { InsightService } from './insight.service';
+import { PredictionService } from './prediction.service';
+import { DataNotificationService } from './data-notification.service';
+
+interface DashboardSummary {
+  revenues: number;
+  expenses: number;
+  expensesByCategory: { [key: string]: number };
+  revenuesByCategory: { [key: string]: number };
+  highestCat: { name: string, amount: number };
+  prevExpenses: number;
+  prevRevenues: number;
+  budgets: Budget[];
+  insights: Insight[];
+  prediction7d: number;
+  prediction30d: number;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class DashboardService {
   private db = inject(DatabaseService);
+  private budgetService = inject(BudgetService);
+  private insightService = inject(InsightService);
+  private predictionService = inject(PredictionService);
+  private dataNotification = inject(DataNotificationService);
+
+  constructor() {
+    // Listen for data changes to invalidate cache
+    this.dataNotification.dataChange$.subscribe(() => {
+      this.invalidateCache();
+    });
+  }
+
+  private monthlyCache: Record<string, DashboardSummary> = {};
 
   async getDashboardData(period: string, filters?: any): Promise<any[]> {
     return this.db.handleApi<any[]>('getDashboardData', period, filters);
@@ -18,6 +49,46 @@ export class DashboardService {
 
   async getRecentMovements(limit: number = 5, filters?: any): Promise<Movement[]> {
     return this.db.handleApi<Movement[]>('getRecentMovements', limit, filters);
+  }
+
+  async getAggregatedDashboardData(period: string, filters?: any): Promise<DashboardSummary> {
+    const cacheKey = `${period}-${filters?.accountId || 'all'}`;
+    if (this.monthlyCache[cacheKey]) {
+      return this.monthlyCache[cacheKey];
+    }
+
+    const [year, month] = period.split('-').map(Number);
+    const dbData = await this.getDashboardData(period, filters);
+    
+    // Get previous month data for trends
+    const prevDate = new Date(year, month - 2, 1);
+    const prevPeriod = `${prevDate.getFullYear()}-${(prevDate.getMonth() + 1).toString().padStart(2, '0')}`;
+    const prevDbData = await this.getDashboardData(prevPeriod, filters);
+
+    const processed = this.processDashboardData(dbData);
+    const prevProcessed = this.processDashboardData(prevDbData);
+    
+    const budgets = await this.budgetService.getBudgets(month, year);
+    const insights = await this.insightService.generateInsights(period, { ...processed, prevExpenses: prevProcessed.expenses });
+    const prediction7d = await this.predictionService.getPredictiveBalance(7);
+    const prediction30d = await this.predictionService.getPredictiveBalance(30);
+
+    const summary: DashboardSummary = {
+      ...processed,
+      prevExpenses: prevProcessed.expenses,
+      prevRevenues: prevProcessed.revenues,
+      budgets,
+      insights,
+      prediction7d,
+      prediction30d
+    };
+
+    this.monthlyCache[cacheKey] = summary;
+    return summary;
+  }
+
+  invalidateCache() {
+    this.monthlyCache = {};
   }
 
   processDashboardData(dbData: any[]) {
@@ -49,28 +120,6 @@ export class DashboardService {
       revenuesByCategory,
       highestCat
     };
-  }
-
-  generateInsights(expenses: number, prevExpenses: number, highestCat: { name: string, amount: number }) {
-    let expenseTrendInsight = "Seus gastos estão estáveis.";
-    if (prevExpenses > 0) {
-      const increase = ((expenses - prevExpenses) / prevExpenses) * 100;
-      if (increase > 5) {
-        expenseTrendInsight = `Você gastou ${increase.toFixed(0)}% a mais este mês.`;
-      } else if (increase < -5) {
-        expenseTrendInsight = `Parabéns! Você economizou ${Math.abs(increase).toFixed(0)}% este mês.`;
-      }
-    }
-
-    let topCategoryInsight = "";
-    if (highestCat.name && expenses > 0) {
-      const perc = (highestCat.amount / expenses) * 100;
-      topCategoryInsight = `Maior gasto: ${highestCat.name} (${perc.toFixed(0)}% do total)`;
-    } else {
-      topCategoryInsight = `Nenhum gasto registrado neste mês.`;
-    }
-
-    return { expenseTrendInsight, topCategoryInsight };
   }
 
   getEvolutionPeriods(selectedYear: number, selectedMonth: number, periodsCount: number) {

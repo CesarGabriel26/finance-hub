@@ -1,27 +1,35 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from './database.service';
 import { Asset, InvestmentEntry } from '../models/database.models';
+import { DataNotificationService } from './data-notification.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class InvestmentService {
   private db = inject(DatabaseService);
+  private dataNotification = inject(DataNotificationService);
 
   async getAssets(): Promise<Asset[]> {
     return this.db.handleApi<Asset[]>('getAssets');
   }
 
   async addAsset(asset: Partial<Asset>): Promise<any> {
-    return this.db.handleApi('addAsset', asset);
+    const res = await this.db.handleApi('addAsset', asset);
+    this.dataNotification.notifyDataChange();
+    return res;
   }
 
   async updateAsset(id: number, asset: Partial<Asset>): Promise<any> {
-    return this.db.handleApi('updateAsset', id, asset);
+    const res = await this.db.handleApi('updateAsset', id, asset);
+    this.dataNotification.notifyDataChange();
+    return res;
   }
 
   async deleteAsset(id: number): Promise<any> {
-    return this.db.handleApi('deleteAsset', id);
+    const res = await this.db.handleApi('deleteAsset', id);
+    this.dataNotification.notifyDataChange();
+    return res;
   }
 
   async getInvestmentEntries(assetId: number): Promise<InvestmentEntry[]> {
@@ -33,11 +41,15 @@ export class InvestmentService {
   }
 
   async addInvestmentEntry(entry: Partial<InvestmentEntry>): Promise<any> {
-    return this.db.handleApi('addInvestmentEntry', entry);
+    const res = await this.db.handleApi('addInvestmentEntry', entry);
+    this.dataNotification.notifyDataChange();
+    return res;
   }
 
   async deleteInvestmentEntry(id: number): Promise<any> {
-    return this.db.handleApi('deleteInvestmentEntry', id);
+    const res = await this.db.handleApi('deleteInvestmentEntry', id);
+    this.dataNotification.notifyDataChange();
+    return res;
   }
 
   async getMonthlyStats(months: number = 12): Promise<any[]> {
@@ -80,7 +92,38 @@ export class InvestmentService {
         targetDate.setMonth(targetDate.getMonth() + monthsToGoal);
     }
 
-    // 3. Current Month Analysis
+    // 3. Status Logic (Refined)
+    let status: 'ahead' | 'on_track' | 'delayed' = 'on_track';
+    let monthsWithoutContribution = 0;
+    
+    if (objective > 0) {
+        // Time-based expected progress: (Total Elapsed Time / Total Goal Time) - simplified as 1/12 per month if no date set
+        // Value-based actual progress: invested / objective
+        const actualProgress = invested / objective;
+        
+        // Find months without contribution
+        const now = new Date();
+        for (let i = 0; i < 6; i++) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const p = d.toISOString().substring(0, 7);
+          if (!(depositsByMonth[p] > 0)) {
+            monthsWithoutContribution++;
+          } else {
+            break; // Streak intact
+          }
+        }
+
+        if (monthsWithoutContribution >= 2) {
+          status = 'delayed';
+        } else {
+          // Simplified expected progress for now: if we have time left and contribution covers it
+          if (monthsToGoal === Infinity) status = 'delayed';
+          else if (actualProgress > 0.6) status = 'ahead'; // Placeholder logic
+          else status = 'on_track';
+        }
+    }
+
+    // 4. Current Month Analysis
     const currentMonth = new Date().toISOString().substring(0, 7);
     const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().substring(0, 7);
     
@@ -90,7 +133,7 @@ export class InvestmentService {
     const currentMonthRevenue = monthlyStats.find(s => s.period === currentMonth)?.total_revenue || 0;
     const investedPercentage = currentMonthRevenue > 0 ? (currentMonthDeposit / currentMonthRevenue) * 100 : 0;
 
-    // 4. Consistency
+    // 5. Consistency
     let consecutiveMonths = 0;
     const sortedDepositMonths = Object.keys(depositsByMonth).sort().reverse();
     
@@ -114,7 +157,7 @@ export class InvestmentService {
         }
     }
 
-    // 5. Insights
+    // 6. Insights
     const insights: string[] = [];
     const isSelected = !!selectedAsset;
     
@@ -122,13 +165,19 @@ export class InvestmentService {
         insights.push("Você está investindo abaixo do recomendado (20%). Tente aumentar seus aportes.");
     }
     if (currentMonthDeposit < lastMonthDeposit && lastMonthDeposit > 0) {
-        insights.push(`${isSelected ? 'Os aportes neste ativo' : 'Seus aportes totais'} caíram em relação ao mês passado.`);
+        const subject = isSelected ? 'Os aportes neste ativo' : 'Seus aportes totais';
+        insights.push(subject + ' caíram em relação ao mês passado.');
     }
     if (averageContribution > 0 && monthsToGoal !== Infinity) {
-        insights.push(`Mantendo a média, você atingirá o objetivo ${isSelected ? 'deste ativo' : 'total'} em aproximadamente ${monthsToGoal} meses.`);
+        const subject = isSelected ? 'deste ativo' : 'total';
+        insights.push('Mantendo a média, você atingirá o objetivo ' + subject + ' em aproximadamente ' + monthsToGoal + ' meses.');
     }
     if (consecutiveMonths >= 3) {
-        insights.push(`Incrível! Você mantém consistência ${isSelected ? 'neste ativo ' : ''}há ${consecutiveMonths} meses.`);
+        const activeStr = isSelected ? 'neste ativo ' : '';
+        insights.push('Incrível! Você mantém consistência ' + activeStr + 'há ' + consecutiveMonths + ' meses.');
+    }
+    if (status === 'delayed' && objective > 0) {
+        insights.push('Atenção: Seu objetivo está atrasado ou sem aportes recentes.');
     }
 
     return {
@@ -141,7 +190,9 @@ export class InvestmentService {
         insights,
         depositsByMonth,
         currentMonthDeposit,
-        lastMonthDeposit
+        lastMonthDeposit,
+        status,
+        monthsWithoutContribution
     };
   }
 

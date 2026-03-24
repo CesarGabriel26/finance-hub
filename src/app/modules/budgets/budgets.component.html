@@ -1,0 +1,131 @@
+<div class="h-full overflow-y-auto p-4 lg:p-6 bg-gray-50/50">
+  <div class="max-w-5xl mx-auto space-y-6">
+    
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Planejamento de Orçamentos</h1>
+        <p class="text-gray-500 mt-1">Defina metas de gastos por categoria para manter suas finanças sob controle</p>
+      </div>
+
+      <div class="flex items-center gap-4 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100">
+        <button (click)="changeMonth(-1)" class="p-2 hover:bg-gray-50 rounded-xl transition-colors">
+          <lucide-icon [name]="ChevronLeftIcon" size="20"></lucide-icon>
+        </button>
+        <span class="text-sm font-bold text-gray-700 min-w-[120px] text-center uppercase tracking-wide">
+          {{ selectedDate() | date:'MMMM yyyy' }}
+        </span>
+        <button (click)="changeMonth(1)" class="p-2 hover:bg-gray-50 rounded-xl transition-colors">
+          <lucide-icon [name]="ChevronRightIcon" size="20"></lucide-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Budgets Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      @for (cat of categories(); track cat.id) {
+        @let budget = getBudgetForCategory(cat.id!);
+        @let spent = getSpentForCategory(cat.name);
+        
+        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+          
+          <!-- Category Header -->
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                <span class="font-bold text-xs uppercase">{{ cat.name.substring(0, 2) }}</span>
+              </div>
+              <div>
+                <h3 class="font-bold text-gray-900">{{ cat.name }}</h3>
+                <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Despesa</span>
+              </div>
+            </div>
+            
+            <div class="text-right">
+              @if (budget && budget.monthly_limit > 0) {
+                <div [class]="getStatusColor(spent, budget.monthly_limit)" class="flex items-center justify-end gap-1.5 mb-1">
+                  @let status = getStatus(spent, budget.monthly_limit);
+                  @if (status === 'exceeded') { <lucide-icon [name]="AlertIcon" size="14"></lucide-icon> }
+                  @if (status === 'warning') { <lucide-icon [name]="InfoIcon" size="14"></lucide-icon> }
+                  @if (status === 'safe') { <lucide-icon [name]="CheckIcon" size="14"></lucide-icon> }
+                  <span class="text-[10px] font-black uppercase tracking-wide">
+                    {{ status === 'exceeded' ? 'Excedido' : status === 'warning' ? 'Atenção' : 'Seguro' }}
+                  </span>
+                </div>
+              } @else if (budget && budget.monthly_limit <= 0) {
+                <div class="text-gray-400 flex items-center justify-end gap-1.5 mb-1">
+                  <lucide-icon [name]="InfoIcon" size="14"></lucide-icon>
+                  <span class="text-[10px] font-black uppercase tracking-wide">Sem Limite</span>
+                </div>
+              } @else {
+                <span class="text-[10px] font-black uppercase tracking-wide text-gray-300">Não Definido</span>
+              }
+              <p class="text-sm font-black text-gray-900">{{ spent | currency:'BRL' }} gastos</p>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          @if (budget && budget.monthly_limit > 0) {
+            <div class="space-y-2 mb-6">
+              <div class="flex justify-between items-end">
+                <span class="text-[10px] font-bold text-gray-400 uppercase">Progresso</span>
+                <span class="text-xs font-black text-gray-700">
+                  {{ (spent / budget.monthly_limit * 100) | number:'1.0-0' }}%
+                </span>
+              </div>
+              <div class="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full transition-all duration-700 ease-out rounded-full"
+                     [class]="getProgressColor(spent, budget.monthly_limit)"
+                     [style.width.%]="calculatePercent(spent, budget.monthly_limit)"></div>
+              </div>
+              <div class="flex justify-between text-[9px] font-black uppercase tracking-tighter">
+                <span class="text-gray-400">Restante: {{ (budget.monthly_limit - spent) | currency:'BRL' }}</span>
+                <span class="text-gray-400">Limite: {{ budget.monthly_limit | currency:'BRL' }}</span>
+              </div>
+            </div>
+          } @else if ((budget && budget.monthly_limit <= 0) || !budget  ) {
+            <div class="py-6 flex flex-col items-center justify-center text-center border-2 border-dashed border-gray-100 rounded-3xl mb-6">
+              <lucide-icon [name]="CheckIcon" size="24" class="text-emerald-500/30 mb-2"></lucide-icon>
+              <p class="text-[10px] font-bold text-gray-400 uppercase max-w-[140px]">Gastos ilimitados para esta categoria</p>
+            </div>
+          } @else {
+            <div class="py-6 flex flex-col items-center justify-center text-center opacity-40 mb-6">
+              <lucide-icon [name]="InfoIcon" size="24" class="text-gray-300 mb-2"></lucide-icon>
+              <p class="text-[10px] font-bold text-gray-400 uppercase max-w-[140px]">Defina um limite para acompanhar os gastos desta categoria</p>
+            </div>
+          }
+
+          <!-- Limit Input -->
+          <div class="pt-4 border-t border-gray-50 flex items-center gap-3">
+            <div class="relative flex-1">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-400">R$</span>
+              <input type="number" 
+                     #limitInput
+                     [value]="budget?.monthly_limit || 0"
+                     placeholder="Definir limite..."
+                     class="w-full h-10 pl-8 pr-4 bg-gray-50 border-none rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all">
+            </div>
+            <button (click)="saveBudget(cat, +limitInput.value)"
+                    class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition-all hover:shadow-md flex items-center gap-2">
+              <lucide-icon [name]="SaveIcon" size="16"></lucide-icon>
+              <span class="text-xs font-bold whitespace-nowrap">Salvar</span>
+            </button>
+          </div>
+
+        </div>
+      }
+    </div>
+
+    <!-- Empty State -->
+    @if (categories().length === 0) {
+      <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[40px] border border-gray-100 shadow-sm">
+        <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mb-6">
+          <lucide-icon [name]="InfoIcon" size="40"></lucide-icon>
+        </div>
+        <h4 class="text-xl font-bold text-gray-900">Nenhuma categoria encontrada</h4>
+        <p class="text-gray-500 mt-2">Crie categorias de despesa para começar a planejar orçamentos.</p>
+      </div>
+    }
+
+  </div>
+</div>

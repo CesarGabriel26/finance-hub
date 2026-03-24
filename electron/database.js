@@ -67,20 +67,16 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 FOREIGN KEY (category_id) REFERENCES categories(id)
             )`);
 
-            db.run(`CREATE TABLE IF NOT EXISTS bills (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                description TEXT NOT NULL,
-                amount REAL NOT NULL,
-                due_date DATE NOT NULL,
-                type TEXT NOT NULL CHECK(type IN ('C', 'D')),
-                category_id INTEGER,
-                status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid')),
-                is_recurring BOOLEAN DEFAULT 0,
-                total_installments INTEGER DEFAULT 1,
-                current_installment INTEGER DEFAULT 1,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (category_id) REFERENCES categories(id)
-            )`);
+            db.run("CREATE TABLE IF NOT EXISTS bills (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT NOT NULL, amount REAL NOT NULL, due_date DATE NOT NULL, type TEXT NOT NULL CHECK(type IN ('C', 'D')), category_id INTEGER, status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid')), is_recurring BOOLEAN DEFAULT 0, recurrence_classification TEXT CHECK(recurrence_classification IN ('fixed', 'variable')), total_installments INTEGER DEFAULT 1, current_installment INTEGER DEFAULT 1, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (category_id) REFERENCES categories(id))");
+
+      // Column additions for existing tables
+      db.all("PRAGMA table_info(bills)", (err, columns) => {
+        if (err) return;
+        const hasClassification = columns.some(c => c.name === 'recurrence_classification');
+        if (!hasClassification) {
+          db.run("ALTER TABLE bills ADD COLUMN recurrence_classification TEXT CHECK(recurrence_classification IN ('fixed', 'variable'))");
+        }
+      });
 
             db.run(`CREATE TABLE IF NOT EXISTS assets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -158,6 +154,18 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                     }
                 }
             });
+
+            db.run(`CREATE TABLE IF NOT EXISTS budgets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category_id INTEGER NOT NULL,
+                monthly_limit REAL NOT NULL,
+                month INTEGER NOT NULL,
+                year INTEGER NOT NULL,
+                alert_threshold_percentage REAL DEFAULT 80,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (category_id) REFERENCES categories(id),
+                UNIQUE(category_id, month, year)
+            )`);
 
 
 

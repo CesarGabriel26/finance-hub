@@ -77,17 +77,45 @@
             }
         ]
     },
-    "1.0.3.1": {
+    "1.0.4": {
         "latest": true,
         "date": "2026-03-23",
         "features": [
             {
-                "title": "Correção no Tray",
-                "description": "Corrigido erro crítico que fechava o aplicativo ao interagir com o ícone da bandeja após fechar a janela principal.",
+                "title": "Sistema de Orçamentos",
+                "description": "Agora você pode definir limites mensais por categoria e acompanhar seu progresso em tempo real.",
                 "steps": [
-                    "Implementado comportamento de 'Ocultar ao Fechar' para manter o app rodando em segundo plano.",
-                    "Recriação automática da janela principal caso ela seja destruída inesperadamente.",
-                    "Melhoria na estabilidade das interações via bandeja (tray icon)."
+                    "Acesse a nova aba 'Orçamentos' no menu lateral.",
+                    "Defina limites para suas categorias de despesa (0 para ilimitado).",
+                    "Acompanhe o status (Seguro, Atenção, Excedido) baseado no seu gasto atual.",
+                    "Visualize o resumo dos orçamentos diretamente no topo do seu Dashboard."
+                ]
+            },
+            {
+                "title": "Inteligência & Previsão",
+                "description": "O Finance Hub agora analisa seu comportamento para prever o futuro do seu saldo.",
+                "steps": [
+                    "Novo painel de 'Insights' com alertas sobre gastos elevados e tendências de queda.",
+                    "Previsão de Saldo para 7 e 30 dias baseada em suas contas a pagar/receber pendentes.",
+                    "Alertas automáticos quando um objetivo de investimento está em risco."
+                ]
+            },
+            {
+                "title": "Análise de Investimentos",
+                "description": "Métricas detalhadas por ativo para ajudar você a manter a consistência.",
+                "steps": [
+                    "Análise de 'Consistência' (streak) para ver há quantos meses você aporta sem falhar.",
+                    "Estimativa de data para atingir objetivos baseada na sua média de aportes.",
+                    "Alertas de queda de aportes e ativos sem movimentação recente."
+                ]
+            },
+            {
+                "title": "Correção e Estabilidade",
+                "description": "Melhorias na base do sistema para uma experiência mais fluida.",
+                "steps": [
+                    "Correção de erro crítico no Tray Icon (Bandeja) ao fechar o app.",
+                    "Resolução de dependências circulares nos serviços para maior performance.",
+                    "Classificação de contas (Fixa vs Variável) para melhor organização."
                 ]
             }
         ]

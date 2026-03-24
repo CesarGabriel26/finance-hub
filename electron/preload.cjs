@@ -67,4 +67,9 @@ contextBridge.exposeInMainWorld('api', {
     installUpdate: () => ipcRenderer.invoke('install-update'),
     onUpdateEvent: (callback) => ipcRenderer.on('update-event', (_event, data) => callback(data)),
     removeUpdateEvent: () => ipcRenderer.removeAllListeners('update-event'),
+
+    getBudgets: () => ipcRenderer.invoke('get-budgets'),
+    addBudget: (budget) => ipcRenderer.invoke('add-budget', budget),
+    updateBudget: (id, budget) => ipcRenderer.invoke('update-budget', id, budget),
+    deleteBudget: (id) => ipcRenderer.invoke('delete-budget', id),
 });
