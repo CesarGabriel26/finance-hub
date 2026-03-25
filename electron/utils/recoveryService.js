@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { dbGet, dbPath } from '../database.js';
-import { logInfo, logError } from './logger.js';
 import { backupService } from './backupService.js';
 
 /**
@@ -16,7 +15,7 @@ export const recoveryService = {
             const result = await dbGet("SELECT 1");
             return !!result;
         } catch (error) {
-            logError(`Database health check failed: ${error.message}`);
+            console.error(`Database health check failed: ${error.message}`);
             return false;
         }
     },
@@ -25,15 +24,15 @@ export const recoveryService = {
      * Initializes the recovery process if the database is corrupted.
      */
     async initRecovery() {
-        logInfo('Performing database health check...');
+        console.log('Performing database health check...');
         const isHealthy = await this.checkDatabaseHealth();
         
         if (isHealthy) {
-            logInfo('Database is healthy.');
+            console.log('Database is healthy.');
             return true;
         }
 
-        logError('CRITICAL: Database corruption detected. Starting automatic recovery...');
+        console.error('CRITICAL: Database corruption detected. Starting automatic recovery...');
         
         try {
             const settings = await backupService.getSettings();
@@ -55,17 +54,15 @@ export const recoveryService = {
             }
 
             const latestBackup = path.join(backupPath, files[0]);
-            logInfo(`Found latest backup at: ${latestBackup}. Reverting...`);
+            console.log(`Found latest backup at: ${latestBackup}. Reverting...`);
 
             // Replace current DB with the backup
-            // Note: Since health check failed, the connection might be closed or unstable.
-            // Ideally we should try to close it then copy.
             fs.copyFileSync(latestBackup, dbPath);
             
-            logInfo('Automatic recovery successful. Database restored from latest backup.');
+            console.log('Automatic recovery successful. Database restored from latest backup.');
             return true;
         } catch (error) {
-            logError(`Automatic recovery process failed: ${error.message}`);
+            console.error(`Automatic recovery process failed: ${error.message}`);
             return false;
         }
     }

@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { dbPath, dbGet, dbRun } from '../database.js';
-import { logInfo, logError } from './logger.js';
 
 /**
  * Service to handle database backups.
@@ -32,7 +31,7 @@ export const backupService = {
                 backup_frequency: freqRow ? freqRow.value : 'daily'
             };
         } catch (error) {
-            logError(`Failed to get backup settings: ${error.message}`);
+            console.error(`Failed to get backup settings: ${error.message}`);
             return { backup_paths: [], backup_frequency: 'daily' };
         }
     },
@@ -48,10 +47,10 @@ export const backupService = {
             if (settings.backup_frequency) {
                 await dbRun("INSERT OR REPLACE INTO settings (key, value) VALUES ('backup_frequency', ?)", [settings.backup_frequency]);
             }
-            logInfo(`Backup settings updated: ${JSON.stringify(settings)}`);
+            console.log(`Backup settings updated: ${JSON.stringify(settings)}`);
             return { success: true };
         } catch (error) {
-            logError(`Failed to set backup settings: ${error.message}`);
+            console.error(`Failed to set backup settings: ${error.message}`);
             return { success: false, error: error.message };
         }
     },
@@ -65,7 +64,7 @@ export const backupService = {
             const backupPaths = settings.backup_paths;
 
             if (!backupPaths || backupPaths.length === 0) {
-                logInfo('Backup skipped: No backup paths configured.');
+                console.log('Backup skipped: No backup paths configured.');
                 return { success: false, error: 'No backup paths configured' };
             }
 
@@ -87,9 +86,9 @@ export const backupService = {
                     
                     await this.cleanupOldBackups(backupPath);
                     results.push({ path: backupPath, success: true });
-                    logInfo(`Backup created successfully at: ${destination}`);
+                    console.log(`Backup created successfully at: ${destination}`);
                 } catch (err) {
-                    logError(`Backup failed for path ${backupPath}: ${err.message}`);
+                    console.error(`Backup failed for path ${backupPath}: ${err.message}`);
                     results.push({ path: backupPath, success: false, error: err.message });
                 }
             }
@@ -130,17 +129,15 @@ export const backupService = {
      * Sets up the automatic backup schedule.
      */
     setupAutoBackup() {
-        // Run daily (every 24 hours)
-        setInterval(async () => {
+        this._autoBackupInterval = setInterval(async () => {
             const settings = await this.getSettings();
             if (settings.backup_frequency === 'daily') {
-                logInfo('Starting scheduled daily backup...');
+                console.log('Starting scheduled daily backup...');
                 await this.performBackup();
             }
         }, 24 * 60 * 60 * 1000);
         
-        // Also try a backup shortly after startup if it's daily
-        setTimeout(async () => {
+        this._startupBackupTimeout = setTimeout(async () => {
             const settings = await this.getSettings();
             if (settings.backup_frequency === 'daily') {
                 const date = new Date().toISOString().split('T')[0];
@@ -156,10 +153,18 @@ export const backupService = {
                 }
 
                 if (needed) {
-                    logInfo('Missing today\'s backup in at least one folder, performing scheduled backup...');
+                    console.log('Missing today\'s backup in at least one folder, performing scheduled backup...');
                     await this.performBackup();
                 }
             }
         }, 30000); // 30 seconds after startup
+    },
+
+    /**
+     * Stops the automatic backup schedule.
+     */
+    stopAutoBackup() {
+        if (this._autoBackupInterval) clearInterval(this._autoBackupInterval);
+        if (this._startupBackupTimeout) clearTimeout(this._startupBackupTimeout);
     }
 };

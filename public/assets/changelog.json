@@ -78,7 +78,6 @@
         ]
     },
     "1.0.4": {
-        "latest": true,
         "date": "2026-03-23",
         "features": [
             {
@@ -116,6 +115,32 @@
                     "Correção de erro crítico no Tray Icon (Bandeja) ao fechar o app.",
                     "Resolução de dependências circulares nos serviços para maior performance.",
                     "Classificação de contas (Fixa vs Variável) para melhor organização."
+                ]
+            }
+        ]
+    },
+    "1.0.5": {
+        "latest": true,
+        "date": "2026-03-24",
+        "features": [
+            {
+                "title": "Sistema de Backup e Recuperação",
+                "description": "Implementado um sistema robusto para garantir a segurança dos seus dados financeiros com redundância e automação.",
+                "steps": [
+                    "Backups diários automáticos para múltiplos locais definidos pelo usuário.",
+                    "Sistema de recuperação de integridade do banco de dados na inicialização do app.",
+                    "Interface de Configurações para gerenciar destinos de backup e visualizar logs.",
+                    "Possibilidade de restauração manual em caso de falhas ou troca de dispositivo."
+                ]
+            },
+            {
+                "title": "Estabilidade & Performance (Core)",
+                "description": "Refatoração profunda do motor do Electron para maior resiliência em sistemas Windows.",
+                "steps": [
+                    "Gerenciamento inteligente de cache do Chromium para prevenir travamentos críticos.",
+                    "Limpeza automatizada de arquivos temporários ao atualizar a versão do app.",
+                    "Resolução definitiva do erro 'Acesso Negado' na inicialização da base de dados.",
+                    "Novo sistema de logs diagnósticos para suporte e monitoramento de performance."
                 ]
             }
         ]

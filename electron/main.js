@@ -5,11 +5,15 @@ import Store from "electron-store";
 import { fileURLToPath } from "url";
 import { setupAPI } from "./api.js";
 import { setupUpdater, checkForUpdates, downloadUpdate, installUpdate } from "./updater.js";
-import { dbAll, dbGet, dbRun } from "./database.js";
-import { logInfo, logError } from "./utils/logger.js";
+import { dbAll, dbGet, dbRun, closeDatabase } from "./database.js";
+import { logInfo, logError, setupConsoleRedirection } from "./utils/logger.js";
 import { backupService } from "./utils/backupService.js";
 import { recoveryService } from "./utils/recoveryService.js";
 import { restoreFromBackup } from "./utils/restore.js";
+import fs from "fs";
+
+// -- 0. LOGGING INITIALIZATION --
+setupConsoleRedirection();
 
 /**
  * PRODUCTION-SAFE ELECTRON MAIN PROCESS (Finance Hub)
@@ -24,14 +28,32 @@ import { restoreFromBackup } from "./utils/restore.js";
 // --- 1. INITIALIZATION & STABILITY SETTINGS ---
 
 const isDev = process.env.NODE_ENV === "development";
+
+// Force consistent userData path to avoid discrepancy between "Finance Hub" and "finance-hub"
+const currentDataPath = app.getPath('userData');
+if (app.isPackaged && currentDataPath.endsWith('Finance Hub')) {
+    const newPath = path.join(path.dirname(currentDataPath), 'finance-hub');
+    app.setPath('userData', newPath);
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const iconPath = path.join(__dirname, "../public/assets/icons/financehubicon.ico");
 
-// CRITICAL: Set userData as early as possible to a stable path
-// This prevents 'temp' folder issues on Windows and ensures DB path consistency
-const userDataPath = path.join(app.getPath('appData'), 'Finance Hub');
-app.setPath('userData', userDataPath);
+// Improved icon path resolution for Production and Development
+const getIconPath = () => {
+    // In production (built), __dirname is usually resources/app/electron/
+    // The public folder should be at resources/app/public/ if included in 'files'
+    const prodPath = path.join(process.resourcesPath, "app", "public", "assets", "icons", "financehubicon.ico");
+    const devPath = path.join(__dirname, "..", "public", "assets", "icons", "financehubicon.ico");
+    const fallbackPath = path.join(__dirname, "assets", "icons", "financehubicon.ico");
+
+    if (fs.existsSync(devPath)) return devPath;
+    if (fs.existsSync(prodPath)) return prodPath;
+    return fallbackPath;
+};
+
+const iconPath = getIconPath();
+console.log(`[Resources] Icon path resolved to: ${iconPath}`);
 
 // CRITICAL: Disable GPU acceleration early to prevent "Unable to create cache" errors
 // This is the most effective way to avoid GPU-related locks on startup in many Windows environments
@@ -130,28 +152,44 @@ if (!gotTheLock) {
 let mainWindow;
 let tray;
 let isQuitting = false;
+let billCheckInterval;
 
 const autoLauncher = new AutoLaunch({
     name: 'Finance Hub',
     path: app.getPath("exe"),
 });
 
+// Guard against auto-launch errors on startup
+autoLauncher.isEnabled().then(enabled => {
+    console.log(`[AutoLaunch] Is enabled: ${enabled}`);
+}).catch(err => {
+    console.warn(`[AutoLaunch] Status check failed: ${err.message}`);
+});
+
 function setupWindowCloseHandler() {
     if (!mainWindow) return;
-    
+
     mainWindow.on("close", (event) => {
         if (isQuitting) return;
-        
+
         // Always prevent default initially to handle the async check
         event.preventDefault();
 
         dbGet("SELECT value FROM settings WHERE key = 'minimized_to_tray'")
             .then(setting => {
-                const shouldStayInTray = setting ? setting.value === 'true' : true; // Default to true if not set
-                
+                const shouldStayInTray = setting ? setting.value === 'true' : false; // Default to true if not set
+
                 if (shouldStayInTray) {
                     logInfo("Window closed: Hiding to tray based on settings.");
                     mainWindow.hide();
+
+                    // Professional notification
+                    new Notification({
+                        title: 'Finance Hub em segundo plano',
+                        body: 'O aplicativo continua em execução na bandeja para processar notificações e backups automáticos.',
+                        icon: iconPath
+                    }).show();
+
                 } else {
                     logInfo("Window closed: Quitting app based on settings.");
                     isQuitting = true;
@@ -207,20 +245,31 @@ function createWindow() {
 
 function createTray() {
     if (tray) return;
-    
-    tray = new Tray(iconPath);
-    const contextMenu = Menu.buildFromTemplate([
-        { label: 'Abrir Finance Hub', click: () => showWindow() },
-        { type: 'separator' },
-        { label: 'Sair', click: () => {
-            isQuitting = true;
-            app.quit();
-        }}
-    ]);
-    
-    tray.setToolTip('Finance Hub');
-    tray.setContextMenu(contextMenu);
-    tray.on('double-click', () => showWindow());
+
+    try {
+        if (!fs.existsSync(iconPath)) {
+            console.error(`[Tray] Icon not found at ${iconPath}. Tray might not show.`);
+        }
+        
+        tray = new Tray(iconPath);
+        const contextMenu = Menu.buildFromTemplate([
+            { label: 'Abrir Finance Hub', click: () => showWindow() },
+            { type: 'separator' },
+            {
+                label: 'Sair', click: () => {
+                    isQuitting = true;
+                    app.quit();
+                }
+            }
+        ]);
+
+        tray.setToolTip('Finance Hub');
+        tray.setContextMenu(contextMenu);
+        tray.on('double-click', () => showWindow());
+        console.log("[Tray] Tray initialized successfully.");
+    } catch (err) {
+        console.error(`[Tray] Failed to create tray: ${err.message}`);
+    }
 }
 
 // --- 5. NOTIFICATIONS LOGIC ---
@@ -228,11 +277,11 @@ function createTray() {
 async function checkDueBillsAndNotify() {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
-    
+
     try {
         const lastNotified = await dbGet("SELECT value FROM settings WHERE key = 'last_notification_date'");
         if (lastNotified && lastNotified.value === todayStr) {
-            return; 
+            return;
         }
     } catch (e) {
         console.error("Error checking last notification date", e);
@@ -258,7 +307,7 @@ async function checkDueBillsAndNotify() {
                     icon: iconPath
                 }).show();
             });
-            
+
             await dbRun("INSERT OR REPLACE INTO settings (key, value) VALUES ('last_notification_date', ?)", [todayStr]);
         }
     } catch (e) {
@@ -280,7 +329,7 @@ app.whenReady().then(async () => {
     } catch (error) {
         console.error("Failed to setup API:", error);
     }
-    
+
     // 6.3. UI INITIALIZATION
     createWindow();
     createTray();
@@ -357,9 +406,11 @@ app.whenReady().then(async () => {
         return result.filePaths[0];
     });
 
-    // 6.8. SCHEDULED TASKS (Delayed start to allow app stabilization)
-    setTimeout(checkDueBillsAndNotify, 5000); 
-    setInterval(checkDueBillsAndNotify, 6 * 60 * 60 * 1000);
+    // --- 6.8. SCHEDULED TASKS (Delayed start to allow app stabilization)
+setTimeout(() => {
+    checkDueBillsAndNotify();
+    billCheckInterval = setInterval(checkDueBillsAndNotify, 6 * 60 * 60 * 1000);
+}, 5000);
 
     app.on("activate", () => showWindow());
 });
@@ -368,6 +419,18 @@ app.on("window-all-closed", () => {
     // Finance Hub keeps running in tray unless explicitly quit
 });
 
-app.on("will-quit", () => {
-    logInfo("Finance Hub is shutting down.");
+app.on("will-quit", async (event) => {
+    console.log("Finance Hub is shutting down. Cleaning up...");
+    
+    // Clear background intervals
+    if (billCheckInterval) clearInterval(billCheckInterval);
+    backupService.stopAutoBackup();
+    
+    // Close database connection
+    try {
+        await closeDatabase();
+        console.log("Database cleanup successful.");
+    } catch (err) {
+        console.error("Error during database cleanup:", err);
+    }
 });

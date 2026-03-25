@@ -2,9 +2,8 @@ import { ipcMain } from "electron";
 import { dbAll, dbRun, dbGet } from "./database.js";
 
 function handleIpc(channel, handler) {
-    console.log(`[IPC Registration] ${channel}`);
+    console.log(`[IPC] Registering handler: ${channel}`);
     ipcMain.handle(channel, async (event, ...args) => {
-        // console.log(`[IPC Call] ${channel}`);
         try {
             return await handler(event, ...args);
         } catch (error) {

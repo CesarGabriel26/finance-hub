@@ -24,7 +24,7 @@ const getLogFile = (type = 'app') => {
 
 /**
  * Writes a message to the corresponding log file.
- * @param {string} type - 'info' or 'error'
+ * @param {string} type - 'info', 'error', 'warn', etc.
  * @param {string} message - The message to log
  */
 const writeLog = (type, message) => {
@@ -34,14 +34,42 @@ const writeLog = (type, message) => {
     
     try {
         fs.appendFileSync(logFile, logMessage);
-        // Also log errors to the main app log for context
-        if (type === 'error') {
+        // Also log errors/warnings to the main app log for context
+        if (type === 'error' || type === 'warn') {
             fs.appendFileSync(getLogFile('app'), logMessage);
         }
-        console.log(logMessage.trim());
+        // In dev, we still want to see it in the console terminal
+        // But we avoid recursion if we redirected console.log
     } catch (err) {
-        console.error('Failed to write to log file:', err);
+        // Fallback to original console to avoid losing the message
+        process.stderr.write(`Failed to write to log file: ${err.message}\n`);
     }
+};
+
+/**
+ * Redirects console.log, console.error, and console.warn to the app's log files.
+ */
+export const setupConsoleRedirection = () => {
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    console.log = (...args) => {
+        originalLog(...args);
+        writeLog('info', args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' '));
+    };
+
+    console.error = (...args) => {
+        originalError(...args);
+        writeLog('error', args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' '));
+    };
+
+    console.warn = (...args) => {
+        originalWarn(...args);
+        writeLog('warn', args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' '));
+    };
+    
+    logInfo("Console redirection initialized.");
 };
 
 export const logInfo = (message) => writeLog('info', message);

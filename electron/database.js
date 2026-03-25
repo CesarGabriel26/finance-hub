@@ -5,18 +5,38 @@ import { app } from 'electron';
 import fs from 'fs';
 
 const userDataPath = app.getPath('userData');
+// Ensure consistent path regardless of productName spacing
+const appDataPath = path.dirname(userDataPath);
+const hypenatedPath = path.join(appDataPath, 'finance-hub');
 const dataPath = path.join(userDataPath, 'data');
 
-// Ensure data directory exists for production-safe storage
-if (!fs.existsSync(dataPath)) {
-    fs.mkdirSync(dataPath, { recursive: true });
+// Legacy check: If data exists in the hyphenated folder but we are in the spaced folder
+// we should probably look there.
+const legacyDbPath = path.join(hypenatedPath, 'finance-hub.db');
+const currentDbPath = path.join(userDataPath, 'finance-hub.db'); // root of userData
+const nestedDbPath = path.join(dataPath, 'finance-hub.db'); // inside /data
+
+let dbPath;
+if (app.isPackaged) {
+    if (fs.existsSync(legacyDbPath)) {
+        console.log(`[Database] Found legacy database at: ${legacyDbPath}`);
+        dbPath = legacyDbPath;
+    } else if (fs.existsSync(currentDbPath)) {
+        console.log(`[Database] Using database from userData root: ${currentDbPath}`);
+        dbPath = currentDbPath;
+    } else {
+        // Fallback to nested path or create it if needed
+        if (!fs.existsSync(dataPath)) {
+            fs.mkdirSync(dataPath, { recursive: true });
+        }
+        dbPath = nestedDbPath;
+        console.log(`[Database] No existing database found, using default: ${dbPath}`);
+    }
+} else {
+    dbPath = path.join(app.getAppPath(), 'finance-hub.db');
 }
 
-const dbPath = app.isPackaged
-    ? path.join(dataPath, 'finance-hub.db')
-    : path.join(app.getAppPath(), 'finance-hub.db');
-
-console.log(`Database path: ${dbPath}`);
+console.log(`Actual Database Path used: ${dbPath}`);
 
 export const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
