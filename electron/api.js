@@ -2,7 +2,9 @@ import { ipcMain } from "electron";
 import { dbAll, dbRun, dbGet } from "./database.js";
 
 function handleIpc(channel, handler) {
+    console.log(`[IPC Registration] ${channel}`);
     ipcMain.handle(channel, async (event, ...args) => {
+        // console.log(`[IPC Call] ${channel}`);
         try {
             return await handler(event, ...args);
         } catch (error) {
@@ -37,6 +39,7 @@ async function recalculateAccountBalance(accountId) {
 }
 
 export function setupAPI() {
+    console.log("Registering IPC handlers...");
 
     handleIpc("recalculate-balance", async (_, accountId) => {
         await recalculateAccountBalance(accountId);
@@ -559,4 +562,5 @@ export function setupAPI() {
             LIMIT ?
         `, [months]);
     });
+    console.log("Registered IPC handler: get-monthly-stats");
 }

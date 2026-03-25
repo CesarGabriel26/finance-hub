@@ -1,19 +1,31 @@
-import sqlite3 from 'sqlite3';
+import sqlite3_pkg from 'sqlite3';
+const sqlite3 = sqlite3_pkg.verbose();
 import path from 'path';
 import { app } from 'electron';
 import fs from 'fs';
 
+const userDataPath = app.getPath('userData');
+const dataPath = path.join(userDataPath, 'data');
+
+// Ensure data directory exists for production-safe storage
+if (!fs.existsSync(dataPath)) {
+    fs.mkdirSync(dataPath, { recursive: true });
+}
+
 const dbPath = app.isPackaged
-    ? path.join(app.getPath('userData'), 'finance-hub.db')
+    ? path.join(dataPath, 'finance-hub.db')
     : path.join(app.getAppPath(), 'finance-hub.db');
 
 console.log(`Database path: ${dbPath}`);
 
 export const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
-        console.error("Error opening database " + err.message);
+        console.error("FATAL ERROR: Could not open database file at " + dbPath);
+        console.error("Error message: " + err.message);
     } else {
+        console.log("Database opened successfully.");
         db.serialize(() => {
+            console.log("Initializing database tables...");
             db.run(`CREATE TABLE IF NOT EXISTS accounts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -220,6 +232,7 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                     db.run("INSERT INTO keyword_rules (keyword, category_id) SELECT keyword, category_id FROM keywords");
                 }
             });
+            console.log("Database initialization blocks complete.");
         });
     }
 });
@@ -250,3 +263,27 @@ export const dbAll = (query, params = []) => {
         });
     });
 };
+
+/**
+ * Safely closes the database connection.
+ * @returns {Promise<void>}
+ */
+export const closeDatabase = () => {
+    return new Promise((resolve, reject) => {
+        if (db) {
+            db.close((err) => {
+                if (err) {
+                    console.error('Error closing database:', err);
+                    reject(err);
+                } else {
+                    console.log('Database connection closed.');
+                    resolve();
+                }
+            });
+        } else {
+            resolve();
+        }
+    });
+};
+
+export { dbPath };

@@ -82,5 +82,97 @@
         </button>
       </div>
     </div>
+
+    <!-- Backup Section -->
+    <div class="settings-card bg-white border border-slate-200 shadow-sm rounded-xl p-5 hover:border-blue-500/50 transition-all">
+      <div class="header-section mb-6">
+        <div class="flex items-center gap-4 mb-2">
+          <div class="icon-wrapper p-3 bg-indigo-500/10 rounded-lg text-indigo-400">
+            <lucide-angular [img]="BackupIcon" class="w-6 h-6"></lucide-angular>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-800">Cópia de Segurança (Backup)</h3>
+            <p class="text-sm text-slate-500">Mantenha seus dados seguros em pastas locais ou na nuvem.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="backup-settings space-y-6">
+        <!-- Paths Management -->
+        <div class="path-management">
+          <div class="flex items-center justify-between mb-3">
+            <label class="text-sm font-medium text-slate-700">Destinos de Backup</label>
+            <button 
+              (click)="addBackupPath()"
+              class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            >
+              <lucide-angular [img]="PlusIcon" class="w-3 h-3"></lucide-angular>
+              Adicionar Pasta
+            </button>
+          </div>
+          
+          <div class="path-list space-y-2">
+            @if (backupPaths().length === 0) {
+              <p class="text-xs text-slate-400 italic py-2">Nenhuma pasta configurada. Seus arquivos não estão sendo salvos externamente.</p>
+            }
+            @for (path of backupPaths(); track path) {
+              <div class="path-item flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-lg group">
+                <div class="flex items-center gap-3 overflow-hidden">
+                  <lucide-angular [img]="FolderIcon" class="w-4 h-4 text-slate-400 shrink-0"></lucide-angular>
+                  <span class="text-xs text-slate-600 truncate" [title]="path">{{path}}</span>
+                </div>
+                <button 
+                  (click)="removePath(path)"
+                  class="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <lucide-angular [img]="TrashIcon" class="w-4 h-4"></lucide-angular>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Frequency -->
+          <div class="frequency-setting">
+            <label class="text-sm font-medium text-slate-700 block mb-2">Frequência Automática</label>
+            <select 
+              (change)="onFrequencyChange($event)"
+              [value]="backupFrequency()"
+              class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            >
+              <option value="daily">Diário</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+
+          <!-- Manual Trigger -->
+          <div class="manual-backup self-end">
+            <button 
+              (click)="triggerBackup()"
+              [disabled]="isBackingUp() || backupPaths().length === 0"
+              class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-200 disabled:shadow-none"
+            >
+              <lucide-angular 
+                [img]="RefreshIcon" 
+                class="w-4 h-4" 
+                [class.animate-spin]="isBackingUp()"
+              ></lucide-angular>
+              {{ isBackingUp() ? 'Realizando...' : 'Backup Agora' }}
+            </button>
+          </div>
+        </div>
+
+        @if (backupMessage()) {
+          <div 
+            class="text-xs py-2 px-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1"
+            [ngClass]="backupMessage()?.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'"
+          >
+            <div class="w-1.5 h-1.5 rounded-full" [ngClass]="backupMessage()?.type === 'success' ? 'bg-green-500' : 'bg-red-500'"></div>
+            {{ backupMessage()?.text }}
+          </div>
+        }
+      </div>
+    </div>
   </div>
 </div>

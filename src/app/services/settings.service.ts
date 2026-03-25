@@ -26,4 +26,24 @@ export class SettingsService {
   async checkNotifications() {
     return await (window as any).api.checkDueBills();
   }
+
+  async getBackupSettings() {
+    return await (window as any).api.getBackupSettings();
+  }
+
+  async setBackupSettings(settings: any) {
+    return await (window as any).api.setBackupSettings(settings);
+  }
+
+  async backupNow() {
+    return await (window as any).api.backupNow();
+  }
+
+  async restoreBackup(filePath: string) {
+    return await (window as any).api.restoreBackup(filePath);
+  }
+
+  async selectDirectory() {
+    return await (window as any).api.selectDirectory();
+  }
 }

@@ -72,4 +72,11 @@ contextBridge.exposeInMainWorld('api', {
     addBudget: (budget) => ipcRenderer.invoke('add-budget', budget),
     updateBudget: (id, budget) => ipcRenderer.invoke('update-budget', id, budget),
     deleteBudget: (id) => ipcRenderer.invoke('delete-budget', id),
+    
+    // Cloud/Local Backup
+    getBackupSettings: () => ipcRenderer.invoke('get-backup-settings'),
+    setBackupSettings: (settings) => ipcRenderer.invoke('set-backup-settings', settings),
+    backupNow: () => ipcRenderer.invoke('backup-now'),
+    restoreBackup: (filePath) => ipcRenderer.invoke('restore-backup', filePath),
+    selectDirectory: () => ipcRenderer.invoke('select-directory'),
 });
