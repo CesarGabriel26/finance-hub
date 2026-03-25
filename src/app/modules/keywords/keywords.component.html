@@ -1,31 +1,31 @@
 <div class="space-y-6">
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Inteligência de Importação</h1>
-      <p class="text-gray-500 mt-1">Gerencie palavras-chave para associação automática de categorias durante a importação.</p>
+      <h1 class="text-2xl font-bold text-text tracking-tight">Inteligência de Importação</h1>
+      <p class="text-textMuted mt-1">Gerencie palavras-chave para associação automática de categorias durante a importação.</p>
     </div>
   </div>
 
   <!-- Nova Palavra-chave -->
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Nova Regra</h2>
+  <div class="bg-card rounded-2xl shadow-sm border border-border p-6">
+    <h2 class="text-sm font-semibold text-textMuted uppercase tracking-wider mb-4">Nova Regra</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="flex flex-col space-y-1.5">
-        <label class="text-xs font-medium text-gray-500 ml-1">Palavra-chave (contida na descrição)</label>
+        <label class="text-xs font-medium text-textMuted ml-1">Palavra-chave (contida na descrição)</label>
         <div class="relative">
-          <lucide-icon [img]="SearchIcon" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></lucide-icon>
+          <lucide-icon [img]="SearchIcon" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted"></lucide-icon>
           <input type="text" [(ngModel)]="newKeyword" placeholder="Ex: UBER, IFOOD..." 
-                 class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none">
+                 class="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-text">
         </div>
       </div>
       
       <div class="flex flex-col space-y-1.5">
-        <label class="text-xs font-medium text-gray-500 ml-1">Associar à Categoria</label>
+        <label class="text-xs font-medium text-textMuted ml-1">Associar à Categoria</label>
         <div class="relative">
-          <lucide-icon [img]="TagIcon" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></lucide-icon>
+          <lucide-icon [img]="TagIcon" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted"></lucide-icon>
           <select [(ngModel)]="selectedCategoryId" 
-                  class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none">
-            <option *ngFor="let cat of categories()" [value]="cat.id">{{ cat.name }} ({{ cat.type === 'C' ? 'Receita' : 'Despesa' }})</option>
+                  class="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none text-text">
+            <option *ngFor="let cat of categories()" [value]="cat.id" class="bg-card">{{ cat.name }} ({{ cat.type === 'C' ? 'Receita' : 'Despesa' }})</option>
           </select>
         </div>
       </div>
@@ -34,7 +34,7 @@
 
       <div class="flex items-end">
         <button (click)="addKeyword()" 
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl shadow-md shadow-blue-200 transition-all flex items-center justify-center">
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center justify-center">
           <lucide-icon [img]="PlusIcon" class="w-5 h-5 mr-2"></lucide-icon>
           Adicionar Regra
         </button>
@@ -43,14 +43,14 @@
   </div>
 
   <!-- Lista de Palavras-chave -->
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-      <h3 class="font-semibold text-gray-900">Regras Ativas</h3>
+  <div class="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+    <div class="px-6 py-4 border-b border-border bg-bg/50">
+      <h3 class="font-semibold text-text">Regras Ativas</h3>
     </div>
     
     <div class="overflow-x-auto">
       <table class="w-full text-left">
-        <thead class="bg-gray-50/50 text-gray-500 text-xs font-semibold uppercase tracking-wider">
+        <thead class="bg-bg/50 text-textMuted text-xs font-semibold uppercase tracking-wider">
           <tr>
             <th class="px-6 py-3">Palavra-chave</th>
             <th class="px-6 py-3">Categoria</th>
@@ -59,32 +59,32 @@
             <th class="px-6 py-3 text-right">Ações</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-100">
-          <tr *ngFor="let k of keywords()" class="hover:bg-gray-50 transition-colors">
+        <tbody class="divide-y divide-border">
+          <tr *ngFor="let k of keywords()" class="hover:bg-bg transition-colors">
             <td class="px-6 py-4">
-              <span class="font-medium text-gray-900">{{ k.keyword }}</span>
+              <span class="font-medium text-text">{{ k.keyword }}</span>
             </td>
             <td class="px-6 py-4">
-              <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+              <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500 border border-blue-500/20">
                 {{ k.category_name }}
               </span>
             </td>
 
             <td class="px-6 py-4">
               <span class="px-2 py-0.5 rounded text-xs font-bold" 
-                    [ngClass]="k.category_type === 'C' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
+                    [ngClass]="k.category_type === 'C' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'">
                 {{ k.category_type === 'C' ? 'Receita' : 'Despesa' }}
               </span>
             </td>
             <td class="px-6 py-4 text-right">
               <button (click)="deleteKeyword(k.id!)" 
-                      class="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+                      class="p-2 text-textMuted hover:text-rose-600 hover:bg-rose-500/10 rounded-lg transition-all">
                 <lucide-icon [img]="TrashIcon" class="w-4 h-4"></lucide-icon>
               </button>
             </td>
           </tr>
           <tr *ngIf="keywords().length === 0">
-            <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+            <td colspan="4" class="px-6 py-12 text-center text-textMuted">
               Nenhuma regra de inteligência cadastrada ainda.
             </td>
           </tr>

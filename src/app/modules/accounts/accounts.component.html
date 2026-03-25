@@ -1,17 +1,17 @@
 <div class="space-y-6">
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-gray-900">Contas Bancárias</h1>
-    <p class="text-gray-500 mt-1">Gerencie suas contas bancárias e carteiras.</p>
+    <h1 class="text-3xl font-bold tracking-tight text-text">Contas Bancárias</h1>
+    <p class="text-textMuted mt-1">Gerencie suas contas bancárias e carteiras.</p>
   </div>
 
-  <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
-    <div class="p-6 border-b border-gray-100 bg-gray-50/50">
-      <h3 class="text-lg font-medium text-gray-900 mb-4">Adicionar Nova Conta</h3>
+  <div class="bg-card shadow-sm rounded-xl border border-border overflow-hidden">
+    <div class="p-6 border-b border-border bg-bg/50">
+      <h3 class="text-lg font-medium text-text mb-4">Adicionar Nova Conta</h3>
       <div class="flex flex-col sm:flex-row gap-4">
         <input type="text" [ngModel]="newAccountName()" (ngModelChange)="newAccountName.set($event)" placeholder="Nome da Conta (ex: Nubank)" 
-               class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border" />
+               class="flex-1 rounded-md border-border bg-bg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border text-text" />
         <input type="number" [ngModel]="newAccountBalance()" (ngModelChange)="newAccountBalance.set($event)" placeholder="Saldo Inicial (R$)" 
-               class="w-full sm:w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border" />
+               class="w-full sm:w-48 rounded-md border-border bg-bg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border text-text" />
         <button (click)="addAccount()" [disabled]="!newAccountName()"
                 class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50">
           <lucide-icon [img]="PlusIcon" class="w-4 h-4 mr-2"></lucide-icon> Adicionar
@@ -19,20 +19,20 @@
       </div>
     </div>
 
-    <ul role="list" class="divide-y divide-gray-100">
-      <li *ngFor="let account of accounts()" class="flex items-center justify-between gap-x-6 p-6 hover:bg-gray-50 transition-colors">
+    <ul role="list" class="divide-y divide-border">
+      <li *ngFor="let account of accounts()" class="flex items-center justify-between gap-x-6 p-6 hover:bg-bg transition-colors">
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-x-3">
             <ng-container *ngIf="editingAccount()?.id !== account.id; else editMode">
-              <p class="text-sm font-semibold leading-6 text-gray-900">{{ account.name }}</p>
-              <button (click)="startEdit(account)" class="text-gray-400 hover:text-blue-600 transition-colors">
+              <p class="text-sm font-semibold leading-6 text-text">{{ account.name }}</p>
+              <button (click)="startEdit(account)" class="text-textMuted hover:text-blue-600 transition-colors">
                 <lucide-icon [img]="EditIcon" class="w-4 h-4"></lucide-icon>
               </button>
             </ng-container>
             <ng-template #editMode>
               <div class="flex items-center gap-x-2 w-full">
                 <input type="text" [(ngModel)]="editingAccount()!.name" 
-                       class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-1 px-2 border text-sm" 
+                       class="flex-1 rounded-md border-border bg-bg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-1 px-2 border text-sm text-text" 
                        (keyup.enter)="saveEdit()" (keyup.escape)="cancelEdit()" autofocus />
                 <button (click)="saveEdit()" class="text-emerald-600 hover:text-emerald-700">
                   <lucide-icon [img]="CheckIcon" class="w-5 h-5"></lucide-icon>
@@ -43,7 +43,7 @@
               </div>
             </ng-template>
           </div>
-          <div class="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500">
+          <div class="mt-1 flex items-center gap-x-2 text-xs leading-5 text-textMuted">
             <p class="truncate">Criado em: {{ account.created_at | date:'dd/MM/yyyy HH:mm' }}</p>
           </div>
         </div>
@@ -56,7 +56,7 @@
           </button>
         </div>
       </li>
-      <li *ngIf="accounts().length === 0" class="p-8 text-center text-gray-500">
+      <li *ngIf="accounts().length === 0" class="p-8 text-center text-textMuted">
         Nenhuma conta cadastrada ainda. Adicione uma acima.
       </li>
     </ul>

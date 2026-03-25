@@ -4,6 +4,7 @@ import { ToastComponent } from './components/toast/toast.component';
 import { UpdateModalComponent } from './components/update-modal/update-modal.component';
 import { DialogComponent } from './components/dialog/dialog.component';
 import { UpdateService } from './services/update.service';
+import { ThemeService } from './services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ import { UpdateService } from './services/update.service';
 export class App implements OnInit {
   protected readonly title = signal('finance-hub');
   private updateService = inject(UpdateService);
+  private themeService = inject(ThemeService);
 
   ngOnInit() {
     // Automatically check for updates on startup

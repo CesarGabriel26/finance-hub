@@ -8,39 +8,39 @@
 
     <div class="flex flex-wrap items-center gap-2">
       <!-- Period Selector -->
-      <div class="flex items-center gap-2 bg-card p-1.5 rounded-xl border border-gray-100 shadow-sm">
+      <div class="flex items-center gap-2 bg-card p-1.5 rounded-xl border border-border shadow-sm">
         <select [(ngModel)]="selectedMonth" (change)="onFilterChange()"
           class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-text">
-          <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+          <option *ngFor="let m of months" [value]="m.value" class="bg-card text-text">{{ m.label }}</option>
         </select>
-        <div class="w-px h-4 bg-gray-200"></div>
+        <div class="w-px h-4 bg-border"></div>
         <select [(ngModel)]="selectedYear" (change)="onFilterChange()"
           class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-text">
-          <option *ngFor="let y of years()" [value]="y">{{ y }}</option>
+          <option *ngFor="let y of years()" [value]="y" class="bg-card text-text">{{ y }}</option>
         </select>
       </div>
 
       <!-- Filters -->
-      <div class="flex items-center gap-2 bg-card p-1.5 rounded-xl border border-gray-100 shadow-sm">
+      <div class="flex items-center gap-2 bg-card p-1.5 rounded-xl border border-border shadow-sm">
         <lucide-icon [img]="Filter" class="w-4 h-4 text-textMuted ml-2"></lucide-icon>
         <select [(ngModel)]="filterType" (change)="onFilterChange()"
           class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted">
-          <option value="ALL">Todos os Tipos</option>
-          <option value="C">Receitas</option>
-          <option value="D">Despesas</option>
+          <option value="ALL" class="bg-card text-text">Todos os Tipos</option>
+          <option value="C" class="bg-card text-text">Receitas</option>
+          <option value="D" class="bg-card text-text">Despesas</option>
         </select>
-        <div class="w-px h-4 bg-gray-200"></div>
+        <div class="w-px h-4 bg-border"></div>
         <select [(ngModel)]="filterAccountId" (change)="onFilterChange()"
           class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted max-w-[120px]">
-          <option [ngValue]="null">Todas as Contas</option>
-          <option *ngFor="let acc of accounts()" [ngValue]="acc.id">{{ acc.name }}</option>
+          <option [ngValue]="null" class="bg-card text-text">Todas as Contas</option>
+          <option *ngFor="let acc of accounts()" [ngValue]="acc.id" class="bg-card text-text">{{ acc.name }}</option>
         </select>
-        <div class="w-px h-4 bg-gray-200"></div>
+        <div class="w-px h-4 bg-border"></div>
         <select [(ngModel)]="filterCategoryId" (change)="onFilterChange()"
           class="bg-transparent border-none focus:ring-0 text-sm font-medium pr-8 outline-none cursor-pointer text-textMuted max-w-[120px]">
-          <option [ngValue]="null">Todas as Categorias</option>
+          <option [ngValue]="null" class="bg-card text-text">Todas as Categorias</option>
           <ng-container *ngFor="let cat of categories()">
-            <option *ngIf="filterType() === 'ALL' || cat.type === filterType()" [ngValue]="cat.id">{{ cat.name }}
+            <option *ngIf="filterType() === 'ALL' || cat.type === filterType()" [ngValue]="cat.id" class="bg-card text-text">{{ cat.name }}
             </option>
           </ng-container>
         </select>
@@ -51,16 +51,12 @@
   <!-- Loading Skeleton -->
   <div *ngIf="isLoading()" class="animate-pulse space-y-6 w-full">
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-      <div class="h-32 bg-gray-200 rounded-xl"></div>
-      <div class="h-32 bg-gray-200 rounded-xl"></div>
-      <div class="h-32 bg-gray-200 rounded-xl"></div>
+      <div class="h-32 bg-border rounded-xl opacity-20"></div>
+      <div class="h-32 bg-border rounded-xl opacity-20"></div>
+      <div class="h-32 bg-border rounded-xl opacity-20"></div>
     </div>
     <div class="h-16 bg-primary/10 rounded-xl"></div>
-    <div class="h-[400px] bg-gray-200 rounded-xl"></div>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="h-[400px] bg-gray-200 rounded-xl"></div>
-      <div class="h-[400px] bg-gray-200 rounded-xl"></div>
-    </div>
+    <div class="h-[400px] bg-border rounded-xl opacity-10"></div>
   </div>
 
   <!-- Content -->
@@ -70,63 +66,63 @@
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
       <!-- Balance -->
       <div
-        class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
+        class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-border p-5 relative group">
         <div
           class="absolute top-5 right-5 p-2 bg-primary/10 text-primary rounded-lg group-hover:scale-110 transition-transform">
           <lucide-icon [img]="Wallet" class="w-5 h-5"></lucide-icon>
         </div>
         <dt class="truncate text-sm font-medium text-textMuted uppercase tracking-wider">Saldo Geral</dt>
-        <dd class="mt-2 text-3xl font-extrabold tracking-tight text-primary">
+        <dd class="mt-2 text-3xl font-extrabold tracking-tight text-blue-500">
           {{ totalBalance() | currency:'BRL' }}
         </dd>
       </div>
 
       <!-- Revenue -->
       <div
-        class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
+        class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-border p-5 relative group">
         <div
-          class="absolute top-5 right-5 p-2 bg-success/10 text-success rounded-lg group-hover:scale-110 transition-transform">
+          class="absolute top-5 right-5 p-2 bg-emerald-500/10 text-emerald-500 rounded-lg group-hover:scale-110 transition-transform">
           <lucide-icon [img]="TrendingUp" class="w-5 h-5"></lucide-icon>
         </div>
         <dt class="truncate text-sm font-medium text-textMuted uppercase tracking-wider">Receitas do Período</dt>
-        <dd class="mt-2 text-3xl font-extrabold tracking-tight text-success">
+        <dd class="mt-2 text-3xl font-extrabold tracking-tight text-emerald-500">
           {{ totalRevenue() | currency:'BRL' }}
         </dd>
         <div class="mt-2 flex items-center text-sm">
           <ng-container *ngIf="getVariation(totalRevenue(), prevTotalRevenue()) as v">
-            <span *ngIf="v.hasData" [class.text-success]="v.isPositive" [class.text-danger]="!v.isPositive"
+            <span *ngIf="v.hasData" [class.text-emerald-500]="v.isPositive" [class.text-danger]="!v.isPositive"
               class="flex items-center font-medium">
               <lucide-icon *ngIf="v.isPositive" [img]="ArrowUpRight" class="w-4 h-4 mr-1"></lucide-icon>
               <lucide-icon *ngIf="!v.isPositive" [img]="ArrowDownRight" class="w-4 h-4 mr-1"></lucide-icon>
               {{ v.value | number:'1.0-0' }}%
             </span>
             <span *ngIf="v.hasData" class="text-textMuted ml-2">vs mês passado</span>
-            <span *ngIf="!v.hasData" class="text-gray-400 italic">Sem dados anteriores</span>
+            <span *ngIf="!v.hasData" class="text-textMuted italic">Sem dados anteriores</span>
           </ng-container>
         </div>
       </div>
 
       <!-- Expenses -->
       <div
-        class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-5 relative group">
+        class="bg-card overflow-hidden shadow-sm hover:shadow-md transition-all rounded-xl border border-border p-5 relative group">
         <div
-          class="absolute top-5 right-5 p-2 bg-danger/10 text-danger rounded-lg group-hover:scale-110 transition-transform">
+          class="absolute top-5 right-5 p-2 bg-rose-500/10 text-rose-500 rounded-lg group-hover:scale-110 transition-transform">
           <lucide-icon [img]="TrendingDown" class="w-5 h-5"></lucide-icon>
         </div>
         <dt class="truncate text-sm font-medium text-textMuted uppercase tracking-wider">Despesas do Período</dt>
-        <dd class="mt-2 text-3xl font-extrabold tracking-tight text-danger">
+        <dd class="mt-2 text-3xl font-extrabold tracking-tight text-rose-500">
           {{ totalExpense() | currency:'BRL' }}
         </dd>
         <div class="mt-2 flex items-center text-sm">
           <ng-container *ngIf="getVariation(totalExpense(), prevTotalExpense()) as v">
-            <span *ngIf="v.hasData" [class.text-danger]="v.isPositive" [class.text-success]="!v.isPositive"
+            <span *ngIf="v.hasData" [class.text-rose-500]="v.isPositive" [class.text-emerald-500]="!v.isPositive"
               class="flex items-center font-medium">
               <lucide-icon *ngIf="v.isPositive" [img]="ArrowUpRight" class="w-4 h-4 mr-1"></lucide-icon>
               <lucide-icon *ngIf="!v.isPositive" [img]="ArrowDownRight" class="w-4 h-4 mr-1"></lucide-icon>
               {{ v.value | number:'1.0-0' }}%
             </span>
             <span *ngIf="v.hasData" class="text-textMuted ml-2">vs mês passado</span>
-            <span *ngIf="!v.hasData" class="text-gray-400 italic">Sem dados anteriores</span>
+            <span *ngIf="!v.hasData" class="text-textMuted italic">Sem dados anteriores</span>
           </ng-container>
         </div>
       </div>
@@ -136,19 +132,19 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
       <!-- Predictions Card -->
-      <div class="lg:col-span-1 bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden group">
-        <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-50/50 rounded-full blur-2xl group-hover:bg-blue-100/50 transition-all"></div>
+      <div class="lg:col-span-1 bg-card p-6 rounded-[32px] border border-border shadow-sm relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
         
-        <h3 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-6 flex items-center gap-2">
+        <h3 class="text-xs font-black uppercase tracking-[0.2em] text-textMuted mb-6 flex items-center gap-2">
           <div class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
           Projeção Inteligente
         </h3>
 
         <div class="space-y-6">
           <div class="relative">
-            <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Saldo em 7 dias</p>
+            <p class="text-[10px] font-bold text-textMuted uppercase mb-1">Saldo em 7 dias</p>
             <div class="flex items-baseline gap-2">
-              <span class="text-2xl font-black tracking-tight" [class.text-rose-600]="prediction7d() < 0" [class.text-gray-900]="prediction7d() >= 0">
+              <span class="text-2xl font-black tracking-tight" [class.text-rose-500]="prediction7d() < 0" [class.text-text]="prediction7d() >= 0">
                 {{ prediction7d() | currency:'BRL' }}
               </span>
               @if (prediction7d() < totalBalance()) {
@@ -161,53 +157,53 @@
           </div>
 
           <div class="relative">
-            <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Saldo em 30 dias</p>
+            <p class="text-[10px] font-bold text-textMuted uppercase mb-1">Saldo em 30 dias</p>
             <div class="flex items-baseline gap-2">
-              <span class="text-2xl font-black tracking-tight text-gray-900">
+              <span class="text-2xl font-black tracking-tight text-text">
                 {{ prediction30d() | currency:'BRL' }}
               </span>
             </div>
           </div>
         </div>
 
-        <div class="mt-8 pt-6 border-t border-gray-50">
-          <p class="text-[9px] font-bold text-gray-400 leading-relaxed">
+        <div class="mt-8 pt-6 border-t border-border">
+          <p class="text-[9px] font-bold text-textMuted leading-relaxed">
             * Baseado em suas contas a pagar e receber futuras cadastradas no sistema.
           </p>
         </div>
       </div>
 
       <!-- Smart Insights List -->
-      <div class="lg:col-span-2 bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
-        <h3 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-6">Sugestões e Insights</h3>
+      <div class="lg:col-span-2 bg-card p-6 rounded-[32px] border border-border shadow-sm">
+        <h3 class="text-xs font-black uppercase tracking-[0.2em] text-textMuted mb-6">Sugestões e Insights</h3>
         
         <div class="space-y-3">
           @for (insight of insights(); track insight.id) {
-            <div class="flex items-start gap-4 p-4 rounded-2xl transition-all border border-transparent hover:border-gray-50"
-                 [class.bg-rose-50/30]="insight.severity === 'critical'"
-                 [class.bg-amber-50/30]="insight.severity === 'warning'"
-                 [class.bg-blue-50/30]="insight.severity === 'info'">
+            <div class="flex items-start gap-4 p-4 rounded-2xl transition-all border border-transparent hover:border-border"
+                 [class.bg-rose-500/10]="insight.severity === 'critical'"
+                 [class.bg-amber-500/10]="insight.severity === 'warning'"
+                 [class.bg-blue-500/10]="insight.severity === 'info'">
               
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                   [class.bg-white]="true"
-                   [class.text-rose-600]="insight.severity === 'critical'"
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors"
+                   [class.bg-card]="true"
+                   [class.text-rose-500]="insight.severity === 'critical'"
                    [class.text-amber-500]="insight.severity === 'warning'"
-                   [class.text-blue-600]="insight.severity === 'info'">
+                   [class.text-blue-500]="insight.severity === 'info'">
                 @if (insight.severity === 'critical') { <lucide-icon [name]="AlertCircle" size="20"></lucide-icon> }
                 @else if (insight.severity === 'warning') { <lucide-icon [name]="Activity" size="20"></lucide-icon> }
                 @else { <lucide-icon [name]="DollarSign" size="20"></lucide-icon> }
               </div>
 
               <div class="flex-1">
-                <h4 class="text-sm font-black text-gray-900 mb-0.5">{{ insight.title }}</h4>
-                <p class="text-xs font-medium text-gray-500 leading-relaxed">{{ insight.description }}</p>
+                <h4 class="text-sm font-black text-text mb-0.5">{{ insight.title }}</h4>
+                <p class="text-xs font-medium text-textMuted leading-relaxed">{{ insight.description }}</p>
               </div>
             </div>
           }
 
           @if (insights().length === 0) {
             <div class="py-10 text-center">
-              <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Tudo em ordem nas suas finanças!</p>
+              <p class="text-xs font-bold text-textMuted uppercase tracking-widest">Tudo em ordem nas suas finanças!</p>
             </div>
           }
         </div>
@@ -216,13 +212,13 @@
     </div>
 
     <!-- Charts: Evolution -->
-    <div class="bg-card shadow-sm hover:shadow-md transition-all rounded-xl border border-gray-100 p-6">
+    <div class="bg-card shadow-sm hover:shadow-md transition-all rounded-xl border border-border p-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-bold text-text flex items-center">
           <lucide-icon [img]="Activity" class="w-5 h-5 text-primary mr-2"></lucide-icon>
           Evolução
         </h2>
-        <div class="flex items-center gap-1 bg-bg p-1 rounded-lg border border-gray-100">
+        <div class="flex items-center gap-1 bg-bg p-1 rounded-lg border border-border">
           <button (click)="onEvolutionPeriodChange(6)" [class.bg-card]="evolutionPeriod() === 6"
             [class.shadow-sm]="evolutionPeriod() === 6"
             class="px-3 py-1 text-xs font-medium rounded-md transition-all text-textMuted hover:text-text">6
@@ -256,7 +252,7 @@
 
       <!-- Chart Breakdown -->
       <div
-        class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col min-h-[400px] h-fit">
+        class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-border p-6 flex flex-col min-h-[400px] h-fit">
         <h2 class="text-lg font-bold text-text mb-6 flex items-center">
           <lucide-icon [img]="List" class="w-5 h-5 text-secondary mr-2"></lucide-icon>
           Gastos por Categoria
@@ -280,15 +276,15 @@
 
         <!-- Budget Quick View -->
         @if (budgets().length > 0) {
-          <div class="mt-8 pt-6 border-t border-gray-50 w-full space-y-4">
-            <h3 class="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">Status de Orçamentos Críticos</h3>
+          <div class="mt-8 pt-6 border-t border-border w-full space-y-4">
+            <h3 class="text-[10px] font-black uppercase tracking-[0.1em] text-textMuted">Status de Orçamentos Críticos</h3>
             <div class="space-y-4">
               @for (b of budgets().slice(0, 3); track b.id) {
                 @let spent = (processedData()?.expensesByCategory?.[b.category_name || ''] || 0);
                 <div class="space-y-1.5">
                   <div class="flex justify-between items-end">
-                    <span class="text-[11px] font-bold text-gray-700">{{ b.category_name }}</span>
-                    <span class="text-[10px] font-black" [class.text-rose-600]="spent > b.monthly_limit" [class.text-gray-900]="spent <= b.monthly_limit">
+                    <span class="text-[11px] font-bold text-text">{{ b.category_name }}</span>
+                    <span class="text-[10px] font-black" [class.text-rose-600]="spent > b.monthly_limit" [class.text-text]="spent <= b.monthly_limit">
                       @if (b.monthly_limit > 0) {
                         {{ (spent / b.monthly_limit * 100) | number:'1.0-0' }}%
                       } @else {
@@ -298,17 +294,17 @@
                   </div>
                   <div class="flex items-center justify-between h-8">
                     <span class="text-[10px] font-black uppercase tracking-tighter"
-                          [class]="b.monthly_limit > 0 ? budgetService.getBudgetStatusColor(processedData()?.expensesByCategory?.[b.category_name || ''] || 0, b.monthly_limit) : 'text-gray-400'">
+                          [class]="b.monthly_limit > 0 ? budgetService.getBudgetStatusColor(processedData()?.expensesByCategory?.[b.category_name || ''] || 0, b.monthly_limit) : 'text-textMuted'">
                       @let currentSpent = processedData()?.expensesByCategory?.[b.category_name || ''] || 0;
                       @let status = budgetService.calculateStatus(currentSpent, b.monthly_limit);
                       {{ b.monthly_limit > 0 ? (status === 'exceeded' ? 'Excedido' : 'Monitorando') : 'Ilimitado' }}
                     </span>
-                    <p class="text-[11px] font-black text-gray-900">{{ (processedData()?.expensesByCategory?.[b.category_name || ''] || 0) | currency:'BRL' }}</p>
+                    <p class="text-[11px] font-black text-text">{{ (processedData()?.expensesByCategory?.[b.category_name || ''] || 0) | currency:'BRL' }}</p>
                   </div>
 
                   @if (b.monthly_limit > 0) {
                     @let currentSpent = processedData()?.expensesByCategory?.[b.category_name || ''] || 0;
-                    <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mt-1">
+                    <div class="h-1.5 w-full bg-bg rounded-full overflow-hidden mt-1 border border-border/50">
                       <div class="h-full transition-all duration-700 rounded-full"
                            [class]="budgetService.getBudgetProgressColor(currentSpent, b.monthly_limit)"
                            [style.width.%]="Math.min((currentSpent / b.monthly_limit) * 100, 100)"></div>
@@ -322,7 +318,7 @@
       </div>
 
       <div
-        class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col min-h-[400px] h-fit">
+        class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-border p-6 flex flex-col min-h-[400px] h-fit">
         <h2 class="text-lg font-bold text-text mb-6 flex items-center">
           <lucide-icon [img]="List" class="w-5 h-5 text-secondary mr-2"></lucide-icon>
           Receita por Categoria
@@ -347,7 +343,7 @@
 
       <!-- Recent Transactions -->
       <div
-        class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-gray-100 p-6 flex flex-col h-[400px] overflow-hidden">
+        class="bg-card hover:shadow-md transition-shadow shadow-sm rounded-xl border border-border p-6 flex flex-col h-[400px] overflow-hidden">
         <h2 class="text-lg font-bold text-text mb-6 flex items-center">
           <lucide-icon [img]="List" class="w-5 h-5 text-textMuted mr-2"></lucide-icon>
           Últimas Transações
@@ -358,7 +354,7 @@
           </div>
           <div class="space-y-4">
             <div *ngFor="let m of recentMovements()"
-              class="flex items-center justify-between p-3 bg-bg rounded-lg hover:bg-gray-100 transition-colors">
+              class="flex items-center justify-between p-3 bg-bg rounded-lg hover:bg-card border border-transparent hover:border-border transition-all">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full flex items-center justify-center"
                   [class.bg-success/10]="m.type === 'C'" [class.text-success]="m.type === 'C'"

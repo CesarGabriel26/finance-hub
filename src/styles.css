@@ -3,10 +3,33 @@
 
 @config "../tailwind.config.js";
 
+:root {
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+  --text: #0F172A;
+  --text-muted: #64748B;
+  --border: #E2E8F0;
+}
+
+.dark {
+  --bg: #0F172A;
+  --card: #1E293B;
+  --text: #F8FAFC;
+  --text-muted: #94A3B8;
+  --border: #334155;
+  color-scheme: dark;
+}
+
+@layer base {
+  body {
+    @apply bg-bg text-text transition-colors duration-300;
+  }
+}
+
 @layer components {
   /* Cards */
   .card {
-    @apply bg-card rounded-2xl shadow-sm border border-slate-200 p-6;
+    @apply bg-card rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6;
   }
 
   /* Hover variants for cards */
@@ -20,7 +43,7 @@
   }
 
   .btn-secondary {
-    @apply bg-white border border-slate-200 text-slate-900 px-4 py-2 rounded-lg font-medium transition-colors hover:bg-slate-50;
+    @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 px-4 py-2 rounded-lg font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-700;
   }
 
   /* Padrões de UI (Valores) */
@@ -33,15 +56,6 @@
   }
 
   .text-neutral {
-    @apply text-slate-500 font-medium;
-  }
-}
-
-@layer base {
-  /* Preparar para modo escuro futuro */
-  @media (prefers-color-scheme: dark) {
-    :root {
-      /* Adicionar variáveis para o modo dark aqui no futuro */
-    }
+    @apply text-textMuted font-medium;
   }
 }

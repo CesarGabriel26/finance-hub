@@ -1,26 +1,26 @@
 <div class="space-y-6">
   <div class="flex justify-between items-center">
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-gray-900">Importar Extratos</h1>
-      <p class="text-gray-500 mt-1">Importe arquivos CSV ou OFX para injetar movimentações em sua conta.</p>
+      <h1 class="text-3xl font-bold tracking-tight text-text">Importar Extratos</h1>
+      <p class="text-textMuted mt-1">Importe arquivos CSV ou OFX para injetar movimentações em sua conta.</p>
     </div>
   </div>
 
-  <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6">
+  <div class="bg-card shadow-sm rounded-xl border border-border p-6">
     <!-- Configuration -->
-    <div class="flex flex-col md:flex-row gap-4 mb-8 pb-6 border-b border-gray-100">
+    <div class="flex flex-col md:flex-row gap-4 mb-8 pb-6 border-b border-border">
       <div class="flex-1">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Conta Destino</label>
+        <label class="block text-sm font-medium text-text mb-1">Conta Destino</label>
         <select [ngModel]="selectedAccountId()" (ngModelChange)="selectedAccountId.set($event)"
-          class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 border">
-          <option *ngFor="let acc of accounts()" [value]="acc.id">{{ acc.name }}</option>
-          <option *ngIf="accounts().length === 0" [value]="null" disabled>Nenhuma conta cadastrada</option>
+          class="w-full rounded-md border-border bg-bg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 border text-text">
+          <option *ngFor="let acc of accounts()" [value]="acc.id" class="bg-card">{{ acc.name }}</option>
+          <option *ngIf="accounts().length === 0" [value]="null" disabled class="bg-card">Nenhuma conta cadastrada</option>
         </select>
       </div>
       <div class="w-full md:w-64">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Mês de Referência</label>
+        <label class="block text-sm font-medium text-text mb-1">Mês de Referência</label>
         <input type="month" [ngModel]="selectedPeriod()" (ngModelChange)="selectedPeriod.set($event)"
-          class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border" />
+          class="w-full rounded-md border-border bg-bg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border text-text" />
       </div>
     </div>
 
@@ -30,19 +30,19 @@
         <input type="file" (change)="onFileSelected($event)" accept=".csv,.ofx" multiple
           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
         <div
-          class="border-2 border-dashed border-gray-300 rounded-xl p-10 flex flex-col items-center justify-center transition-all group-hover:border-blue-400 group-hover:bg-blue-50/30">
+          class="border-2 border-dashed border-border rounded-xl p-10 flex flex-col items-center justify-center transition-all group-hover:border-blue-500/50 group-hover:bg-blue-500/5">
           <div
-            class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-            <lucide-icon [img]="FileUpIcon" class="w-6 h-6 text-blue-600"></lucide-icon>
+            class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <lucide-icon [img]="FileUpIcon" class="w-6 h-6 text-blue-500"></lucide-icon>
           </div>
-          <p class="text-sm font-semibold text-gray-900">Clique para selecionar ou arraste os arquivos</p>
-          <p class="text-xs text-gray-500 mt-1">Formatos suportados: CSV, OFX (Múltiplos arquivos permitidos)</p>
+          <p class="text-sm font-semibold text-text">Clique para selecionar ou arraste os arquivos</p>
+          <p class="text-xs text-textMuted mt-1">Formatos suportados: CSV, OFX (Múltiplos arquivos permitidos)</p>
         </div>
       </div>
     </div>
 
     <!-- Status Messages -->
-    <div *ngIf="isParsing()" class="flex items-center justify-center p-4 text-blue-600">
+    <div *ngIf="isParsing()" class="flex items-center justify-center p-4 text-blue-500">
       <div class="animate-spin mr-2">
         <svg class="h-5 w-5" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
@@ -55,13 +55,13 @@
     </div>
 
     <div *ngIf="importStatus() === 'success'"
-      class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-lg flex items-center mb-6">
+      class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 rounded-lg flex items-center mb-6">
       <lucide-icon [img]="CheckCircleIcon" class="w-5 h-5 mr-3"></lucide-icon>
       Tudo pronto! As movimentações foram importadas com sucesso.
     </div>
 
     <div *ngIf="errorMessage()"
-      class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg flex items-center mb-6">
+      class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-4 rounded-lg flex items-center mb-6">
       <lucide-icon [img]="AlertCircleIcon" class="w-5 h-5 mr-3"></lucide-icon>
       {{ errorMessage() }}
     </div>
@@ -71,87 +71,87 @@
       
       <!-- Summaries per file -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div *ngFor="let s of parsedStatements()" class="bg-gray-50 border border-gray-100 rounded-xl p-4 shadow-sm">
+        <div *ngFor="let s of parsedStatements()" class="bg-bg border border-border rounded-xl p-4 shadow-sm">
           <div class="flex justify-between items-start mb-3">
             <div>
-              <h4 class="font-bold text-gray-900 truncate max-w-[200px]">{{ s.fileName }}</h4>
-              <p class="text-xs text-gray-500">{{ s.period }} | {{ s.movements.length }} movimentações</p>
+              <h4 class="font-bold text-text truncate max-w-[200px]">{{ s.fileName }}</h4>
+              <p class="text-xs text-textMuted">{{ s.period }} | {{ s.movements.length }} movimentações</p>
             </div>
-            <div *ngIf="s.isComplete" class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+            <div *ngIf="s.isComplete" class="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/20 uppercase">
               Completo
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+           <div class="grid grid-cols-2 gap-4">
             <div>
-              <span class="text-[10px] text-gray-400 uppercase font-bold block">Saldo Inicial</span>
-              <span class="text-sm font-semibold" [ngClass]="(s.initialBalance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+              <span class="text-[10px] text-textMuted uppercase font-bold block">Saldo Inicial</span>
+              <span class="text-sm font-semibold" [ngClass]="(s.initialBalance || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'">
                 {{ s.initialBalance !== null ? (s.initialBalance | currency:'BRL') : 'N/A' }}
               </span>
             </div>
             <div class="text-right">
-              <span class="text-[10px] text-gray-400 uppercase font-bold block">Saldo Final</span>
-              <span class="text-sm font-semibold" [ngClass]="(s.finalBalance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+              <span class="text-[10px] text-textMuted uppercase font-bold block">Saldo Final</span>
+              <span class="text-sm font-semibold" [ngClass]="(s.finalBalance || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'">
                 {{ s.finalBalance !== null ? (s.finalBalance | currency:'BRL') : 'N/A' }}
               </span>
             </div>
             <div>
-              <span class="text-[10px] text-gray-400 uppercase font-bold block">Créditos</span>
-              <span class="text-sm font-semibold text-emerald-600">+{{ s.credit | currency:'BRL' }}</span>
+              <span class="text-[10px] text-textMuted uppercase font-bold block">Créditos</span>
+              <span class="text-sm font-semibold text-emerald-500">+{{ s.credit | currency:'BRL' }}</span>
             </div>
             <div class="text-right">
-              <span class="text-[10px] text-gray-400 uppercase font-bold block">Débitos</span>
-              <span class="text-sm font-semibold text-rose-600">-{{ s.debit | currency:'BRL' }}</span>
+              <span class="text-[10px] text-textMuted uppercase font-bold block">Débitos</span>
+              <span class="text-sm font-semibold text-rose-500">-{{ s.debit | currency:'BRL' }}</span>
             </div>
           </div>
         </div>
       </div>
 
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-gray-800">Todas as Movimentações ({{ allMovements().length }})</h3>
+        <h3 class="text-lg font-bold text-text">Todas as Movimentações ({{ allMovements().length }})</h3>
       </div>
 
-      <div class="border border-gray-100 rounded-xl overflow-hidden shadow-sm mb-6 max-h-[450px] overflow-y-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50 sticky top-0">
+       <div class="border border-border rounded-xl overflow-hidden shadow-sm mb-6 max-h-[450px] overflow-y-auto">
+        <table class="min-w-full divide-y divide-border">
+          <thead class="bg-bg sticky top-0">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mês</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-textMuted uppercase tracking-wider">Data</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-textMuted uppercase tracking-wider">Mês</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-textMuted uppercase tracking-wider">Descrição</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-textMuted uppercase tracking-wider">Categoria</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-textMuted uppercase tracking-wider">Tipo</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-textMuted uppercase tracking-wider">Valor</th>
               <th class="px-6 py-3"></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr *ngFor="let m of allMovements()" class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{{ m.date | date:'dd/MM/yyyy':'UTC' }}</td>
-              <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{{ m.period }}</td>
+          <tbody class="divide-y divide-border">
+            <tr *ngFor="let m of allMovements()" class="hover:bg-bg transition-colors">
+              <td class="px-6 py-4 text-sm text-text whitespace-nowrap">{{ m.date | date:'dd/MM/yyyy':'UTC' }}</td>
+              <td class="px-6 py-4 text-sm text-textMuted whitespace-nowrap">{{ m.period }}</td>
               <td class="px-6 py-4">
                 <input type="text" [(ngModel)]="parsedStatements()[m.sIdx].movements[m.mIdx].description"
-                  class="w-full bg-transparent border-b border-transparent focus:border-blue-300 focus:outline-none py-1">
+                  class="w-full bg-transparent border-b border-transparent focus:border-blue-500 focus:outline-none py-1 text-text">
               </td>
               <td class="px-6 py-4">
                 <select [(ngModel)]="parsedStatements()[m.sIdx].movements[m.mIdx].category_id"
-                  class="text-sm bg-white border border-gray-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none w-full max-w-[150px]">
-                  <option [ngValue]="null">Sem categoria</option>
-                  <option *ngFor="let cat of categories()" [ngValue]="cat.id">{{ cat.name }}</option>
+                  class="text-sm bg-bg border border-border rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none w-full max-w-[150px] text-text">
+                  <option [ngValue]="null" class="bg-card">Sem categoria</option>
+                  <option *ngFor="let cat of categories()" [ngValue]="cat.id" class="bg-card">{{ cat.name }}</option>
                 </select>
               </td>
               <td class="px-6 py-4">
                 <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
-                  [ngClass]="m.type === 'C' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
+                  [ngClass]="m.type === 'C' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'">
                   {{ m.type === 'C' ? 'Crédito' : 'Débito' }}
                 </span>
               </td>
               <td class="px-6 py-4 text-right">
-                <span class="font-medium" [ngClass]="m.type === 'C' ? 'text-emerald-600' : 'text-rose-600'">
+                <span class="font-medium" [ngClass]="m.type === 'C' ? 'text-emerald-500' : 'text-rose-500'">
                   {{ m.amount | currency:'BRL' }}
                 </span>
               </td>
               <td class="px-4 py-3 text-right align-middle">
-                <button (click)="removeMovement(m.sIdx, m.mIdx)" class="text-gray-300 hover:text-red-500 transition-colors">
+                <button (click)="removeMovement(m.sIdx, m.mIdx)" class="text-textMuted hover:text-rose-500 transition-colors">
                   <lucide-icon [img]="TrashIcon" class="w-4 h-4"></lucide-icon>
                 </button>
               </td>
@@ -162,7 +162,7 @@
 
       <div class="flex justify-end gap-3">
         <button (click)="parsedStatements.set([])"
-          class="px-6 py-2.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-600 bg-white hover:bg-gray-50 transition-colors">
+          class="px-6 py-2.5 rounded-lg border border-border text-sm font-bold text-textMuted bg-card hover:bg-bg transition-colors">
           Cancelar
         </button>
         <button (click)="importData()"

@@ -2,7 +2,8 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
-import { LucideAngularModule, Settings, Bell, Monitor, Power, Folder, Plus, Trash2, RefreshCw, HardDrive } from 'lucide-angular';
+import { ThemeService } from '../../services/theme.service';
+import { LucideAngularModule, Settings, Bell, Monitor, Power, Folder, Plus, Trash2, RefreshCw, HardDrive, Moon, Sun } from 'lucide-angular';
 
 @Component({
   selector: 'app-settings',
@@ -13,6 +14,7 @@ import { LucideAngularModule, Settings, Bell, Monitor, Power, Folder, Plus, Tras
 })
 export class SettingsComponent implements OnInit {
   settingsService = inject(SettingsService);
+  themeService = inject(ThemeService);
   
   readonly SettingsIcon = Settings;
   readonly BellIcon = Bell;
@@ -23,6 +25,8 @@ export class SettingsComponent implements OnInit {
   readonly TrashIcon = Trash2;
   readonly RefreshIcon = RefreshCw;
   readonly BackupIcon = HardDrive;
+  readonly MoonIcon = Moon;
+  readonly SunIcon = Sun;
 
   backupPaths = signal<string[]>([]);
   backupFrequency = signal<string>('daily');

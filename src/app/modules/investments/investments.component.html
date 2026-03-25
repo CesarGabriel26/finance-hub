@@ -1,11 +1,11 @@
-<div class="h-full overflow-y-auto p-4 lg:p-6 bg-gray-50/50">
+<div class="h-full overflow-y-auto p-4 lg:p-6 bg-bg">
   <div class="max-w-7xl mx-auto space-y-6">
     
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Investimentos</h1>
-        <p class="text-gray-500 mt-1">Acompanhe seu patrimônio de forma simples</p>
+        <h1 class="text-3xl font-bold text-text tracking-tight">Investimentos</h1>
+        <p class="text-textMuted mt-1">Acompanhe seu patrimônio de forma simples</p>
       </div>
       <div class="flex gap-3">
         <button (click)="showAssetModal.set(true)" 
@@ -14,7 +14,7 @@
           Novo Ativo
         </button>
         <button (click)="showEntryModal.set(true)" 
-                class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-medium transition-all shadow-sm">
+                class="flex items-center gap-2 px-5 py-2.5 bg-card border border-border hover:bg-bg text-text rounded-xl font-medium transition-all shadow-sm">
           <lucide-icon [name]="PlusIcon" size="20"></lucide-icon>
           Registrar Aporte
         </button>
@@ -23,33 +23,33 @@
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
-        <div class="p-4 bg-blue-50 text-blue-600 rounded-2xl">
+      <div class="bg-card p-6 rounded-3xl shadow-sm border border-border flex items-center gap-4">
+        <div class="p-4 bg-blue-600/10 text-blue-500 rounded-2xl">
           <lucide-icon [name]="WalletIcon" size="28"></lucide-icon>
         </div>
         <div>
-          <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Investido</p>
-          <h2 class="text-2xl font-bold text-gray-900">{{ totalInvested() | currency:'BRL' }}</h2>
+          <p class="text-sm font-medium text-textMuted uppercase tracking-wider">Total Investido</p>
+          <h2 class="text-2xl font-bold text-text">{{ totalInvested() | currency:'BRL' }}</h2>
         </div>
       </div>
 
-      <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
-        <div class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl">
+      <div class="bg-card p-6 rounded-3xl shadow-sm border border-border flex items-center gap-4">
+        <div class="p-4 bg-emerald-600/10 text-emerald-500 rounded-2xl">
           <lucide-icon [name]="TrendingUpIcon" size="28"></lucide-icon>
         </div>
         <div>
-          <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Ativos Ativos</p>
-          <h2 class="text-2xl font-bold text-gray-900">{{ assets().length }}</h2>
+          <p class="text-sm font-medium text-textMuted uppercase tracking-wider">Ativos Ativos</p>
+          <h2 class="text-2xl font-bold text-text">{{ assets().length }}</h2>
         </div>
       </div>
 
-      <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4 hidden lg:flex">
-        <div class="p-4 bg-amber-50 text-amber-600 rounded-2xl">
+      <div class="bg-card p-6 rounded-3xl shadow-sm border border-border flex items-center gap-4 hidden lg:flex">
+        <div class="p-4 bg-amber-600/10 text-amber-500 rounded-2xl">
           <lucide-icon [name]="TargetIcon" size="28"></lucide-icon>
         </div>
         <div>
-          <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Metas Definidas</p>
-          <h2 class="text-2xl font-bold text-gray-900">{{ assets().filter(a => !!a.objective_value).length }}</h2>
+          <p class="text-sm font-medium text-textMuted uppercase tracking-wider">Metas Definidas</p>
+          <h2 class="text-2xl font-bold text-text">{{ assets().filter(a => !!a.objective_value).length }}</h2>
         </div>
       </div>
     </div>
@@ -63,73 +63,73 @@
         <!-- Key Metrics Row -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <!-- Avg Contribution -->
-          <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+          <div class="bg-card p-5 rounded-3xl border border-border shadow-sm">
             <div class="flex items-center gap-3 mb-3">
-              <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+              <div class="p-2 bg-indigo-600/10 text-indigo-500 rounded-xl">
                 <lucide-icon [name]="PercentIcon" size="18"></lucide-icon>
               </div>
-              <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Aporte Médio</span>
+              <span class="text-xs font-bold text-textMuted uppercase tracking-wider">Aporte Médio</span>
             </div>
-            <h4 class="text-xl font-black text-gray-900">{{ analysis().averageContribution | currency:'BRL' }}</h4>
-            <p class="text-[10px] text-gray-400 mt-1 uppercase font-bold">Base: últimos 6 meses</p>
+            <h4 class="text-xl font-black text-text">{{ analysis().averageContribution | currency:'BRL' }}</h4>
+            <p class="text-[10px] text-textMuted mt-1 uppercase font-bold">Base: últimos 6 meses</p>
           </div>
 
           <!-- Time to Goal -->
-          <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+          <div class="bg-card p-5 rounded-3xl border border-border shadow-sm">
             <div class="flex items-center gap-3 mb-3">
-              <div class="p-2 bg-amber-50 text-amber-600 rounded-xl">
+              <div class="p-2 bg-amber-600/10 text-amber-500 rounded-xl">
                 <lucide-icon [name]="CalendarIcon" size="18"></lucide-icon>
               </div>
-              <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Meta em</span>
+              <span class="text-xs font-bold text-textMuted uppercase tracking-wider">Meta em</span>
             </div>
-            <h4 class="text-xl font-black text-gray-900">
+            <h4 class="text-xl font-black text-text">
                {{ analysis().monthsToGoal === Infinity ? '--' : analysis().monthsToGoal + ' meses' }}
             </h4>
-            <p class="text-[10px] text-gray-400 mt-1 uppercase font-bold">
+            <p class="text-[10px] text-textMuted mt-1 uppercase font-bold">
                 Previsão: {{ analysis().monthsToGoal === Infinity ? 'Sem aportes' : analysis().targetDate | date:'MMMM/yyyy' }}
             </p>
           </div>
 
           <!-- Invested % -->
-          <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+          <div class="bg-card p-5 rounded-3xl border border-border shadow-sm">
             <div class="flex items-center gap-3 mb-3">
-              <div class="p-2 bg-rose-50 text-rose-600 rounded-xl">
+              <div class="p-2 bg-rose-600/10 text-rose-500 rounded-xl">
                 <lucide-icon [name]="ZapIcon" size="18"></lucide-icon>
               </div>
-              <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">% da Renda</span>
+              <span class="text-xs font-bold text-textMuted uppercase tracking-wider">% da Renda</span>
             </div>
-            <h4 class="text-xl font-black text-gray-900">{{ analysis().investedPercentage | number:'1.1-1' }}%</h4>
-            <p class="text-[10px] text-gray-400 mt-1 uppercase font-bold">Investido neste mês</p>
+            <h4 class="text-xl font-black text-text">{{ analysis().investedPercentage | number:'1.1-1' }}%</h4>
+            <p class="text-[10px] text-textMuted mt-1 uppercase font-bold">Investido neste mês</p>
           </div>
         </div>
 
         <!-- Trend Chart -->
-        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm transition-all"
-             [class.ring-2]="selectedAsset()" [class.ring-emerald-100]="selectedAsset()">
+        <div class="bg-card p-6 rounded-[32px] border border-border shadow-sm transition-all"
+             [class.ring-2]="selectedAsset()" [class.ring-emerald-500/20]="selectedAsset()">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-                <h3 class="text-lg font-black text-gray-900 flex items-center gap-2">
+                <h3 class="text-lg font-black text-text flex items-center gap-2">
                     Tendência de Aportes
                     @if (selectedAsset()) {
-                        <span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] rounded-lg border border-emerald-100 animate-pulse">
+                        <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[10px] rounded-lg border border-emerald-500/20 animate-pulse">
                             ATIVO: {{ selectedAsset()?.name }}
                         </span>
                     } @else {
-                        <span class="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] rounded-lg border border-blue-100">
+                        <span class="px-2 py-0.5 bg-blue-500/10 text-blue-500 text-[10px] rounded-lg border border-blue-500/20">
                             GERAL
                         </span>
                     }
                 </h3>
-                <p class="text-xs text-gray-400">Evolução dos seus investimentos mensalmente</p>
+                <p class="text-xs text-textMuted">Evolução dos seus investimentos mensalmente</p>
             </div>
             <div class="flex items-center gap-2">
-                <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full h-8">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 text-blue-500 rounded-full h-8">
                     <lucide-icon [name]="TrendingUpIcon" size="14"></lucide-icon>
                     <span class="text-[10px] font-black uppercase whitespace-nowrap">Consistência: {{ analysis().consecutiveMonths }} meses</span>
                 </div>
                 @if (selectedAsset()) {
                     <button (click)="selectedAsset.set(null)" 
-                            class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full h-8 transition-all group">
+                            class="flex items-center gap-2 px-3 py-1.5 bg-bg hover:bg-card border border-border text-textMuted rounded-full h-8 transition-all group">
                         <lucide-icon [name]="XIcon" size="14" class="group-hover:rotate-90 transition-transform"></lucide-icon>
                         <span class="text-[10px] font-black uppercase">Limpar</span>
                     </button>
@@ -192,25 +192,25 @@
         </div>
 
         <!-- Automated Insights -->
-        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+        <div class="bg-card p-6 rounded-[32px] border border-border shadow-sm">
           <div class="flex items-center gap-3 mb-4">
-            <div class="p-2 bg-amber-50 text-amber-600 rounded-xl">
+            <div class="p-2 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20">
                <lucide-icon [name]="LightbulbIcon" size="20"></lucide-icon>
             </div>
-            <h3 class="font-bold text-gray-900">Insights do Sistema</h3>
+            <h3 class="font-bold text-text">Insights do Sistema</h3>
           </div>
           
           <div class="space-y-3">
             @for (insight of analysis().insights; track insight) {
-                <div class="flex gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                <div class="flex gap-3 p-3 rounded-2xl bg-bg border border-border">
                     <div class="text-blue-500 mt-0.5">
                         <lucide-icon [name]="InfoIcon" size="16"></lucide-icon>
                     </div>
-                    <p class="text-xs font-medium text-gray-600 leading-relaxed">{{ insight }}</p>
+                    <p class="text-xs font-medium text-textMuted leading-relaxed">{{ insight }}</p>
                 </div>
             } @empty {
                 <div class="py-8 text-center">
-                    <p class="text-xs text-gray-400">Continue aportando para gerar mais insights.</p>
+                    <p class="text-xs text-textMuted italic">Continue aportando para gerar mais insights.</p>
                 </div>
             }
           </div>
@@ -224,7 +224,7 @@
       
       <!-- List -->
       <div class="xl:col-span-2 space-y-4">
-        <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+        <h3 class="text-lg font-semibold text-text flex items-center gap-2 mb-4">
           <lucide-icon [name]="LandmarkIcon" size="20"></lucide-icon>
           Seus Ativos
         </h3>
@@ -233,18 +233,18 @@
           <div (click)="selectAsset(asset)"
                [class.border-blue-500]="selectedAsset()?.id === asset.id"
                [class.ring-2]="selectedAsset()?.id === asset.id"
-               [class.ring-blue-100]="selectedAsset()?.id === asset.id"
-               class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md cursor-pointer transition-all group relative overflow-hidden">
+               [class.ring-blue-500/20]="selectedAsset()?.id === asset.id"
+               class="bg-card p-5 rounded-3xl border border-border shadow-sm hover:shadow-md cursor-pointer transition-all group relative overflow-hidden">
             
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-50 transition-colors">
+                <div class="w-12 h-12 rounded-2xl bg-bg flex items-center justify-center text-blue-500 group-hover:bg-blue-500/10 transition-colors">
                   <lucide-icon [name]="getAssetTypeLabel(asset.type) === 'Cripto' ? WalletIcon : LandmarkIcon" size="24"></lucide-icon>
                 </div>
                 <div>
-                  <h4 class="font-bold text-gray-900 leading-tight">{{ asset.name }}</h4>
+                  <h4 class="font-bold text-text leading-tight">{{ asset.name }}</h4>
                   <div class="flex items-center gap-2 mt-1">
-                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ getAssetTypeLabel(asset.type) }}</span>
+                    <span class="text-[10px] font-black text-textMuted uppercase tracking-widest">{{ getAssetTypeLabel(asset.type) }}</span>
                     @let analysis = assetAnalysis().get(asset.id!);
                     @if (analysis?.status) {
                       <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter shadow-sm border"
@@ -262,10 +262,10 @@
               </div>
               
               <div class="text-right">
-                <p class="text-lg font-black text-gray-900">{{ (asset.total_invested || 0) | currency:'BRL' }}</p>
+                <p class="text-lg font-black text-text">{{ (asset.total_invested || 0) | currency:'BRL' }}</p>
                 @if (asset.objective_value) {
                   @let analysis = assetAnalysis().get(asset.id!);
-                  <p class="text-[10px] font-bold text-gray-400">
+                  <p class="text-[10px] font-bold text-textMuted">
                     {{ analysis?.monthsToGoal === Infinity ? 'Sem Aportes' : (analysis?.monthsToGoal + ' meses p/ meta') }}
                   </p>
                 }
@@ -276,17 +276,17 @@
               @let analysis = assetAnalysis().get(asset.id!);
               @let progress = calculateProgress(asset);
               <div class="space-y-1.5">
-                <div class="flex justify-between text-[10px] font-bold text-gray-500 uppercase">
+                <div class="flex justify-between text-[10px] font-bold text-textMuted uppercase">
                   <span>Progresso do Objetivo</span>
                   <span>{{ progress | number:'1.0-0' }}%</span>
                 </div>
-                <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-2 w-full bg-bg rounded-full overflow-hidden border border-border/50">
                   <div class="h-full rounded-full transition-all duration-700" 
                        [style.width.%]="progress"
                        [class.bg-emerald-500]="analysis?.status === 'ahead'"
-                       [class.bg-blue-500]="analysis?.status === 'on-track'"
+                       [class.bg-blue-500]="analysis?.status === 'on_track'"
                        [class.bg-amber-500]="analysis?.status === 'delayed'"
-                       [class.bg-gray-400]="!analysis?.status"></div>
+                       [class.bg-textMuted]="!analysis?.status"></div>
                 </div>
                 
                 @if (analysis?.missingMonths > 0) {
@@ -299,69 +299,69 @@
             }
 
             <button (click)="deleteAsset(asset.id!, $event)" 
-                    class="absolute top-4 right-4 p-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                    class="absolute top-4 right-4 p-2 text-textMuted hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
               <lucide-icon [name]="TrashIcon" size="18"></lucide-icon>
             </button>
           </div>
         } @empty {
-          <div class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-12 text-center">
-            <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-4 text-gray-400">
+          <div class="bg-card border-2 border-dashed border-border rounded-3xl p-12 text-center">
+            <div class="w-16 h-16 bg-bg rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-4 text-textMuted border border-border">
               <lucide-icon [name]="InfoIcon" size="32"></lucide-icon>
             </div>
-            <h4 class="text-lg font-bold text-gray-900 mb-1">Nenhum ativo criado</h4>
-            <p class="text-gray-500 max-w-xs mx-auto">Comece adicionando um novo ativo como "Caixinha" ou "Ações".</p>
+            <h4 class="text-lg font-bold text-text mb-1">Nenhum ativo criado</h4>
+            <p class="text-textMuted max-w-xs mx-auto">Comece adicionando um novo ativo como "Caixinha" ou "Ações".</p>
           </div>
         }
       </div>
 
       <!-- Detail View / History -->
       <div class="space-y-6">
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 min-h-[400px]">
+        <div class="bg-card p-6 rounded-3xl shadow-sm border border-border min-h-[400px]">
           @if (selectedAsset()) {
             <div class="flex items-center justify-between mb-6">
-              <h3 class="text-xl font-black text-gray-900">Extrato: {{ selectedAsset()?.name }}</h3>
+              <h3 class="text-xl font-black text-text">Extrato: {{ selectedAsset()?.name }}</h3>
               <button (click)="openEntryModal()" 
-                      class="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                      class="p-2 text-blue-500 hover:bg-blue-500/10 rounded-xl transition-all">
                 <lucide-icon [name]="PlusIcon" size="24"></lucide-icon>
               </button>
             </div>
 
             <div class="space-y-4">
               @for (entry of entries(); track entry.id) {
-                <div class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors group">
+                <div class="flex items-center justify-between p-4 rounded-2xl bg-bg border border-border hover:border-blue-500/20 transition-colors group">
                   <div class="flex items-center gap-3">
                     <div [class]="entry.type === 'deposit' ? 'text-emerald-500' : 'text-rose-500'">
                       <lucide-icon [name]="entry.type === 'deposit' ? ArrowRightIcon : XIcon" size="18"></lucide-icon>
                     </div>
                     <div>
-                      <p class="text-sm font-bold text-gray-900 leading-tight">{{ entry.type === 'deposit' ? 'Aporte' : 'Resgate' }}</p>
-                      <p class="text-[10px] text-gray-400 uppercase font-bold">{{ entry.date | date:'shortDate' }} • {{ entry.account_name }}</p>
+                      <p class="text-sm font-bold text-text leading-tight">{{ entry.type === 'deposit' ? 'Aporte' : 'Resgate' }}</p>
+                      <p class="text-[10px] text-textMuted uppercase font-bold">{{ entry.date | date:'shortDate' }} • {{ entry.account_name }}</p>
                     </div>
                   </div>
                   <div class="flex items-center gap-4">
-                    <p [class]="entry.type === 'deposit' ? 'text-emerald-600' : 'text-rose-600'" class="font-bold">
+                    <p [class]="entry.type === 'deposit' ? 'text-emerald-500' : 'text-rose-500'" class="font-bold">
                       {{ (entry.type === 'deposit' ? entry.amount : -entry.amount) | currency:'BRL' }}
                     </p>
                     <button (click)="deleteEntry(entry.id!)" 
-                            class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all">
+                            class="opacity-0 group-hover:opacity-100 text-textMuted hover:text-rose-500 transition-all">
                       <lucide-icon [name]="TrashIcon" size="16"></lucide-icon>
                     </button>
                   </div>
                 </div>
               } @empty {
                 <div class="py-12 text-center">
-                  <lucide-icon [name]="HistoryIcon" class="mx-auto text-gray-200 mb-2" size="48"></lucide-icon>
-                  <p class="text-sm text-gray-400">Nenhum lançamento registrado.</p>
+                  <lucide-icon [name]="HistoryIcon" class="mx-auto text-textMuted opacity-20 mb-2" size="48"></lucide-icon>
+                  <p class="text-sm text-textMuted italic">Nenhum lançamento registrado.</p>
                 </div>
               }
             </div>
           } @else {
             <div class="h-full flex flex-col items-center justify-center text-center p-8">
-              <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-4 animate-bounce">
+              <div class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500 mb-4 animate-bounce border border-blue-500/20">
                 <lucide-icon [name]="ArrowRightIcon" size="32" class="-rotate-90"></lucide-icon>
               </div>
-              <h4 class="text-lg font-bold text-gray-900 mb-2">Selecione um Ativo</h4>
-              <p class="text-sm text-gray-500">Clique em um investimento da lista para ver o histórico detalhado.</p>
+              <h4 class="text-lg font-bold text-text mb-2">Selecione um Ativo</h4>
+              <p class="text-sm text-textMuted">Clique em um investimento da lista para ver o histórico detalhado.</p>
             </div>
           }
         </div>
@@ -371,43 +371,43 @@
 
   <!-- Modal: Novo Ativo -->
   @if (showAssetModal()) {
-    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-[40px] shadow-2xl p-8 max-w-md w-full border border-gray-100 animate-in fade-in zoom-in duration-300">
+    <div class="fixed inset-0 bg-bg/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div class="bg-card rounded-[40px] shadow-2xl p-8 max-w-md w-full border border-border animate-in fade-in zoom-in duration-300">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-black text-gray-900 uppercase tracking-tight">Novo Investimento</h2>
-          <button (click)="showAssetModal.set(false)" class="text-gray-400 hover:text-gray-600">
+          <h2 class="text-2xl font-black text-text uppercase tracking-tight">Novo Investimento</h2>
+          <button (click)="showAssetModal.set(false)" class="text-textMuted hover:text-text">
             <lucide-icon [name]="XIcon" size="24"></lucide-icon>
           </button>
         </div>
 
         <div class="space-y-6">
           <div class="space-y-2">
-            <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Nome</label>
+            <label class="text-xs font-black text-textMuted uppercase tracking-widest pl-1">Nome</label>
             <input type="text" [(ngModel)]="newAsset.name" placeholder="Ex: Caixinha Nubank"
-                   class="w-full h-14 px-6 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all">
+                   class="w-full h-14 px-6 bg-bg border border-border rounded-2xl font-bold text-text focus:ring-2 focus:ring-blue-500 transition-all outline-none">
           </div>
 
           <div class="space-y-2">
-            <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Tipo</label>
+            <label class="text-xs font-black text-textMuted uppercase tracking-widest pl-1">Tipo</label>
             <select [(ngModel)]="newAsset.type" 
-                    class="w-full h-14 px-6 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
-              <option value="renda_fixa">Renda Fixa</option>
-              <option value="cripto">Cripto</option>
-              <option value="acoes">Ações</option>
-              <option value="outros">Outros</option>
+                    class="w-full h-14 px-6 bg-bg border border-border rounded-2xl font-bold text-text focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer outline-none">
+              <option value="renda_fixa" class="bg-card">Renda Fixa</option>
+              <option value="cripto" class="bg-card">Cripto</option>
+              <option value="acoes" class="bg-card">Ações</option>
+              <option value="outros" class="bg-card">Outros</option>
             </select>
           </div>
 
           <div class="space-y-2">
-            <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Objetivo (Opcional)</label>
+            <label class="text-xs font-black text-textMuted uppercase tracking-widest pl-1">Objetivo (Opcional)</label>
             <input type="number" [(ngModel)]="newAsset.objective_value" placeholder="R$ 0,00"
-                   class="w-full h-14 px-6 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all text-xl">
+                   class="w-full h-14 px-6 bg-bg border border-border rounded-2xl font-bold text-text focus:ring-2 focus:ring-blue-500 transition-all text-xl outline-none">
           </div>
 
           <div class="space-y-2">
-            <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Saldo Inicial (Valor já investido)</label>
+            <label class="text-xs font-black text-textMuted uppercase tracking-widest pl-1">Saldo Inicial (Valor já investido)</label>
             <input type="number" [(ngModel)]="newAsset.initial_balance" placeholder="R$ 0,00"
-                   class="w-full h-14 px-6 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all text-xl">
+                   class="w-full h-14 px-6 bg-bg border border-border rounded-2xl font-bold text-text focus:ring-2 focus:ring-blue-500 transition-all text-xl outline-none">
           </div>
 
           <button (click)="saveAsset()" [disabled]="!newAsset.name"
@@ -421,74 +421,74 @@
 
   <!-- Modal: Lançamento -->
   @if (showEntryModal()) {
-    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-[40px] shadow-2xl p-8 max-w-md w-full border border-gray-100 animate-in fade-in zoom-in duration-300">
+    <div class="fixed inset-0 bg-bg/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div class="bg-card rounded-[40px] shadow-2xl p-8 max-w-md w-full border border-border animate-in fade-in zoom-in duration-300">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-black text-gray-900 uppercase tracking-tight">Registrar Lançamento</h2>
-          <button (click)="showEntryModal.set(false)" class="text-gray-400 hover:text-gray-600">
+          <h2 class="text-2xl font-black text-text uppercase tracking-tight">Registrar Lançamento</h2>
+          <button (click)="showEntryModal.set(false)" class="text-textMuted hover:text-text">
             <lucide-icon [name]="XIcon" size="24"></lucide-icon>
           </button>
         </div>
 
         <div class="space-y-5">
-          <div class="flex p-1.5 bg-gray-50 rounded-2xl">
+          <div class="flex p-1.5 bg-bg rounded-2xl border border-border">
             <button (click)="newEntry.type = 'deposit'"
-                    [class.bg-white]="newEntry.type === 'deposit'"
+                    [class.bg-card]="newEntry.type === 'deposit'"
                     [class.shadow-sm]="newEntry.type === 'deposit'"
                     class="flex-1 py-3 px-4 rounded-xl font-bold transition-all"
-                    [class.text-emerald-600]="newEntry.type === 'deposit'"
-                    [class.text-gray-400]="newEntry.type !== 'deposit'">
+                    [class.text-emerald-500]="newEntry.type === 'deposit'"
+                    [class.text-textMuted]="newEntry.type !== 'deposit'">
               Aporte
             </button>
             <button (click)="newEntry.type = 'withdrawal'"
-                    [class.bg-white]="newEntry.type === 'withdrawal'"
+                    [class.bg-card]="newEntry.type === 'withdrawal'"
                     [class.shadow-sm]="newEntry.type === 'withdrawal'"
                     class="flex-1 py-3 px-4 rounded-xl font-bold transition-all"
-                    [class.text-rose-600]="newEntry.type === 'withdrawal'"
-                    [class.text-gray-400]="newEntry.type !== 'withdrawal'">
+                    [class.text-rose-500]="newEntry.type === 'withdrawal'"
+                    [class.text-textMuted]="newEntry.type !== 'withdrawal'">
               Resgate
             </button>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
-              <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Valor</label>
+              <label class="text-xs font-black text-textMuted uppercase tracking-widest pl-1">Valor</label>
               <input type="number" [(ngModel)]="newEntry.amount" placeholder="0,00"
-                     class="w-full h-14 px-6 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all text-xl">
+                     class="w-full h-14 px-6 bg-bg border border-border rounded-2xl font-bold text-text focus:ring-2 focus:ring-blue-500 transition-all text-xl outline-none">
             </div>
             <div class="space-y-2">
-              <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Data</label>
+              <label class="text-xs font-black text-textMuted uppercase tracking-widest pl-1">Data</label>
               <input type="date" [(ngModel)]="newEntry.date"
-                     class="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                     class="w-full h-14 px-4 bg-bg border border-border rounded-2xl font-bold text-text focus:ring-2 focus:ring-blue-500 transition-all text-sm outline-none">
             </div>
           </div>
 
           <div class="space-y-2">
-            <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Ativo Destino</label>
+            <label class="text-xs font-black text-textMuted uppercase tracking-widest pl-1">Ativo Destino</label>
             <select [(ngModel)]="newEntry.asset_id" 
-                    class="w-full h-14 px-6 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
-              <option [ngValue]="undefined">Selecione o ativo...</option>
+                    class="w-full h-14 px-6 bg-bg border border-border rounded-2xl font-bold text-text focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer outline-none">
+              <option [ngValue]="undefined" class="bg-card">Selecione o ativo...</option>
               @for (asset of assets(); track asset.id) {
-                <option [value]="asset.id">{{ asset.name }}</option>
+                <option [value]="asset.id" class="bg-card">{{ asset.name }}</option>
               }
             </select>
           </div>
 
           <div class="space-y-2">
-            <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Conta Bancária</label>
+            <label class="text-xs font-black text-textMuted uppercase tracking-widest pl-1">Conta Bancária</label>
             <select [(ngModel)]="newEntry.account_id" 
-                    class="w-full h-14 px-6 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
-              <option [ngValue]="undefined">Selecione a conta...</option>
+                    class="w-full h-14 px-6 bg-bg border border-border rounded-2xl font-bold text-text focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer outline-none">
+              <option [ngValue]="undefined" class="bg-card">Selecione a conta...</option>
               @for (acc of accounts(); track acc.id) {
-                <option [value]="acc.id">{{ acc.name }} (Saldo: {{ acc.balance | currency:'BRL' }})</option>
+                <option [value]="acc.id" class="bg-card">{{ acc.name }} (Saldo: {{ acc.balance | currency:'BRL' }})</option>
               }
             </select>
           </div>
 
           <div class="space-y-2">
-            <label class="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Descrição</label>
+            <label class="text-xs font-black text-textMuted uppercase tracking-widest pl-1">Descrição</label>
             <input type="text" [(ngModel)]="newEntry.description" placeholder="Opcional..."
-                   class="w-full h-14 px-6 bg-gray-50 border-none rounded-2xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 transition-all">
+                   class="w-full h-14 px-6 bg-bg border border-border rounded-2xl font-bold text-text focus:ring-2 focus:ring-blue-500 transition-all outline-none">
           </div>
 
           <button (click)="saveEntry()" [disabled]="!newEntry.amount || !newEntry.account_id || !newEntry.asset_id"
