@@ -120,7 +120,6 @@
         ]
     },
     "1.0.5": {
-        "latest": true,
         "date": "2026-03-24",
         "features": [
             {
@@ -141,6 +140,32 @@
                     "Limpeza automatizada de arquivos temporários ao atualizar a versão do app.",
                     "Resolução definitiva do erro 'Acesso Negado' na inicialização da base de dados.",
                     "Novo sistema de logs diagnósticos para suporte e monitoramento de performance."
+                ]
+            }
+        ]
+    },
+    "1.1.0": {
+        "latest": true,
+        "date": "2026-03-25",
+        "features": [
+            {
+                "title": "Suporte a Tema Escuro (Dark Mode)",
+                "description": "O Finance Hub agora suporta Dark Mode de forma nativa e persistente, garantindo conforto visual em qualquer horário.",
+                "steps": [
+                    "Ativação do Dark Mode por padrão para novos usuários.",
+                    "Toggle de tema global disponível na página de Configurações.",
+                    "Persistência automática da preferência do usuário entre sessões.",
+                    "Integração profunda com as preferências do sistema operacional."
+                ]
+            },
+            {
+                "title": "Auditoria Visual & Refatoração UI",
+                "description": "Uma revisão completa da interface para garantir 100% de consistência em ambos os temas.",
+                "steps": [
+                    "Padronização da paleta financeira: Esmeralda para receitas e Rosa para despesas em todo o app.",
+                    "Refatoração de todos os módulos (Investimentos, Contas, Extratos) para usar variáveis CSS dinâmicas.",
+                    "Eliminação de cores fixas (hardcoded) para uma experiência visual premium e Coerente.",
+                    "Ajustes finos em diálogos, modais e gráficos para melhor contraste e legibilidade."
                 ]
             }
         ]
