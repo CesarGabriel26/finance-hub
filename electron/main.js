@@ -3,13 +3,13 @@ import path from "path";
 import AutoLaunch from "auto-launch";
 import Store from "electron-store";
 import { fileURLToPath } from "url";
-import { setupAPI } from "./api.js";
-import { setupUpdater, checkForUpdates, downloadUpdate, installUpdate } from "./updater.js";
-import { dbAll, dbGet, dbRun, closeDatabase } from "./database.js";
-import { logInfo, logError, setupConsoleRedirection } from "./utils/logger.js";
-import { backupService } from "./utils/backupService.js";
-import { recoveryService } from "./utils/recoveryService.js";
-import { restoreFromBackup } from "./utils/restore.js";
+import { setupAPI } from "./src/api.js";
+import { setupUpdater, checkForUpdates, downloadUpdate, installUpdate } from "./src/services/updater.services.js";
+import { dbAll, dbGet, dbRun, closeDatabase } from "./src/services/database.services.js";
+import { logInfo, logError, setupConsoleRedirection } from "./src/utils/logger.utils.js";
+import { backupService } from "./src/services/backup.services.js";
+import { recoveryService } from "./src/services/recovery.services.js";
+import { restoreFromBackup } from "./src/utils/restore.utils.js";
 import fs from "fs";
 
 // -- 0. LOGGING INITIALIZATION --
@@ -250,7 +250,7 @@ function createTray() {
         if (!fs.existsSync(iconPath)) {
             console.error(`[Tray] Icon not found at ${iconPath}. Tray might not show.`);
         }
-        
+
         tray = new Tray(iconPath);
         const contextMenu = Menu.buildFromTemplate([
             { label: 'Abrir Finance Hub', click: () => showWindow() },
@@ -407,10 +407,10 @@ app.whenReady().then(async () => {
     });
 
     // --- 6.8. SCHEDULED TASKS (Delayed start to allow app stabilization)
-setTimeout(() => {
-    checkDueBillsAndNotify();
-    billCheckInterval = setInterval(checkDueBillsAndNotify, 6 * 60 * 60 * 1000);
-}, 5000);
+    setTimeout(() => {
+        checkDueBillsAndNotify();
+        billCheckInterval = setInterval(checkDueBillsAndNotify, 6 * 60 * 60 * 1000);
+    }, 5000);
 
     app.on("activate", () => showWindow());
 });
@@ -421,11 +421,11 @@ app.on("window-all-closed", () => {
 
 app.on("will-quit", async (event) => {
     console.log("Finance Hub is shutting down. Cleaning up...");
-    
+
     // Clear background intervals
     if (billCheckInterval) clearInterval(billCheckInterval);
     backupService.stopAutoBackup();
-    
+
     // Close database connection
     try {
         await closeDatabase();

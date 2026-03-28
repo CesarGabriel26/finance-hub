@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { dbPath, dbGet, dbRun } from '../database.js';
+import { dbPath, dbGet, dbRun } from './database.services.js';
 
 /**
  * Service to handle database backups.

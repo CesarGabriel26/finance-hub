@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { dbPath, closeDatabase } from '../database.js';
-import { logInfo, logError } from './logger.js';
+import { dbPath, closeDatabase } from '../services/database.services.js';
+import { logInfo, logError } from './logger.utils.js';
 import { app } from 'electron';
 
 /**

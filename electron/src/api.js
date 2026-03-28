@@ -1,5 +1,5 @@
 import { ipcMain } from "electron";
-import { dbAll, dbRun, dbGet } from "./database.js";
+import { dbAll, dbRun, dbGet } from "./services/database.services.js";
 
 function handleIpc(channel, handler) {
     console.log(`[IPC] Registering handler: ${channel}`);
@@ -12,9 +12,6 @@ function handleIpc(channel, handler) {
         }
     });
 }
-
-let memoryRatesCache = null;
-let memoryRatesDate = null;
 
 async function recalculateAccountBalance(accountId) {
     // Obter o primeiro AC

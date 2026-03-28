@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { dbGet, dbPath } from '../database.js';
-import { backupService } from './backupService.js';
+import { dbGet, dbPath } from './database.services.js';
+import { backupService } from './backup.services.js';
 
 /**
  * Service to handle database recovery.
@@ -26,14 +26,14 @@ export const recoveryService = {
     async initRecovery() {
         console.log('Performing database health check...');
         const isHealthy = await this.checkDatabaseHealth();
-        
+
         if (isHealthy) {
             console.log('Database is healthy.');
             return true;
         }
 
         console.error('CRITICAL: Database corruption detected. Starting automatic recovery...');
-        
+
         try {
             const settings = await backupService.getSettings();
             const backupPath = settings.backup_path;
@@ -58,7 +58,7 @@ export const recoveryService = {
 
             // Replace current DB with the backup
             fs.copyFileSync(latestBackup, dbPath);
-            
+
             console.log('Automatic recovery successful. Database restored from latest backup.');
             return true;
         } catch (error) {
