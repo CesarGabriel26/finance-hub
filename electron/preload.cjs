@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
     // Categories
     getCategories: () => ipcRenderer.invoke('get-categories'),
     addCategory: (category) => ipcRenderer.invoke('add-category', category),
+    updateCategory: (id, category) => ipcRenderer.invoke('update-category', id, category),
     deleteCategory: (id) => ipcRenderer.invoke('delete-category', id),
 
     getMovements: (accountId, period) => ipcRenderer.invoke('get-movements', accountId, period),

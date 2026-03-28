@@ -1,48 +1,143 @@
 <div class="space-y-6">
-  <div>
-    <h1 class="text-3xl font-bold tracking-tight text-text">Categorias</h1>
-    <p class="text-textMuted mt-1">Organize seus rendimentos e despesas.</p>
-  </div>
-
-  <div class="bg-card shadow-sm rounded-xl border border-border overflow-hidden">
-    <div class="p-6 border-b border-border bg-bg/50">
-      <h3 class="text-lg font-medium text-text mb-4">Criar Categoria</h3>
-      <div class="flex flex-col sm:flex-row gap-4">
-        <input type="text" [ngModel]="newCategoryName()" (ngModelChange)="newCategoryName.set($event)" placeholder="Nome (ex: Alimentação)" 
-               class="flex-1 rounded-md border-border bg-bg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border text-text" />
-        
-        <select [ngModel]="newCategoryType()" (ngModelChange)="newCategoryType.set($event)" class="w-full sm:w-48 rounded-md border-border bg-bg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border text-text">
-          <option value="D" class="bg-card">Despesa</option>
-          <option value="C" class="bg-card">Receita</option>
-        </select>
-
-        <button (click)="addCategory()" [disabled]="!newCategoryName()"
-                class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50">
-          <lucide-icon [img]="PlusIcon" class="w-4 h-4 mr-2"></lucide-icon> Adicionar
-        </button>
-      </div>
+    <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-bold tracking-tight text-text">Categorias</h1>
+        <p class="text-textMuted mt-1">Organize seus rendimentos e despesas.</p>
     </div>
 
-    <ul role="list" class="divide-y divide-border">
-      <li *ngFor="let cat of categories()" class="flex items-center justify-between gap-x-6 p-6 hover:bg-bg transition-colors">
-        <div class="min-w-0">
-          <div class="flex items-start gap-x-3">
-            <p class="text-sm font-semibold leading-6 text-text">{{ cat.name }}</p>
-            <span [ngClass]="{'bg-red-100 text-red-700': cat.type === 'D', 'bg-emerald-100 text-emerald-700': cat.type === 'C'}" 
-                  class="rounded-full px-2 py-1 text-xs font-medium">
-              {{ cat.type === 'D' ? 'Despesa' : 'Receita' }}
-            </span>
-          </div>
+    <div class="flex flex-col gap-6">
+        <!-- Search and Add Header -->
+        <div
+            class="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card p-4 rounded-xl shadow-sm border border-border">
+            <div class="relative flex-1 w-full">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-textMuted">
+                    <lucide-icon [img]="SearchIcon" class="w-4 h-4"></lucide-icon>
+                </div>
+                <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)"
+                    placeholder="Pesquisar categoria..."
+                    class="block w-full pl-10 pr-3 py-2.5 border border-border rounded-lg bg-bg text-text text-sm focus:ring-blue-500 focus:border-blue-500 outline-none" />
+            </div>
+            <button (click)="openModal()"
+                class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-bold rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-colors">
+                <lucide-icon [img]="PlusIcon" class="w-4 h-4 mr-2"></lucide-icon>
+                Nova Categoria
+            </button>
         </div>
-        <div class="flex flex-col items-end gap-y-2">
-          <button (click)="deleteCategory(cat.id!)" class="text-red-500 hover:text-red-700 text-xs flex items-center">
-            <lucide-icon [img]="TrashIcon" class="w-3 h-3 mr-1"></lucide-icon> Excluir
-          </button>
+
+        <!-- Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            @for(cat of filteredCategories(); track cat.id){
+            <div
+                class="bg-card shadow-sm border border-border p-5 rounded-xl hover:shadow-md transition-all group flex flex-col justify-between hover:border-blue-500/30">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <span [ngClass]="{
+                                'bg-red-500/10 text-red-600 border-red-500/20': cat.type === 'D', 
+                                'bg-emerald-500/10 text-emerald-600 border-emerald-500/20': cat.type === 'C'
+                            }" class="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border">
+                            {{ cat.type === 'D' ? 'Despesa' : 'Receita' }}
+                        </span>
+
+                        @if(cat.is_fixed){
+                        <span
+                            class="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                            Fixo
+                        </span>
+                        }
+                    </div>
+                    <h4 class="text-lg font-semibold text-text truncate" [title]="cat.name">{{ cat.name }}</h4>
+                </div>
+
+                <div
+                    class="flex items-center justify-end gap-1 pt-4 border-t border-border mt-4 group-hover:opacity-100 transition-opacity">
+                    <button (click)="editCategory(cat)"
+                        class="p-2 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors" title="Editar">
+                        <lucide-icon [img]="EditIcon" class="w-4 h-4"></lucide-icon>
+                    </button>
+                    <button (click)="deleteCategory(cat.id!)"
+                        class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors" title="Excluir">
+                        <lucide-icon [img]="TrashIcon" class="w-4 h-4"></lucide-icon>
+                    </button>
+                </div>
+            </div>
+            } @empty {
+            <div class="col-span-full py-16 text-center bg-card/20 rounded-xl border border-dashed border-border">
+                <lucide-icon [img]="SearchIcon" class="w-8 h-8 mx-auto text-textMuted mb-3 opacity-20"></lucide-icon>
+                <p class="text-textMuted text-sm font-medium">
+                    {{ searchQuery() ? 'Nenhuma categoria encontrada para "' + searchQuery() + '"' : 'Nenhuma categoria cadastrada.' }}
+                </p>
+                <button *ngIf="!searchQuery()" (click)="openModal()" class="mt-4 text-blue-500 text-sm font-semibold hover:underline">
+                    Criar minha primeira categoria
+                </button>
+            </div>
+            }
         </div>
-      </li>
-      <li *ngIf="categories().length === 0" class="p-8 text-center text-textMuted">
-        Nenhuma categoria cadastrada.
-      </li>
-    </ul>
-  </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div *ngIf="isModalOpen()"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all animate-in fade-in duration-300">
+        <div
+            class="bg-card w-full max-w-md rounded-2xl shadow-2xl border border-border overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+            <div class="flex items-center justify-between p-6 border-b border-border">
+                <h3 class="text-xl font-bold text-text">
+                    {{ editingCategoryId() ? 'Editar Categoria' : 'Nova Categoria' }}
+                </h3>
+                <button (click)="closeModal()"
+                    class="text-textMuted hover:text-text p-1.5 rounded-lg hover:bg-bg transition-colors">
+                    <lucide-icon [img]="CloseIcon" class="w-5 h-5"></lucide-icon>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-5">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold uppercase tracking-wider text-textMuted">Nome da Categoria</label>
+                    <input type="text" [ngModel]="newCategoryName()" (ngModelChange)="newCategoryName.set($event)"
+                        placeholder="Ex: Alimentação, Salário..."
+                        class="w-full rounded-xl border-border bg-bg px-4 py-3 text-text focus:border-blue-500 focus:ring-blue-500 border shadow-sm outline-none transition-all placeholder:text-textMuted/50" />
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold uppercase tracking-wider text-textMuted">Tipo de Categoria</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button (click)="newCategoryType.set('D')"
+                            [class]="newCategoryType() === 'D' ? 'bg-red-500/10 text-red-600 border-red-500/20 shadow-sm ring-1 ring-red-500/20' : 'bg-bg text-textMuted border-border'"
+                            class="flex items-center justify-center py-3 border rounded-xl text-sm font-bold transition-all">
+                            Despesa
+                        </button>
+                        <button (click)="newCategoryType.set('C')"
+                            [class]="newCategoryType() === 'C' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 shadow-sm ring-1 ring-emerald-500/20' : 'bg-bg text-textMuted border-border'"
+                            class="flex items-center justify-center py-3 border rounded-xl text-sm font-bold transition-all">
+                            Receita
+                        </button>
+                    </div>
+                </div>
+
+                <div *ngIf="newCategoryType() === 'D'"
+                    class="flex items-center justify-between p-4 bg-bg rounded-xl border border-border">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-text">Despesa Fixa</span>
+                        <span class="text-xs text-textMuted">Esta despesa ocorre todos os meses</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" [ngModel]="newCategoryIsFixed()"
+                            (ngModelChange)="newCategoryIsFixed.set($event)" class="sr-only peer">
+                        <div
+                            class="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 p-6 bg-card border-t border-border">
+                <button (click)="closeModal()"
+                    class="flex-1 px-4 py-3 text-sm font-bold text-text bg-bg border border-border rounded-xl hover:bg-card transition-colors">
+                    Cancelar
+                </button>
+                <button (click)="saveCategory()" [disabled]="!newCategoryName()"
+                    class="flex-1 px-4 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all active:scale-95">
+                    {{ editingCategoryId() ? 'Salvar Alterações' : 'Criar Categoria' }}
+                </button>
+            </div>
+        </div>
+    </div>
 </div>

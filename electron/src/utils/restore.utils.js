@@ -2,7 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { dbPath, closeDatabase } from '../services/database.services.js';
 import { logInfo, logError } from './logger.utils.js';
-import { app } from 'electron';
+import electron from 'electron';
+const { app } = electron;
 
 /**
  * Safely restores a database from a backup file.

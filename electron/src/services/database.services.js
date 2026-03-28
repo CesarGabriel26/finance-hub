@@ -1,7 +1,8 @@
 import sqlite3_pkg from 'sqlite3';
 const sqlite3 = sqlite3_pkg.verbose();
 import path from 'path';
-import { app } from 'electron';
+import electron from 'electron';
+const { app } = electron;
 import fs from 'fs';
 
 const userDataPath = app.getPath('userData');
@@ -57,6 +58,7 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 type TEXT NOT NULL CHECK(type IN ('C', 'D')),
+                is_fixed BOOLEAN DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`);
 
@@ -145,6 +147,14 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 }
             });
 
+            db.all("PRAGMA table_info(categories)", (err, columns) => {
+                if (columns) {
+                    if (!columns.find(c => c.name === 'is_fixed')) {
+                        db.run("ALTER TABLE categories ADD COLUMN is_fixed BOOLEAN DEFAULT 0");
+                    }
+                }
+            });
+
             db.run(`CREATE TABLE IF NOT EXISTS asset_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 asset_id INTEGER NOT NULL,
@@ -221,29 +231,33 @@ export const db = new sqlite3.Database(dbPath, (err) => {
 
             // Initialize default categories
             const defaultCategories = [
-                { name: 'Moradia', type: 'D' },
-                { name: 'Contas', type: 'D' },
-                { name: 'Supermercado', type: 'D' },
-                { name: 'Transporte', type: 'D' },
-                { name: 'Alimentação', type: 'D' },
-                { name: 'Lazer', type: 'D' },
-                { name: 'Compras', type: 'D' },
-                { name: 'Assinaturas', type: 'D' },
-                { name: 'Saúde', type: 'D' },
-                { name: 'Educação', type: 'D' },
-                { name: 'Impostos', type: 'D' },
-                { name: 'Financeiro', type: 'D' },
-                { name: 'Viagem', type: 'D' },
-                { name: 'Salário', type: 'C' },
-                { name: 'Freelance', type: 'C' },
-                { name: 'Investimentos', type: 'C' },
-                { name: 'Venda', type: 'C' },
-                { name: 'Transferência', type: 'C' },
-                { name: 'Reembolso', type: 'C' }
+                { name: 'Moradia', type: 'D', is_fixed: 1 },
+                { name: 'Contas', type: 'D', is_fixed: 1 },
+                { name: 'Assinaturas', type: 'D', is_fixed: 1 },
+                { name: 'Saúde', type: 'D', is_fixed: 1 },
+                { name: 'Educação', type: 'D', is_fixed: 1 },
+                { name: 'Seguros', type: 'D', is_fixed: 1 },
+                { name: 'Investimento (aplicação)', type: 'D', is_fixed: 1 },
+                { name: 'Supermercado', type: 'D', is_fixed: 0 },
+                { name: 'Transporte', type: 'D', is_fixed: 0 },
+                { name: 'Alimentação', type: 'D', is_fixed: 0 },
+                { name: 'Lazer', type: 'D', is_fixed: 0 },
+                { name: 'Compras', type: 'D', is_fixed: 0 },
+                { name: 'Impostos', type: 'D', is_fixed: 1 },
+                { name: 'Financeiro', type: 'D', is_fixed: 0 },
+                { name: 'Viagem', type: 'D', is_fixed: 0 },
+                { name: 'Salário', type: 'C', is_fixed: 0 },
+                { name: 'Freelance', type: 'C', is_fixed: 0 },
+                { name: 'Investimentos', type: 'C', is_fixed: 0 },
+                { name: 'Venda', type: 'C', is_fixed: 0 },
+                { name: 'Transferência', type: 'C', is_fixed: 0 },
+                { name: 'Reembolso', type: 'C', is_fixed: 0 }
             ];
 
             defaultCategories.forEach(cat => {
-                db.run("INSERT INTO categories (name, type) SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = ? AND type = ?)", [cat.name, cat.type, cat.name, cat.type]);
+                db.run("INSERT INTO categories (name, type, is_fixed) SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = ? AND type = ?)", [cat.name, cat.type, cat.is_fixed, cat.name, cat.type]);
+                // Ensure existing standard categories have is_fixed set correctly
+                db.run("UPDATE categories SET is_fixed = ? WHERE name = ? AND is_fixed = 0", [cat.is_fixed, cat.name]);
             });
 
             // Optional: Migrate keywords to keyword_rules if empty

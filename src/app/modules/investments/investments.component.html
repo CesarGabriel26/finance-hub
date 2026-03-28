@@ -266,7 +266,7 @@
                 @if (asset.objective_value) {
                   @let analysis = assetAnalysis().get(asset.id!);
                   <p class="text-[10px] font-bold text-textMuted">
-                    {{ analysis?.monthsToGoal === Infinity ? 'Sem Aportes' : (analysis?.monthsToGoal + ' meses p/ meta') }}
+                    {{ analysis?.monthsToGoal === Infinity ? 'Sem Aportes' : (analysis?.monthsToGoal + ' meses p/ meta de ') + (asset.objective_value | currency:'BRL') }}
                   </p>
                 }
               </div>

@@ -11,6 +11,8 @@ interface DashboardSummary {
   expenses: number;
   expensesByCategory: { [key: string]: number };
   revenuesByCategory: { [key: string]: number };
+  expensesByCategoryId: { [key: number]: number };
+  revenuesByCategoryId: { [key: number]: number };
   highestCat: { name: string, amount: number };
   prevExpenses: number;
   prevRevenues: number;
@@ -94,6 +96,8 @@ export class DashboardService {
   processDashboardData(dbData: any[]) {
     let expensesByCategory: { [key: string]: number } = {};
     let revenuesByCategory: { [key: string]: number } = {};
+    let expensesByCategoryId: { [key: number]: number } = {};
+    let revenuesByCategoryId: { [key: number]: number } = {};
     let revenues = 0;
     let expenses = 0;
     let highestCat = { name: '', amount: 0 };
@@ -103,10 +107,12 @@ export class DashboardService {
         revenues += row.total;
         const catName = row.category_name || 'Outros';
         revenuesByCategory[catName] = (revenuesByCategory[catName] || 0) + row.total;
+        if (row.category_id) revenuesByCategoryId[row.category_id] = (revenuesByCategoryId[row.category_id] || 0) + row.total;
       } else if (row.type === 'D') {
         expenses += row.total;
         const catName = row.category_name || 'Outros';
         expensesByCategory[catName] = (expensesByCategory[catName] || 0) + row.total;
+        if (row.category_id) expensesByCategoryId[row.category_id] = (expensesByCategoryId[row.category_id] || 0) + row.total;
         if (row.total > highestCat.amount) {
           highestCat = { name: catName, amount: row.total };
         }
@@ -118,6 +124,8 @@ export class DashboardService {
       expenses,
       expensesByCategory,
       revenuesByCategory,
+      expensesByCategoryId,
+      revenuesByCategoryId,
       highestCat
     };
   }

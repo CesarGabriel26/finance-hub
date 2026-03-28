@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, Notification, session, dialog } from "electron";
+import electron from "electron";
+const { app, BrowserWindow, ipcMain, Tray, Menu, Notification, session, dialog } = electron;
 import path from "path";
 import AutoLaunch from "auto-launch";
 import Store from "electron-store";
@@ -11,6 +12,7 @@ import { backupService } from "./src/services/backup.services.js";
 import { recoveryService } from "./src/services/recovery.services.js";
 import { restoreFromBackup } from "./src/utils/restore.utils.js";
 import fs from "fs";
+import { closeServer, openServer } from "./src/server/ws.server.js";
 
 // -- 0. LOGGING INITIALIZATION --
 setupConsoleRedirection();
@@ -204,6 +206,7 @@ function setupWindowCloseHandler() {
 
     mainWindow.on('closed', () => {
         mainWindow = null;
+        closeServer()
     });
 }
 
@@ -259,6 +262,7 @@ function createTray() {
                 label: 'Sair', click: () => {
                     isQuitting = true;
                     app.quit();
+                    closeServer()
                 }
             }
         ]);
@@ -324,7 +328,8 @@ app.whenReady().then(async () => {
 
     // 6.2. BACKEND INITIALIZATION
     try {
-        setupAPI();
+        await setupAPI();
+        openServer()
         console.log("Backend API setup complete.");
     } catch (error) {
         console.error("Failed to setup API:", error);

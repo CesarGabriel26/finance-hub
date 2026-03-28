@@ -1,4 +1,5 @@
-import { app } from 'electron';
+import electron from 'electron';
+const { app } = electron;
 import pkg from 'electron-updater';
 const { autoUpdater } = pkg;
 import fs from 'fs';
