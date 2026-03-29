@@ -5,6 +5,7 @@ import { CategoryService } from '../../services/category.service';
 import { Category } from '../../models/database.models';
 import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, Plus, Trash2, Edit, Search, X } from 'lucide-angular';
+import { areSimilar } from '../../utils/string.utils';
 
 @Component({
     selector: 'app-categories',
@@ -48,22 +49,39 @@ export class CategoriesComponent implements OnInit {
     }
 
     async saveCategory() {
-        if (!this.newCategoryName().trim()) return;
+        const name = this.newCategoryName().trim();
+        if (!name) return;
+
+        // Similarity check (Fuzzy matching)
+        if (!this.editingCategoryId()) {
+            const existingSimilar = this.categories().find(cat => areSimilar(cat.name, name, 0.2));
+            if (existingSimilar) {
+                const proceed = await this.dialog.confirm(
+                    `Já existe uma categoria semelhante: "${existingSimilar.name}". Deseja criar "${name}" mesmo assim?`,
+                    'warning',
+                    'Categoria Semelhante Detectada'
+                );
+                if (!proceed) return;
+            }
+        }
 
         const categoryData: Partial<Category> = {
-            name: this.newCategoryName().trim(),
+            name,
             type: this.newCategoryType(),
             is_fixed: this.newCategoryType() === 'D' ? this.newCategoryIsFixed() : false
         };
 
-        if (this.editingCategoryId()) {
-            await this.categoryService.updateCategory(this.editingCategoryId()!, categoryData);
-        } else {
-            await this.categoryService.addCategory(categoryData);
+        try {
+            if (this.editingCategoryId()) {
+                await this.categoryService.updateCategory(this.editingCategoryId()!, categoryData);
+            } else {
+                await this.categoryService.addCategory(categoryData);
+            }
+            this.closeModal();
+            this.loadCategories();
+        } catch (err: any) {
+            this.dialog.error(err.message || 'Erro ao salvar categoria');
         }
-
-        this.closeModal();
-        this.loadCategories();
     }
 
     openModal() {

@@ -5,36 +5,13 @@ import { AccountService } from '../../services/account.service';
 import { CategoryService } from '../../services/category.service';
 import { KeywordService } from '../../services/keyword.service';
 import { MovementService } from '../../services/movement.service';
-import { Account, Movement, Category, Keyword } from '../../models/database.models';
+import { Account, Movement, Category, Keyword, ParsedMovement, ParsedStatement } from '../../models/database.models';
+import { ImportService } from '../../services/import.service';
 import { DialogService } from '../../services/dialog.service';
 import { LucideAngularModule, FileUp, CheckCircle, AlertCircle, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-angular';
 import { Ofx } from 'ofx-data-extractor';
 import { DeepSearch } from '../../utils/object.utils';
-
-interface ParsedMovement {
-  date: string;
-  description: string;
-  amount: number;
-  type: 'C' | 'D';
-  period: string; // YYYY-MM
-  category_id?: number | null;
-
-  classification_source?: 'manual' | 'keyword' | 'imported';
-  classification_rule_id?: number | null;
-  confidence?: number | null;
-}
-
-interface ParsedStatement {
-  fileName: string;
-  period: string;
-  movements: ParsedMovement[];
-  total: number;
-  credit: number;
-  debit: number;
-  initialBalance: number | null;
-  finalBalance: number | null;
-  isComplete: boolean;
-}
+import { areSimilar } from '../../utils/string.utils';
 
 @Component({
   selector: 'app-import-statement',
@@ -45,10 +22,10 @@ interface ParsedStatement {
 })
 export class ImportStatementComponent implements OnInit {
   accounts = signal<Account[]>([]);
-  selectedAccountId = signal<number | null>(null);
+  selectedAccountId = this.importService.selectedAccountId;
   selectedPeriod = signal(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
-  parsedStatements = signal<ParsedStatement[]>([]);
+  parsedStatements = this.importService.parsedStatements;
   readonly allMovements = computed(() =>
     this.parsedStatements().flatMap((s, sIdx) =>
       s.movements.map((m, mIdx) => ({ ...m, sIdx, mIdx }))
@@ -75,7 +52,8 @@ export class ImportStatementComponent implements OnInit {
     private categoryService: CategoryService,
     private keywordService: KeywordService,
     private movementService: MovementService,
-    private dialog: DialogService
+    private dialog: DialogService,
+    private importService: ImportService
   ) { }
 
   async ngOnInit() {
@@ -123,7 +101,7 @@ export class ImportStatementComponent implements OnInit {
       }
     }
 
-    this.parsedStatements.set(statements);
+    this.importService.setStatements(statements);
     this.isParsing.set(false);
   }
 
@@ -254,11 +232,35 @@ export class ImportStatementComponent implements OnInit {
 
     // Fallback to legacy keywords
     const match = this.keywords().find(k => desc.includes(k.keyword.toUpperCase()));
+    if (match) {
+      return {
+        categoryId: match.category_id,
+        source: 'keyword',
+        ruleId: null,
+        confidence: 0.7
+      };
+    }
+
+    // NEW: Levenshtein distance match against category names
+    let bestMatch: { categoryId: number, confidence: number } | null = null;
+    let maxSimilarity = 0;
+
+    for (const cat of this.categories()) {
+      const catName = cat.name.toUpperCase();
+      // Use higher threshold for direct description matching (more strict)
+      if (areSimilar(desc, catName, 0.3)) {
+        // Calculate a simple confidence based on similarity (reversed normalized distance)
+        // Here we just use a heuristic for demonstration
+        bestMatch = { categoryId: cat.id!, confidence: 0.6 };
+        break; // Take the first good match
+      }
+    }
+
     return {
-      categoryId: match ? match.category_id : null,
-      source: match ? 'keyword' : 'imported',
+      categoryId: bestMatch ? bestMatch.categoryId : null,
+      source: bestMatch ? 'imported' : 'imported',
       ruleId: null,
-      confidence: match ? 0.7 : 0.4
+      confidence: bestMatch ? bestMatch.confidence : 0.4
     };
   }
 
@@ -334,32 +336,7 @@ export class ImportStatementComponent implements OnInit {
   }
 
   removeMovement(statementIndex: number, movementIndex: number) {
-    const statements = [...this.parsedStatements()];
-    const statement = { ...statements[statementIndex] };
-    const movements = [...statement.movements];
-    
-    movements.splice(movementIndex, 1);
-    statement.movements = movements;
-    
-    // Recalculate totals for this statement
-    let credit = 0;
-    let debit = 0;
-    let total = 0;
-    for (const m of movements) {
-      const amount = m.amount;
-      total += (m.type === 'C' ? amount : -amount);
-      if (m.type === 'C') credit += amount;
-      else debit += amount;
-    }
-    statement.total = total;
-    statement.credit = credit;
-    statement.debit = debit;
-    if (statement.finalBalance !== null) {
-      statement.initialBalance = statement.finalBalance - total;
-    }
-
-    statements[statementIndex] = statement;
-    this.parsedStatements.set(statements);
+    this.importService.removeMovement(statementIndex, movementIndex);
   }
 
   private isAllowedToCreateAC(period: string, source: 'import' | 'manual'): boolean {
@@ -434,7 +411,7 @@ export class ImportStatementComponent implements OnInit {
 
       await this.dialog.success('Dados importados com sucesso!');
       this.importStatus.set('success');
-      this.parsedStatements.set([]);
+      this.importService.clearStatements();
     } catch (err) {
       console.error(err);
       this.errorMessage.set('Erro ao salvar no banco de dados.');

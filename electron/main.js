@@ -329,7 +329,7 @@ app.whenReady().then(async () => {
     // 6.2. BACKEND INITIALIZATION
     try {
         await setupAPI();
-        openServer()
+        // openServer()
         console.log("Backend API setup complete.");
     } catch (error) {
         console.error("Failed to setup API:", error);

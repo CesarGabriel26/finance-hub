@@ -24,6 +24,10 @@ export class InsightService {
     const { revenues, expenses, expensesByCategory, expensesByCategoryId, prevExpenses, highestCat } = dashboardProcessedData;
 
     const [year, month] = period.split('-').map(Number);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const currentDay = now.getDate();
     
     // Fetch external data concurrently
     const [budgets, accounts, bills, assets, categories] = await Promise.all([
@@ -37,7 +41,19 @@ export class InsightService {
     const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
     // Only pending bills for the selected period if possible, but the API might return all pending. 
     // Usually, getBills('D', 'pending') returns current unresolved bills.
-    const pendingBillsAmount = bills.reduce((sum, bill) => sum + bill.amount, 0);
+
+    const pendingBillsAmount = bills.reduce((sum, bill) => {
+      const dueDate = new Date(bill.due_date);
+      const billYear = dueDate.getFullYear();
+      const billMonth = dueDate.getMonth() + 1;
+      const billDay = dueDate.getDate();
+
+      // "só leve em conta contas pendentes no mes atual q se apliquem do dia atual para frente"
+      if (billYear === currentYear && billMonth === currentMonth && billDay >= currentDay) {
+        return sum + bill.amount;
+      }
+      return sum;
+    }, 0);
     const totalInvestments = assets.reduce((sum, asset) => sum + (asset.total_invested || 0), 0);
     const totalLiquidity = Math.max(0, totalBalance);
 
@@ -111,7 +127,6 @@ export class InsightService {
     }
 
     // 4. Burn Rate / Ritmo de Gastos
-    const currentDay = getDayOfMonth();
     const daysInMonth = currentDay + getDaysRemainingInMonth();
     if (currentDay > 5 && revenues > 0) {
        const dailyRate = expenses / currentDay;
@@ -243,11 +258,24 @@ export class InsightService {
       });
     }
 
-    const balance30d = await this.predictionService.getPredictiveBalance(30);
-    if (balance30d > 0 && revenues > 0 && currentDay > 5) {
-      const daysRemaining = getDaysRemainingInMonth() || 1;
-      const safeDaily = balance30d / daysRemaining;
+    // 10. Safe Daily Spending (Conservative logic: Current Balance - Mandatory Bills - 10% Margin)
+    const daysRemaining = getDaysRemainingInMonth() || 1;
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0);
+    
+    const fixedCategories = new Set(categories.filter(c => c.is_fixed).map(c => c.id));
+    const essentialBillsTotal = bills.reduce((sum, bill) => {
+      const dueDate = new Date(bill.due_date);
+      const isFixed = bill.recurrence_classification === 'fixed' || (bill.category_id && fixedCategories.has(bill.category_id));
+      const inPeriod = dueDate >= monthStart && dueDate <= monthEnd;
+      return sum + (isFixed && inPeriod ? bill.amount : 0);
+    }, 0);
 
+    const margemSeguranca = totalBalance * 0.1;
+    const saldoDisponivel = totalBalance - essentialBillsTotal - margemSeguranca;
+    const safeDaily = Math.max(0, saldoDisponivel / daysRemaining);
+
+    if (safeDaily > 0 && revenues > 0) {
       insights.push({
         id: 'safe_spending',
         type: 'guidance',

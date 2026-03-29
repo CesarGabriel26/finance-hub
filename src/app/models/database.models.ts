@@ -124,6 +124,33 @@ export interface Insight {
     priority: number;
 }
 
+export interface ParsedMovement {
+    date: string;
+    description: string;
+    amount: number;
+    type: 'C' | 'D';
+    period: string; // YYYY-MM
+    category_id?: number | null;
+
+    classification_source?: 'manual' | 'keyword' | 'imported';
+    classification_rule_id?: number | null;
+    confidence?: number | null;
+    sIdx? : number; // used index in component
+    mIdx? : number; // used index in component
+}
+
+export interface ParsedStatement {
+    fileName: string;
+    period: string;
+    movements: ParsedMovement[];
+    total: number;
+    credit: number;
+    debit: number;
+    initialBalance: number | null;
+    finalBalance: number | null;
+    isComplete: boolean;
+}
+
 declare global {
     interface Window {
         api: {

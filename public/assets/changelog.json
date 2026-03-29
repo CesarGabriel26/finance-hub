@@ -200,6 +200,15 @@
                     "Padronização de cards (sem bordas, sombras premium).",
                     "Refinamento do 'Modo Iniciante' e layout de configurações em 2 colunas."
                 ]
+            },
+            {
+                "title": "Novas Regras de Controle (Modo Iniciante)",
+                "description": "Introduzimos conceitos educativos para ajudar na sua tomada de decisão financeira.",
+                "steps": [
+                    "Regra das 24h: Para gastos que superam seu limite diário ou orçamento, o sistema sugere aguardar 24h, ajudando a evitar compras por impulso.",
+                    "Equivalente em Trabalho: O simulador traduz o preço de um item em dias/horas de trabalho (Custo / Renda Diária), dando um choque de realidade sobre o esforço necessário.",
+                    "Potes Visuais: Divisão automática do seu saldo baseada na regra 50/30/20, separando o que é Sobrevivência (fixo), Curtição (variável) e Futuro (investimentos/reserva)."
+                ]
             }
         ]
     }

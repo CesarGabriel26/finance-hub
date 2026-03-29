@@ -39,22 +39,31 @@ if (app.isPackaged) {
 
 console.log(`Actual Database Path used: ${dbPath}`);
 
-export const db = new sqlite3.Database(dbPath, (err) => {
+let resolveInit;
+const initPromise = new Promise(res => resolveInit = res);
+
+export const db = new sqlite3.Database(dbPath, async (err) => {
     if (err) {
         console.error("FATAL ERROR: Could not open database file at " + dbPath);
         console.error("Error message: " + err.message);
     } else {
-        console.log("Database opened successfully.");
-        db.serialize(() => {
-            console.log("Initializing database tables...");
-            db.run(`CREATE TABLE IF NOT EXISTS accounts (
+        console.log("Database opened successfully. Initializing...");
+        try {
+            // Use internal promises for initialization to ensure absolute order
+            const run = (sql, params = []) => new Promise((res, rej) => db.run(sql, params, (e) => e ? rej(e) : res()));
+            const all = (sql, params = []) => new Promise((res, rej) => db.all(sql, params, (e, r) => e ? rej(e) : res(r)));
+            const get = (sql, params = []) => new Promise((res, rej) => db.get(sql, params, (e, r) => e ? rej(e) : res(r)));
+
+            await run("PRAGMA foreign_keys = ON");
+
+            await run(`CREATE TABLE IF NOT EXISTS accounts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 balance REAL DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`);
 
-            db.run(`CREATE TABLE IF NOT EXISTS categories (
+            await run(`CREATE TABLE IF NOT EXISTS categories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 type TEXT NOT NULL CHECK(type IN ('C', 'D')),
@@ -62,7 +71,7 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`);
 
-            db.run(`CREATE TABLE IF NOT EXISTS movements (
+            await run(`CREATE TABLE IF NOT EXISTS movements (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 account_id INTEGER NOT NULL,
                 category_id INTEGER,
@@ -77,7 +86,7 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 FOREIGN KEY (category_id) REFERENCES categories(id)
             )`);
 
-            db.run(`CREATE TABLE IF NOT EXISTS keywords (
+            await run(`CREATE TABLE IF NOT EXISTS keywords (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 keyword TEXT NOT NULL,
                 category_id INTEGER NOT NULL,
@@ -85,13 +94,7 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 FOREIGN KEY (category_id) REFERENCES categories(id)
             )`);
 
-
-
-
-
-
-
-            db.run(`CREATE TABLE IF NOT EXISTS keyword_rules (
+            await run(`CREATE TABLE IF NOT EXISTS keyword_rules (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 keyword TEXT NOT NULL,
                 category_id INTEGER NOT NULL,
@@ -101,18 +104,9 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 FOREIGN KEY (category_id) REFERENCES categories(id)
             )`);
 
-            db.run("CREATE TABLE IF NOT EXISTS bills (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT NOT NULL, amount REAL NOT NULL, due_date DATE NOT NULL, type TEXT NOT NULL CHECK(type IN ('C', 'D')), category_id INTEGER, status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid')), is_recurring BOOLEAN DEFAULT 0, recurrence_classification TEXT CHECK(recurrence_classification IN ('fixed', 'variable')), total_installments INTEGER DEFAULT 1, current_installment INTEGER DEFAULT 1, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (category_id) REFERENCES categories(id))");
+            await run("CREATE TABLE IF NOT EXISTS bills (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT NOT NULL, amount REAL NOT NULL, due_date DATE NOT NULL, type TEXT NOT NULL CHECK(type IN ('C', 'D')), category_id INTEGER, status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid')), is_recurring BOOLEAN DEFAULT 0, recurrence_classification TEXT CHECK(recurrence_classification IN ('fixed', 'variable')), total_installments INTEGER DEFAULT 1, current_installment INTEGER DEFAULT 1, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (category_id) REFERENCES categories(id))");
 
-      // Column additions for existing tables
-      db.all("PRAGMA table_info(bills)", (err, columns) => {
-        if (err) return;
-        const hasClassification = columns.some(c => c.name === 'recurrence_classification');
-        if (!hasClassification) {
-          db.run("ALTER TABLE bills ADD COLUMN recurrence_classification TEXT CHECK(recurrence_classification IN ('fixed', 'variable'))");
-        }
-      });
-
-            db.run(`CREATE TABLE IF NOT EXISTS assets (
+            await run(`CREATE TABLE IF NOT EXISTS assets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 type TEXT,
@@ -122,7 +116,7 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`);
 
-            db.run(`CREATE TABLE IF NOT EXISTS investment_entries (
+            await run(`CREATE TABLE IF NOT EXISTS investment_entries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 account_id INTEGER NOT NULL,
                 asset_id INTEGER NOT NULL,
@@ -135,27 +129,7 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 FOREIGN KEY (asset_id) REFERENCES assets(id)
             )`);
 
-
-
-            db.all("PRAGMA table_info(movements)", (err, columns) => {
-                if (columns) {
-                    if (!columns.find(c => c.name === 'classification_source')) {
-                        db.run("ALTER TABLE movements ADD COLUMN classification_source TEXT CHECK(classification_source IN ('manual', 'keyword', 'imported'))");
-                        db.run("ALTER TABLE movements ADD COLUMN classification_rule_id INTEGER");
-                        db.run("ALTER TABLE movements ADD COLUMN confidence REAL");
-                    }
-                }
-            });
-
-            db.all("PRAGMA table_info(categories)", (err, columns) => {
-                if (columns) {
-                    if (!columns.find(c => c.name === 'is_fixed')) {
-                        db.run("ALTER TABLE categories ADD COLUMN is_fixed BOOLEAN DEFAULT 0");
-                    }
-                }
-            });
-
-            db.run(`CREATE TABLE IF NOT EXISTS asset_history (
+            await run(`CREATE TABLE IF NOT EXISTS asset_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 asset_id INTEGER NOT NULL,
                 date DATE NOT NULL,
@@ -165,7 +139,7 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 FOREIGN KEY (asset_id) REFERENCES assets(id)
             )`);
 
-            db.run(`CREATE TABLE IF NOT EXISTS market_rates (
+            await run(`CREATE TABLE IF NOT EXISTS market_rates (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 date DATE NOT NULL UNIQUE,
                 cdi REAL,
@@ -174,30 +148,7 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`);
 
-            db.all("PRAGMA table_info(assets)", (err, columns) => {
-                if (columns) {
-                    if (!columns.find(c => c.name === 'current_value')) {
-                        db.run("ALTER TABLE assets ADD COLUMN current_value REAL DEFAULT 0");
-                    }
-                    if (!columns.find(c => c.name === 'benchmark')) {
-                        db.run("ALTER TABLE assets ADD COLUMN benchmark TEXT");
-                    }
-                    if (!columns.find(c => c.name === 'status')) {
-                        db.run("ALTER TABLE assets ADD COLUMN status TEXT DEFAULT 'active'");
-                    }
-                    if (!columns.find(c => c.name === 'index_type')) {
-                        db.run("ALTER TABLE assets ADD COLUMN index_type TEXT");
-                    }
-                    if (!columns.find(c => c.name === 'index_percentage')) {
-                        db.run("ALTER TABLE assets ADD COLUMN index_percentage REAL");
-                    }
-                    if (!columns.find(c => c.name === 'initial_balance')) {
-                        db.run("ALTER TABLE assets ADD COLUMN initial_balance REAL DEFAULT 0");
-                    }
-                }
-            });
-
-            db.run(`CREATE TABLE IF NOT EXISTS budgets (
+            await run(`CREATE TABLE IF NOT EXISTS budgets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 category_id INTEGER NOT NULL,
                 monthly_limit REAL NOT NULL,
@@ -209,27 +160,50 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 UNIQUE(category_id, month, year)
             )`);
 
-
-
-            db.run(`CREATE TABLE IF NOT EXISTS settings (
+            await run(`CREATE TABLE IF NOT EXISTS settings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 key TEXT UNIQUE NOT NULL,
                 value TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`);
 
-            // Initialize default settings if they don't exist
+            // --- ALL TABLES CREATED. NOW PERFORM MIGRATIONS ---
+
+            const billsCols = await all("PRAGMA table_info(bills)");
+            if (!billsCols.some(c => c.name === 'recurrence_classification')) {
+                await run("ALTER TABLE bills ADD COLUMN recurrence_classification TEXT CHECK(recurrence_classification IN ('fixed', 'variable'))");
+            }
+
+            const moveCols = await all("PRAGMA table_info(movements)");
+            if (!moveCols.some(c => c.name === 'classification_source')) {
+                await run("ALTER TABLE movements ADD COLUMN classification_source TEXT CHECK(classification_source IN ('manual', 'keyword', 'imported'))");
+                await run("ALTER TABLE movements ADD COLUMN classification_rule_id INTEGER");
+                await run("ALTER TABLE movements ADD COLUMN confidence REAL");
+            }
+
+            const catCols = await all("PRAGMA table_info(categories)");
+            if (!catCols.some(c => c.name === 'is_fixed')) {
+                await run("ALTER TABLE categories ADD COLUMN is_fixed BOOLEAN DEFAULT 0");
+            }
+
+            const assetCols = await all("PRAGMA table_info(assets)");
+            if (!assetCols.find(c => c.name === 'current_value')) await run("ALTER TABLE assets ADD COLUMN current_value REAL DEFAULT 0");
+            if (!assetCols.find(c => c.name === 'benchmark')) await run("ALTER TABLE assets ADD COLUMN benchmark TEXT");
+            if (!assetCols.find(c => c.name === 'status')) await run("ALTER TABLE assets ADD COLUMN status TEXT DEFAULT 'active'");
+            if (!assetCols.find(c => c.name === 'initial_balance')) await run("ALTER TABLE assets ADD COLUMN initial_balance REAL DEFAULT 0");
+
+            // --- INITIALIZE DEFAULT DATA ---
+
             const defaultSettings = [
                 { key: 'open_at_login', value: 'false' },
                 { key: 'notifications_enabled', value: 'true' },
                 { key: 'minimized_to_tray', value: 'true' }
             ];
 
-            defaultSettings.forEach(setting => {
-                db.run("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", [setting.key, setting.value]);
-            });
+            for (const setting of defaultSettings) {
+                await run("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", [setting.key, setting.value]);
+            }
 
-            // Initialize default categories
             const defaultCategories = [
                 { name: 'Moradia', type: 'D', is_fixed: 1 },
                 { name: 'Contas', type: 'D', is_fixed: 1 },
@@ -254,24 +228,28 @@ export const db = new sqlite3.Database(dbPath, (err) => {
                 { name: 'Reembolso', type: 'C', is_fixed: 0 }
             ];
 
-            defaultCategories.forEach(cat => {
-                db.run("INSERT INTO categories (name, type, is_fixed) SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = ? AND type = ?)", [cat.name, cat.type, cat.is_fixed, cat.name, cat.type]);
-                // Ensure existing standard categories have is_fixed set correctly
-                db.run("UPDATE categories SET is_fixed = ? WHERE name = ? AND is_fixed = 0", [cat.is_fixed, cat.name]);
-            });
+            for (const cat of defaultCategories) {
+                // First ensure standard categories have is_fixed set correctly BEFORE attempting insert or if they exist
+                await run("UPDATE categories SET is_fixed = ? WHERE name = ? AND is_fixed = 0", [cat.is_fixed, cat.name]);
+                await run("INSERT INTO categories (name, type, is_fixed) SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = ? AND type = ?)", [cat.name, cat.type, cat.is_fixed, cat.name, cat.type]);
+            }
 
-            // Optional: Migrate keywords to keyword_rules if empty
-            db.get("SELECT COUNT(*) as count FROM keyword_rules", (err, row) => {
-                if (row && row.count === 0) {
-                    db.run("INSERT INTO keyword_rules (keyword, category_id) SELECT keyword, category_id FROM keywords");
-                }
-            });
-            console.log("Database initialization blocks complete.");
-        });
+            const ruleCountRow = await get("SELECT COUNT(*) as count FROM keyword_rules");
+            if (ruleCountRow && ruleCountRow.count === 0) {
+                await run("INSERT INTO keyword_rules (keyword, category_id) SELECT keyword, category_id FROM keywords");
+            }
+
+            console.log("Database initialization and migrations complete.");
+            resolveInit();
+        } catch (error) {
+            console.error("Error during database initialization:", error);
+            resolveInit(); // Resolve anyway to unblock, or could handle differently
+        }
     }
 });
 
-export const dbRun = (query, params = []) => {
+export const dbRun = async (query, params = []) => {
+    await initPromise;
     return new Promise((resolve, reject) => {
         db.run(query, params, function (err) {
             if (err) reject(err);
@@ -280,7 +258,8 @@ export const dbRun = (query, params = []) => {
     });
 };
 
-export const dbGet = (query, params = []) => {
+export const dbGet = async (query, params = []) => {
+    await initPromise;
     return new Promise((resolve, reject) => {
         db.get(query, params, (err, row) => {
             if (err) reject(err);
@@ -289,7 +268,8 @@ export const dbGet = (query, params = []) => {
     });
 };
 
-export const dbAll = (query, params = []) => {
+export const dbAll = async (query, params = []) => {
+    await initPromise;
     return new Promise((resolve, reject) => {
         db.all(query, params, (err, rows) => {
             if (err) reject(err);
