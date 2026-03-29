@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { KeywordService } from '../../services/keyword.service';
@@ -6,7 +6,7 @@ import { CategoryService } from '../../services/category.service';
 import { MovementService } from '../../services/movement.service';
 import { Category, Keyword } from '../../models/database.models';
 import { DialogService } from '../../services/dialog.service';
-import { LucideAngularModule, Plus, Trash2, Search, Tag } from 'lucide-angular';
+import { LucideAngularModule, Plus, Trash2, Search, Tag, Edit, X } from 'lucide-angular';
 
 @Component({
   selector: 'app-keywords',
@@ -21,6 +21,9 @@ export class KeywordsComponent implements OnInit {
   
   newKeyword = signal('');
   selectedCategoryId = signal<number | null>(null);
+  searchQuery = signal('');
+  isModalOpen = signal(false);
+  editingKeywordId = signal<number | null>(null);
   
 
 
@@ -28,6 +31,17 @@ export class KeywordsComponent implements OnInit {
   readonly TrashIcon = Trash2;
   readonly SearchIcon = Search;
   readonly TagIcon = Tag;
+  readonly EditIcon = Edit;
+  readonly CloseIcon = X;
+
+  filteredKeywords = computed(() => {
+    const query = this.searchQuery().toLowerCase().trim();
+    if (!query) return this.keywords();
+    return this.keywords().filter(k => 
+      k.keyword.toLowerCase().includes(query) || 
+      k.category_name?.toLowerCase().includes(query)
+    );
+  });
 
   constructor(
     private keywordService: KeywordService,
@@ -53,16 +67,49 @@ export class KeywordsComponent implements OnInit {
     }
   }
 
-  async addKeyword() {
+  openModal() {
+    this.resetForm();
+    this.isModalOpen.set(true);
+  }
+
+  editKeyword(k: Keyword) {
+    this.editingKeywordId.set(k.id!);
+    this.newKeyword.set(k.keyword);
+    this.selectedCategoryId.set(k.category_id);
+    this.isModalOpen.set(true);
+  }
+
+  closeModal() {
+    this.isModalOpen.set(false);
+    this.resetForm();
+  }
+
+  private resetForm() {
+    this.editingKeywordId.set(null);
+    this.newKeyword.set('');
+    if (this.categories().length > 0) {
+      this.selectedCategoryId.set(this.categories()[0].id!);
+    }
+  }
+
+  async saveKeyword() {
     if (!this.newKeyword().trim() || !this.selectedCategoryId()) return;
 
-    await this.keywordService.addKeyword(
-      this.newKeyword().trim(), 
-      this.selectedCategoryId()!
-    );
+    if (this.editingKeywordId()) {
+      await this.keywordService.updateKeyword(
+        this.editingKeywordId()!,
+        this.newKeyword().trim(),
+        this.selectedCategoryId()!
+      );
+    } else {
+      await this.keywordService.addKeyword(
+        this.newKeyword().trim(), 
+        this.selectedCategoryId()!
+      );
+    }
 
     await this.movementService.recategorizeMovements();
-    this.newKeyword.set('');
+    this.closeModal();
     await this.loadData();
   }
 

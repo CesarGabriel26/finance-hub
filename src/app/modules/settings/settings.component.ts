@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
 import { ThemeService } from '../../services/theme.service';
-import { LucideAngularModule, Settings, Bell, Monitor, Power, Folder, Plus, Trash2, RefreshCw, HardDrive, Moon, Sun } from 'lucide-angular';
+import { LucideAngularModule, Settings, Bell, Monitor, Power, Folder, Plus, Trash2, RefreshCw, HardDrive, Moon, Sun, Lightbulb } from 'lucide-angular';
 
 @Component({
   selector: 'app-settings',
@@ -27,6 +27,7 @@ export class SettingsComponent implements OnInit {
   readonly BackupIcon = HardDrive;
   readonly MoonIcon = Moon;
   readonly SunIcon = Sun;
+  readonly LightbulbIcon = Lightbulb;
 
   backupPaths = signal<string[]>([]);
   backupFrequency = signal<string>('daily');

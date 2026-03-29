@@ -20,6 +20,7 @@ interface DashboardSummary {
   insights: Insight[];
   prediction7d: number;
   prediction30d: number;
+  expenseVariations?: any[];
 }
 
 @Injectable({
@@ -74,6 +75,7 @@ export class DashboardService {
     const insights = await this.insightService.generateInsights(period, { ...processed, prevExpenses: prevProcessed.expenses });
     const prediction7d = await this.predictionService.getPredictiveBalance(7);
     const prediction30d = await this.predictionService.getPredictiveBalance(30);
+    const expenseVariations = await this.insightService.explainExpenseVariation(processed, prevProcessed);
 
     const summary: DashboardSummary = {
       ...processed,
@@ -82,7 +84,8 @@ export class DashboardService {
       budgets,
       insights,
       prediction7d,
-      prediction30d
+      prediction30d,
+      expenseVariations
     };
 
     this.monthlyCache[cacheKey] = summary;

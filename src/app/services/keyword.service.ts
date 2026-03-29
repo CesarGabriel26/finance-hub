@@ -16,6 +16,10 @@ export class KeywordService {
     return this.db.handleApi('addKeyword', keyword, categoryId);
   }
 
+  async updateKeyword(id: number, keyword: string, categoryId: number): Promise<any> {
+    return this.db.handleApi('updateKeyword', id, keyword, categoryId);
+  }
+
   async deleteKeyword(id: number): Promise<any> {
     return this.db.handleApi('deleteKeyword', id);
   }

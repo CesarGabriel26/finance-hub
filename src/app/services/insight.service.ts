@@ -129,7 +129,7 @@ export class InsightService {
        }
     }
 
-    // 5. 50/30/20 Rule
+    // 5. Dynamic 50/30/20 Rule
     const fixedCategoryIds = categories.filter(c => c.is_fixed).map(c => c.id).filter(id => id !== undefined) as number[];
     const fixedSpent = fixedCategoryIds.reduce((sum, id) => sum + (expensesByCategoryId[id] || 0), 0);
     const variableSpent = expenses - fixedSpent;
@@ -137,23 +137,35 @@ export class InsightService {
     if (revenues > 0) {
       const fixedPct = (fixedSpent / revenues) * 100;
       const variablePct = (variableSpent / revenues) * 100;
+      
+      let idealFixedPct = 50;
+      let idealVarPct = 30;
+      
+      // Adapt thresholds for lower incomes where survival takes more % naturally
+      if (revenues <= 3000) {
+        idealFixedPct = 65;
+        idealVarPct = 25;
+      } else if (revenues <= 5000) {
+        idealFixedPct = 60;
+        idealVarPct = 30;
+      }
 
-      if (fixedPct > 55) {
+      if (fixedPct > idealFixedPct + 5) {
         insights.push({
-          id: 'high_fixed_costs_50_30_20',
+          id: 'high_fixed_costs_dynamic',
           type: 'structure',
           title: 'Custos Fixos Elevados',
-          description: `Seus custos fixos consomem ${fixedPct.toFixed(0)}% da renda (ideal: 50%). Isso reduz a margem para lazer e investimentos.`,
+          description: `Seus custos essenciais (sobrevivência) consomem ${fixedPct.toFixed(0)}% da renda (ideal pro seu perfil: ${idealFixedPct}%). Tente não assumir mais dívidas fixas.`,
           severity: 'warning',
           priority: 90
         });
       }
-      if (variablePct > 40) {
+      if (variablePct > idealVarPct + 5) {
         insights.push({
-          id: 'high_variable_costs_50_30_20',
+          id: 'high_variable_costs_dynamic',
           type: 'guidance',
-          title: 'Gastos Variáveis Altos',
-          description: `Os gastos variáveis consomem ${variablePct.toFixed(0)}% da renda (ideal: 30%). Tente reduzir despesas não essenciais.`,
+          title: 'Gastos de Curtição Altos',
+          description: `Os gastos variáveis (lazer, compras) estão em ${variablePct.toFixed(0)}% da renda (ideal: ${idealVarPct}%). Cuidado com gastos menores frequentes.`,
           severity: 'warning',
           priority: 88
         });
@@ -261,5 +273,124 @@ export class InsightService {
     return insights
       .sort((a, b) => b.priority - a.priority)
       .slice(0, 8);
+  }
+
+  async simulateExpense(
+    amount: number,
+    categoryId: number | null,
+    period: string,
+    dashboardProcessedData: any
+  ): Promise<any> {
+    const { revenues, expensesByCategoryId } = dashboardProcessedData;
+    const [year, month] = period.split('-').map(Number);
+
+    const [budgets, accounts, bills, categories] = await Promise.all([
+      this.budgetService.getBudgets(month, year),
+      this.accountService.getAccounts(),
+      this.billService.getBills('D', 'pending'),
+      this.categoryService.getCategories()
+    ]);
+
+    const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+    const fixedCategories = new Set(categories.filter(c => c.is_fixed).map(c => c.id));
+    
+    // Contas vitais (fixas ou de categorias fixas) que ainda não foram pagas
+    const essentialBillsTotal = bills.reduce((sum, bill) => {
+      const isFixed = bill.recurrence_classification === 'fixed' || (bill.category_id && fixedCategories.has(bill.category_id));
+      return sum + (isFixed ? bill.amount : 0);
+    }, 0);
+
+    const result: any = {
+      status: 'success',
+      title: 'Pode Gastar ✅',
+      descriptions: [],
+      invisibleImpact: {
+        workDays: 0,
+        budgetPercentage: null
+      },
+      suggest24hRule: false
+    };
+
+    // Impacto invisível
+    if (revenues > 0) {
+      const dailyIncome = revenues / 22; // media de 22 dias uteis
+      result.invisibleImpact.workDays = amount / dailyIncome;
+    }
+
+    let budgetWarning = false;
+    
+    if (categoryId) {
+      const budget = budgets.find(b => b.category_id === categoryId);
+      if (budget) {
+        const spent = expensesByCategoryId[categoryId] || 0;
+        result.invisibleImpact.budgetPercentage = (amount / budget.monthly_limit) * 100;
+        
+        if (spent + amount > budget.monthly_limit) {
+          budgetWarning = true;
+          result.descriptions.push(`Este gasto fará você ultrapassar seu limite mensal para esta categoria em R$ ${((spent + amount) - budget.monthly_limit).toFixed(2)}.`);
+        } else {
+          result.descriptions.push(`Você ainda ficará dentro do orçamento desta categoria (sobrarão R$ ${(budget.monthly_limit - (spent + amount)).toFixed(2)}).`);
+        }
+      }
+    }
+
+    // Regras de Status
+    const availableAfterEssential = totalBalance - essentialBillsTotal;
+
+    if (amount > availableAfterEssential) {
+      result.status = 'critical';
+      result.title = 'Não deveria gastar ❌';
+      result.descriptions.unshift(`Atenção: Seu saldo atual cobrindo as contas essenciais pendentes (R$ ${essentialBillsTotal.toFixed(2)}) não é suficiente para o mês caso você faça esse gasto agora. Falta R$ ${Math.abs(availableAfterEssential - amount).toFixed(2)}.`);
+      result.suggest24hRule = true;
+    } else if (budgetWarning) {
+      result.status = 'warning';
+      result.title = 'Pode, mas vai apertar ⚠️';
+      result.descriptions.unshift('Você tem saldo para pagar, mas irá furar o seu planejamento de orçamento.');
+      result.suggest24hRule = true;
+    } else {
+      result.descriptions.unshift('Tudo certo! Este gasto não compromete suas contas essenciais ou seu orçamento.');
+    }
+
+    // Regra 24h por impacto invisível
+    if (result.invisibleImpact.workDays > 4) {
+      result.suggest24hRule = true;
+      result.descriptions.push(`Choque de realidade: Este item equivale a ${result.invisibleImpact.workDays.toFixed(1)} dias do seu trabalho.`);
+    } else if (revenues > 0) {
+      result.descriptions.push(`Este item representa ${((amount / revenues) * 100).toFixed(1)}% da sua renda mensal.`);
+    }
+
+    return result;
+  }
+
+  async explainExpenseVariation(dashboardProcessedData: any, prevDashboardProcessedData: any): Promise<any[]> {
+    if (!dashboardProcessedData || !prevDashboardProcessedData) return [];
+    
+    const categories = await this.categoryService.getCategories();
+    const currentMap = dashboardProcessedData.expensesByCategoryId || {};
+    const prevMap = prevDashboardProcessedData.expensesByCategoryId || {};
+    
+    const variations: any[] = [];
+    
+    for (const catIdStr of Object.keys(currentMap)) {
+      const catId = Number(catIdStr);
+      const currentVal = currentMap[catId];
+      const prevVal = prevMap[catId] || 0;
+      
+      const diff = currentVal - prevVal;
+      if (diff > 50) { // só consideramos aumento maior que 50 reais como notável
+        const catName = categories.find(c => c.id === catId)?.name || 'Outros';
+        variations.push({
+          categoryId: catId,
+          categoryName: catName,
+          diff: diff,
+          currentVal,
+          prevVal,
+          text: `+R$ ${diff.toFixed(2)} em ${catName}`
+        });
+      }
+    }
+    
+    // Retorna os top 3 aumentos de despesa
+    return variations.sort((a, b) => b.diff - a.diff).slice(0, 3);
   }
 }

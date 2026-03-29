@@ -33,6 +33,31 @@
       </div>
     </div>
 
+    <!-- Beginner Mode Toggle -->
+    <div class="settings-card bg-card border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-5 hover:border-blue-500/50 transition-all">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="icon-wrapper p-3 bg-primary/10 rounded-lg text-primary">
+            <lucide-angular [img]="LightbulbIcon" class="w-6 h-6"></lucide-angular>
+          </div>
+          <div>
+            <h3 class="font-semibold text-text">Modo Iniciante</h3>
+            <p class="text-sm text-textMuted">Simplifica a interface e exibe limites diários para melhor controle.</p>
+          </div>
+        </div>
+        <button 
+          (click)="toggleSetting('beginner_mode')"
+          class="switch relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+          [ngClass]="settingsService.settings()['beginner_mode'] ? 'bg-primary' : 'bg-slate-200'"
+        >
+          <span 
+            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+            [ngClass]="settingsService.settings()['beginner_mode'] ? 'translate-x-6' : 'translate-x-1'"
+          ></span>
+        </button>
+      </div>
+    </div>
+
     <!-- Auto Start -->
     <div class="settings-card bg-card border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-5 hover:border-blue-500/50 transition-all">
       <div class="flex items-center justify-between">

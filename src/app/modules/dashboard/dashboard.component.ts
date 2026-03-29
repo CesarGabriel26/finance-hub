@@ -7,13 +7,16 @@ import { DashboardService } from '../../services/dashboard.service';
 import { AccountService } from '../../services/account.service';
 import { CategoryService } from '../../services/category.service';
 import { Movement, Account, Category, Budget, Insight } from '../../models/database.models';
-import { LucideAngularModule, TrendingUp, TrendingDown, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Filter, Search, List, Activity, AlertCircle } from 'lucide-angular';
+import { LucideAngularModule, TrendingUp, TrendingDown, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Filter, Search, List, Activity, AlertCircle, Lightbulb, Calculator, Flame } from 'lucide-angular';
 import { BudgetService } from '../../services/budget.service';
+import { SimulatorModalComponent } from '../../components/simulator-modal/simulator-modal.component';
+import { SettingsService } from '../../services/settings.service';
+import { BillService } from '../../services/bill.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, BaseChartDirective, LucideAngularModule],
+  imports: [CommonModule, FormsModule, BaseChartDirective, LucideAngularModule, SimulatorModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
@@ -33,7 +36,23 @@ export class DashboardComponent implements OnInit {
   readonly List = List;
   readonly Activity = Activity;
   readonly AlertCircle = AlertCircle;
+  readonly Lightbulb = Lightbulb;
+  readonly CalculatorIcon = Calculator;
+  readonly Flame = Flame;
   readonly Math = Math;
+
+  // Beginner Mode State
+  settingsService = inject(SettingsService);
+  isBeginnerMode = () => this.settingsService.settings()['beginner_mode'] === true;
+  isSimulatorOpen = signal(false);
+  expenseVariations = signal<any[]>([]);
+  dailySafeLimit = signal(0);
+  currentStreak = signal(0);
+
+  // Pots for Beginner Mode
+  potSurvival = signal(0);
+  potPleasure = signal(0);
+  potFuture = signal(0);
 
   // Period
   selectedMonth = signal(new Date().getMonth() + 1);
@@ -214,7 +233,8 @@ export class DashboardComponent implements OnInit {
     private dashboardService: DashboardService,
     private categoryService: CategoryService,
     private cdr: ChangeDetectorRef,
-    private accountService: AccountService
+    private accountService: AccountService,
+    private billService: BillService
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -269,7 +289,56 @@ export class DashboardComponent implements OnInit {
       this.prediction7d.set(summary.prediction7d);
       this.prediction30d.set(summary.prediction30d);
       this.budgets.set(summary.budgets);
+      this.expenseVariations.set(summary.expenseVariations || []);
       this.processedData.set(summary);
+
+      // Beginner Mode Logic: Daily Limit
+      const now = new Date();
+      const isCurrentMonth = this.selectedYear() === now.getFullYear() && this.selectedMonth() === (now.getMonth() + 1);
+      const isFutureMonth = (this.selectedYear() > now.getFullYear()) || (this.selectedYear() === now.getFullYear() && this.selectedMonth() > (now.getMonth() + 1));
+
+      if (isCurrentMonth || isFutureMonth) {
+        const daysInMonth = new Date(this.selectedYear(), this.selectedMonth(), 0).getDate();
+        const currentDay = isCurrentMonth ? now.getDate() : 1;
+        const remainingDays = Math.max(1, daysInMonth - currentDay + 1);
+
+        // Custom formula requested by user
+        const pendingBills = await this.billService.getBills('D', 'pending');
+        const monthStart = new Date(this.selectedYear(), this.selectedMonth() - 1, 1);
+        const monthEnd = new Date(this.selectedYear(), this.selectedMonth(), 0);
+        
+        const contasObrigatorias = pendingBills
+          .filter(b => {
+            const dueDate = new Date(b.due_date);
+            return dueDate >= monthStart && dueDate <= monthEnd && b.recurrence_classification === 'fixed';
+          })
+          .reduce((sum, b) => sum + b.amount, 0);
+
+        const margemSeguranca = balance * 0.1; // 10% safety margin
+        const saldoDisponivel = balance - contasObrigatorias - margemSeguranca;
+        
+        const safeDaily = Math.max(0, saldoDisponivel / remainingDays);
+        this.dailySafeLimit.set(safeDaily);
+      } else {
+        this.dailySafeLimit.set(0);
+      }
+
+      // Visual Pots Calculation
+      const fixedCategories = new Set(this.categories().filter(c => c.is_fixed).map(c => c.id));
+      let survival = 0;
+      let pleasure = 0;
+
+      for (const catIdStr of Object.keys(summary.expensesByCategoryId)) {
+        const id = Number(catIdStr);
+        if (fixedCategories.has(id)) {
+          survival += summary.expensesByCategoryId[id];
+        } else {
+          pleasure += summary.expensesByCategoryId[id];
+        }
+      }
+      this.potSurvival.set(survival);
+      this.potPleasure.set(pleasure);
+      this.potFuture.set(this.totalBalance());
 
       // Pie Charts
       this.pieChartLabels = Object.keys(summary.expensesByCategory);
@@ -287,9 +356,26 @@ export class DashboardComponent implements OnInit {
 
       // Recent Movements
       const f = { ...filters, period: monthStr };
-      const recents = await this.dashboardService.getRecentMovements(6, f);
-      this.recentMovements.set(recents);
+      const recents = await this.dashboardService.getRecentMovements(15, f); // fetch more to calculate streak
+      this.recentMovements.set(recents.slice(0, 6)); // show only 6 in UI 
 
+      // Calculate streak (consecutive days without exceeding safe limits or just having no expenses)
+      if (isCurrentMonth) {
+        let streak = 0;
+        let d = new Date();
+        while (streak < 30) {
+          const dateStr = d.toISOString().split('T')[0];
+          const daysTotalD = recents.filter((m: Movement) => m.date === dateStr && m.type === 'D').reduce((s: number, m: Movement) => s + m.amount, 0);
+          // Very simplified streak rule: didn't spend > dailySafeLimit or 50 BRL if daily limit is 0
+          if (daysTotalD <= (this.dailySafeLimit() || 50)) {
+            streak++;
+          } else {
+            break; // streak broke
+          }
+          d.setDate(d.getDate() - 1);
+        }
+        this.currentStreak.set(streak);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -304,13 +390,13 @@ export class DashboardComponent implements OnInit {
 
     const evolutionData = await this.dashboardService.getDashboardEvolution(periods, filters);
 
-    const pointsExpense = periods.map(p => {
-      const match = evolutionData.find(row => row.period === p);
+    const pointsExpense = periods.map((p: string) => {
+      const match = evolutionData.find((row: any) => row.period === p);
       return match ? match.total_expense : 0;
     });
 
-    const pointsRevenue = periods.map(p => {
-      const match = evolutionData.find(row => row.period === p);
+    const pointsRevenue = periods.map((p: string) => {
+      const match = evolutionData.find((row: any) => row.period === p);
       return match ? match.total_revenue : 0;
     });
 
@@ -372,5 +458,14 @@ export class DashboardComponent implements OnInit {
         this.loadData();
       }
     }
+  }
+
+  toggleBeginnerMode() {
+    const newState = !this.isBeginnerMode();
+    this.settingsService.updateSetting('beginner_mode', newState);
+  }
+
+  openSimulator() {
+    this.isSimulatorOpen.set(true);
   }
 }
