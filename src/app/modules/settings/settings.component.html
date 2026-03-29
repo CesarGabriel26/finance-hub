@@ -7,141 +7,42 @@
     <p class="text-textMuted mt-1">Gerencie as preferências e o comportamento do aplicativo.</p>
   </div>
 
-  <div class="settings-grid grid gap-6 max-w-2xl">
-    <!-- Theme Toggle -->
-    <div class="settings-card bg-card border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-5 hover:border-blue-500/50 transition-all">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="icon-wrapper p-3 bg-amber-500/10 rounded-lg text-amber-500">
-            <lucide-angular [img]="themeService.isDarkMode() ? MoonIcon : SunIcon" class="w-6 h-6"></lucide-angular>
+  <div class="settings-grid grid gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      @for (s of simpleSettings; track s.id) {
+      <div class="settings-card bg-card shadow-lg rounded-[32px] p-6 hover:shadow-xl transition-all border-none">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="icon-wrapper p-3 rounded-2xl shrink-0" [ngClass]="[s.bgClass, s.colorClass]">
+              <lucide-angular [img]="s.id === 'theme' ? (themeService.isDarkMode() ? MoonIcon : SunIcon) : s.icon"
+                class="w-6 h-6"></lucide-angular>
+            </div>
+            <div>
+              <h3 class="font-bold text-text">{{ s.title }}</h3>
+              <p class="text-xs text-textMuted leading-relaxed">{{ s.description }}</p>
+            </div>
           </div>
-          <div>
-            <h3 class="font-semibold text-text">Tema Escuro</h3>
-            <p class="text-sm text-textMuted">Alternar entre tema claro e escuro para todo o aplicativo.</p>
-          </div>
+          <button (click)="toggleSetting(s.id)"
+            class="switch relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none flex-shrink-0"
+            [ngClass]="getSwitchBgClass(s.id)">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+              [ngClass]="isSettingEnabled(s.id) ? 'translate-x-6' : 'translate-x-1'"></span>
+          </button>
         </div>
-        <button 
-          (click)="themeService.toggleTheme()"
-          class="switch relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-          [ngClass]="themeService.isDarkMode() ? 'bg-blue-600' : 'bg-slate-200'"
-        >
-          <span 
-            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-            [ngClass]="themeService.isDarkMode() ? 'translate-x-6' : 'translate-x-1'"
-          ></span>
-        </button>
       </div>
-    </div>
-
-    <!-- Beginner Mode Toggle -->
-    <div class="settings-card bg-card border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-5 hover:border-blue-500/50 transition-all">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="icon-wrapper p-3 bg-primary/10 rounded-lg text-primary">
-            <lucide-angular [img]="LightbulbIcon" class="w-6 h-6"></lucide-angular>
-          </div>
-          <div>
-            <h3 class="font-semibold text-text">Modo Iniciante</h3>
-            <p class="text-sm text-textMuted">Simplifica a interface e exibe limites diários para melhor controle.</p>
-          </div>
-        </div>
-        <button 
-          (click)="toggleSetting('beginner_mode')"
-          class="switch relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-          [ngClass]="settingsService.settings()['beginner_mode'] ? 'bg-primary' : 'bg-slate-200'"
-        >
-          <span 
-            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-            [ngClass]="settingsService.settings()['beginner_mode'] ? 'translate-x-6' : 'translate-x-1'"
-          ></span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Auto Start -->
-    <div class="settings-card bg-card border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-5 hover:border-blue-500/50 transition-all">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="icon-wrapper p-3 bg-blue-500/10 rounded-lg text-blue-400">
-            <lucide-angular [img]="MonitorIcon" class="w-6 h-6"></lucide-angular>
-          </div>
-          <div>
-            <h3 class="font-semibold text-text">Abrir com o Windows</h3>
-            <p class="text-sm text-textMuted">Iniciar o aplicativo automaticamente ao ligar o computador.</p>
-          </div>
-        </div>
-        <button 
-          (click)="toggleSetting('open_at_login')"
-          class="switch relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-          [ngClass]="settingsService.settings()['open_at_login'] ? 'bg-blue-600' : 'bg-slate-200'"
-        >
-          <span 
-            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-            [ngClass]="settingsService.settings()['open_at_login'] ? 'translate-x-6' : 'translate-x-1'"
-          ></span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Notifications -->
-    <div class="settings-card bg-card border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-5 hover:border-blue-500/50 transition-all">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="icon-wrapper p-3 bg-purple-500/10 rounded-lg text-purple-400">
-            <lucide-angular [img]="BellIcon" class="w-6 h-6"></lucide-angular>
-          </div>
-          <div>
-            <h3 class="font-semibold text-text">Notificações de Contas</h3>
-            <p class="text-sm text-textMuted">Avisar sobre contas que estão próximas do vencimento.</p>
-          </div>
-        </div>
-        <button 
-          (click)="toggleSetting('notifications_enabled')"
-          class="switch relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-          [ngClass]="settingsService.settings()['notifications_enabled'] ? 'bg-purple-600' : 'bg-slate-200'"
-        >
-          <span 
-            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-            [ngClass]="settingsService.settings()['notifications_enabled'] ? 'translate-x-6' : 'translate-x-1'"
-          ></span>
-        </button>
-      </div>
-    </div>
-
-    <!-- System Tray -->
-    <div class="settings-card bg-card border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-5 hover:border-blue-500/50 transition-all">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="icon-wrapper p-3 bg-teal-500/10 rounded-lg text-teal-400">
-            <lucide-angular [img]="PowerIcon" class="w-6 h-6"></lucide-angular>
-          </div>
-          <div>
-            <h3 class="font-semibold text-text">Permanecer na Bandeja</h3>
-            <p class="text-sm text-textMuted">Ocultar na bandeja do sistema em vez de fechar o app.</p>
-          </div>
-        </div>
-        <button 
-          (click)="toggleSetting('minimized_to_tray')"
-          class="switch relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-          [ngClass]="settingsService.settings()['minimized_to_tray'] ? 'bg-teal-600' : 'bg-slate-200'"
-        >
-          <span 
-            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-            [ngClass]="settingsService.settings()['minimized_to_tray'] ? 'translate-x-6' : 'translate-x-1'"
-          ></span>
-        </button>
-      </div>
+      }
     </div>
 
     <!-- Backup Section -->
-    <div class="settings-card bg-card border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl p-5 hover:border-blue-500/50 transition-all">
+    <div
+      class="settings-card bg-card shadow-lg rounded-[32px] p-8 hover:shadow-xl transition-all border-none">
       <div class="header-section mb-6">
-        <div class="flex items-center gap-4 mb-2">
-          <div class="icon-wrapper p-3 bg-indigo-500/10 rounded-lg text-indigo-400">
-            <lucide-angular [img]="BackupIcon" class="w-6 h-6"></lucide-angular>
+        <div class="flex items-center gap-4">
+          <div class="icon-wrapper p-3 bg-indigo-500/10 rounded-2xl text-indigo-400">
+            <lucide-angular [img]="BackupIcon" class="w-7 h-7"></lucide-angular>
           </div>
           <div>
-            <h3 class="font-semibold text-text">Cópia de Segurança (Backup)</h3>
+            <h3 class="text-lg font-bold text-text">Cópia de Segurança (Backup)</h3>
             <p class="text-sm text-textMuted">Mantenha seus dados seguros em pastas locais ou na nuvem.</p>
           </div>
         </div>
@@ -152,32 +53,30 @@
         <div class="path-management">
           <div class="flex items-center justify-between mb-3">
             <label class="text-sm font-medium text-text">Destinos de Backup</label>
-            <button 
-              (click)="addBackupPath()"
-              class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-            >
+            <button (click)="addBackupPath()"
+              class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
               <lucide-angular [img]="PlusIcon" class="w-3 h-3"></lucide-angular>
               Adicionar Pasta
             </button>
           </div>
-          
+
           <div class="path-list space-y-2">
             @if (backupPaths().length === 0) {
-              <p class="text-xs text-slate-400 italic py-2">Nenhuma pasta configurada. Seus arquivos não estão sendo salvos externamente.</p>
+            <p class="text-xs text-slate-400 italic py-2">Nenhuma pasta configurada. Seus arquivos não estão sendo
+              salvos externamente.</p>
             }
             @for (path of backupPaths(); track path) {
-              <div class="path-item flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-lg group">
-                <div class="flex items-center gap-3 overflow-hidden">
-                  <lucide-angular [img]="FolderIcon" class="w-4 h-4 text-slate-400 shrink-0"></lucide-angular>
-                  <span class="text-xs text-slate-600 truncate" [title]="path">{{path}}</span>
-                </div>
-                <button 
-                  (click)="removePath(path)"
-                  class="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                >
-                  <lucide-angular [img]="TrashIcon" class="w-4 h-4"></lucide-angular>
-                </button>
+            <div
+              class="path-item flex items-center justify-between bg-bg border border-border/50 p-3 rounded-xl group transition-all hover:bg-card">
+              <div class="flex items-center gap-3 overflow-hidden">
+                <lucide-angular [img]="FolderIcon" class="w-4 h-4 text-primary opacity-60 shrink-0"></lucide-angular>
+                <span class="text-xs font-medium text-text truncate" [title]="path">{{path}}</span>
               </div>
+              <button (click)="removePath(path)"
+                class="text-textMuted hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 p-1.5 hover:bg-rose-500/10 rounded-md">
+                <lucide-angular [img]="TrashIcon" class="w-4 h-4"></lucide-angular>
+              </button>
+            </div>
             }
           </div>
         </div>
@@ -186,11 +85,8 @@
           <!-- Frequency -->
           <div class="frequency-setting">
             <label class="text-sm font-medium text-text block mb-2">Frequência Automática</label>
-            <select 
-              (change)="onFrequencyChange($event)"
-              [value]="backupFrequency()"
-              class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-            >
+            <select (change)="onFrequencyChange($event)" [value]="backupFrequency()"
+              class="w-full bg-bg border border-border/50 rounded-xl p-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
               <option value="daily">Diário</option>
               <option value="manual">Manual</option>
             </select>
@@ -198,29 +94,21 @@
 
           <!-- Manual Trigger -->
           <div class="manual-backup self-end">
-            <button 
-              (click)="triggerBackup()"
-              [disabled]="isBackingUp() || backupPaths().length === 0"
-              class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-200 disabled:shadow-none"
-            >
-              <lucide-angular 
-                [img]="RefreshIcon" 
-                class="w-4 h-4" 
-                [class.animate-spin]="isBackingUp()"
-              ></lucide-angular>
+            <button (click)="triggerBackup()" [disabled]="isBackingUp() || backupPaths().length === 0"
+              class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-500/10 disabled:shadow-none">
+              <lucide-angular [img]="RefreshIcon" class="w-4 h-4" [class.animate-spin]="isBackingUp()"></lucide-angular>
               {{ isBackingUp() ? 'Realizando...' : 'Backup Agora' }}
             </button>
           </div>
         </div>
 
         @if (backupMessage()) {
-          <div 
-            class="text-xs py-2 px-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1"
-            [ngClass]="backupMessage()?.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'"
-          >
-            <div class="w-1.5 h-1.5 rounded-full" [ngClass]="backupMessage()?.type === 'success' ? 'bg-green-500' : 'bg-red-500'"></div>
-            {{ backupMessage()?.text }}
-          </div>
+        <div class="text-xs py-2 px-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1"
+          [ngClass]="backupMessage()?.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'">
+          <div class="w-1.5 h-1.5 rounded-full"
+            [ngClass]="backupMessage()?.type === 'success' ? 'bg-green-500' : 'bg-red-500'"></div>
+          {{ backupMessage()?.text }}
+        </div>
         }
       </div>
     </div>

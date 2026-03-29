@@ -29,6 +29,49 @@ export class SettingsComponent implements OnInit {
   readonly SunIcon = Sun;
   readonly LightbulbIcon = Lightbulb;
 
+  simpleSettings = [
+    {
+      id: 'theme',
+      title: 'Tema Escuro',
+      description: 'Alternar entre tema claro e escuro para todo o aplicativo.',
+      icon: Moon, // We'll handle the icon swap in template
+      colorClass: 'text-amber-500',
+      bgClass: 'bg-amber-500/10'
+    },
+    {
+      id: 'beginner_mode',
+      title: 'Modo Iniciante',
+      description: 'Simplifica a interface e exibe limites diários para melhor controle.',
+      icon: Lightbulb,
+      colorClass: 'text-primary',
+      bgClass: 'bg-primary/10'
+    },
+    {
+      id: 'open_at_login',
+      title: 'Abrir com o Windows',
+      description: 'Iniciar o aplicativo automaticamente ao ligar o computador.',
+      icon: Monitor,
+      colorClass: 'text-blue-400',
+      bgClass: 'bg-blue-500/10'
+    },
+    {
+      id: 'notifications_enabled',
+      title: 'Notificações de Contas',
+      description: 'Avisar sobre contas que estão próximas do vencimento.',
+      icon: Bell,
+      colorClass: 'text-purple-400',
+      bgClass: 'bg-purple-500/10'
+    },
+    {
+      id: 'minimized_to_tray',
+      title: 'Permanecer na Bandeja',
+      description: 'Ocultar na bandeja do sistema em vez de fechar o app.',
+      icon: Power,
+      colorClass: 'text-teal-400',
+      bgClass: 'bg-teal-500/10'
+    }
+  ];
+
   backupPaths = signal<string[]>([]);
   backupFrequency = signal<string>('daily');
   isBackingUp = signal<boolean>(false);
@@ -40,7 +83,23 @@ export class SettingsComponent implements OnInit {
     this.backupFrequency.set(settings.backup_frequency || 'daily');
   }
 
+  isSettingEnabled(id: string): boolean {
+    if (id === 'theme') return this.themeService.isDarkMode();
+    return this.settingsService.settings()[id];
+  }
+
+  getSwitchBgClass(id: string): string {
+    const enabled = this.isSettingEnabled(id);
+    if (!enabled) return 'bg-slate-200';
+    if (id === 'beginner_mode') return 'bg-primary';
+    return 'bg-blue-600';
+  }
+
   toggleSetting(key: string) {
+    if (key === 'theme') {
+      this.themeService.toggleTheme();
+      return;
+    }
     const current = this.settingsService.settings()[key];
     this.settingsService.updateSetting(key, !current);
   }
