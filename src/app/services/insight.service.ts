@@ -294,10 +294,16 @@ export class InsightService {
     const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
     const fixedCategories = new Set(categories.filter(c => c.is_fixed).map(c => c.id));
     
-    // Contas vitais (fixas ou de categorias fixas) que ainda não foram pagas
+    // Contas vitais (fixas) que ainda não foram pagas no mês selecionado
+    const [yearSel, monthSel] = period.split('-').map(Number);
+    const monthStart = new Date(yearSel, monthSel - 1, 1);
+    const monthEnd = new Date(yearSel, monthSel, 0);
+
     const essentialBillsTotal = bills.reduce((sum, bill) => {
+      const dueDate = new Date(bill.due_date);
       const isFixed = bill.recurrence_classification === 'fixed' || (bill.category_id && fixedCategories.has(bill.category_id));
-      return sum + (isFixed ? bill.amount : 0);
+      const inPeriod = dueDate >= monthStart && dueDate <= monthEnd;
+      return sum + (isFixed && inPeriod ? bill.amount : 0);
     }, 0);
 
     const result: any = {
@@ -310,6 +316,16 @@ export class InsightService {
       },
       suggest24hRule: false
     };
+
+    // Safe Daily Limit Calculation (Replicated logic for consistency)
+    const now = new Date();
+    const isCurrentMonth = yearSel === now.getFullYear() && monthSel === (now.getMonth() + 1);
+    const currentDay = isCurrentMonth ? now.getDate() : 1;
+    const remainingDays = Math.max(1, monthEnd.getDate() - currentDay + 1);
+    
+    const margemSeguranca = totalBalance * 0.1;
+    const saldoDisponivel = totalBalance - essentialBillsTotal - margemSeguranca;
+    const safeDaily = Math.max(0, saldoDisponivel / remainingDays);
 
     // Impacto invisível
     if (revenues > 0) {
@@ -329,34 +345,37 @@ export class InsightService {
           budgetWarning = true;
           result.descriptions.push(`Este gasto fará você ultrapassar seu limite mensal para esta categoria em R$ ${((spent + amount) - budget.monthly_limit).toFixed(2)}.`);
         } else {
-          result.descriptions.push(`Você ainda ficará dentro do orçamento desta categoria (sobrarão R$ ${(budget.monthly_limit - (spent + amount)).toFixed(2)}).`);
+          result.descriptions.push(`Ponto positivo: Você ainda ficará dentro do orçamento desta categoria.`);
         }
       }
     }
 
-    // Regras de Status
-    const availableAfterEssential = totalBalance - essentialBillsTotal;
+    // Regras de Status & Safe Daily Warning
+    const availableTotal = totalBalance - essentialBillsTotal; // O que realmente tem "sobrando"
 
-    if (amount > availableAfterEssential) {
+    if (amount > availableTotal) {
       result.status = 'critical';
       result.title = 'Não deveria gastar ❌';
-      result.descriptions.unshift(`Atenção: Seu saldo atual cobrindo as contas essenciais pendentes (R$ ${essentialBillsTotal.toFixed(2)}) não é suficiente para o mês caso você faça esse gasto agora. Falta R$ ${Math.abs(availableAfterEssential - amount).toFixed(2)}.`);
+      result.descriptions.unshift(`PERIGO: Este gasto (R$ ${amount.toFixed(2)}) é maior que todo o seu saldo livre após reservar o dinheiro das contas fixas (R$ ${availableTotal.toFixed(2)}).`);
+      result.suggest24hRule = true;
+    } else if (amount > safeDaily) {
+      result.status = 'warning';
+      result.title = 'Pode, mas vai apertar ⚠️';
+      result.descriptions.unshift(`Cuidado: Este gasto (R$ ${amount.toFixed(2)}) ultrapassa o seu Limite Diário Seguro de R$ ${safeDaily.toFixed(2)}. Isso pode acelerar demais o consumo do seu saldo.`);
       result.suggest24hRule = true;
     } else if (budgetWarning) {
       result.status = 'warning';
       result.title = 'Pode, mas vai apertar ⚠️';
-      result.descriptions.unshift('Você tem saldo para pagar, mas irá furar o seu planejamento de orçamento.');
+      result.descriptions.unshift('Você tem saldo, mas irá furar o seu planejamento de orçamento para esta categoria.');
       result.suggest24hRule = true;
     } else {
-      result.descriptions.unshift('Tudo certo! Este gasto não compromete suas contas essenciais ou seu orçamento.');
+      result.descriptions.unshift('Tudo certo! Este gasto está dentro do seu limite diário e não compromete suas obrigações.');
     }
 
     // Regra 24h por impacto invisível
     if (result.invisibleImpact.workDays > 4) {
       result.suggest24hRule = true;
       result.descriptions.push(`Choque de realidade: Este item equivale a ${result.invisibleImpact.workDays.toFixed(1)} dias do seu trabalho.`);
-    } else if (revenues > 0) {
-      result.descriptions.push(`Este item representa ${((amount / revenues) * 100).toFixed(1)}% da sua renda mensal.`);
     }
 
     return result;
