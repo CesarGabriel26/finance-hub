@@ -145,7 +145,6 @@
         ]
     },
     "1.1.0": {
-        "latest": true,
         "date": "2026-03-25",
         "features": [
             {
@@ -166,6 +165,40 @@
                     "Refatoração de todos os módulos (Investimentos, Contas, Extratos) para usar variáveis CSS dinâmicas.",
                     "Eliminação de cores fixas (hardcoded) para uma experiência visual premium e Coerente.",
                     "Ajustes finos em diálogos, modais e gráficos para melhor contraste e legibilidade."
+                ]
+            }
+        ]
+    },
+    "1.1.1": {
+        "latest": true,
+        "date": "2026-03-28",
+        "features": [
+            {
+                "title": "Melhoria no Sistema de Backup",
+                "description": "Sistema de backups diários compactados com rotação semanal inteligente.",
+                "steps": [
+                    "Backups automáticos em formato .zip para economia de espaço.",
+                    "Nomenclatura por dia da semana (ex: backup-segunda.zip).",
+                    "Sobrescrita automática da semana anterior, mantendo sempre os últimos 7 dias.",
+                    "Verificação de integridade e presença de backup na inicialização."
+                ]
+            },
+            {
+                "title": "Gestão de Palavras-chave 2.0",
+                "description": "Refatoração completa da interface de regras de categorização automática.",
+                "steps": [
+                    "Migração do formulário inline para um fluxo baseado em modais.",
+                    "Sistema de busca em tempo real para as palavras-chave cadastradas.",
+                    "Melhoria visual e usabilidade no gerenciamento de regras de importação."
+                ]
+            },
+            {
+                "title": "Arquitetura & UI",
+                "description": "Melhorias estruturais no motor do app e refinamentos na experiência visual.",
+                "steps": [
+                    "Modularização das tabelas do banco de dados (Handlers Plug-and-Play).",
+                    "Padronização de cards (sem bordas, sombras premium).",
+                    "Refinamento do 'Modo Iniciante' e layout de configurações em 2 colunas."
                 ]
             }
         ]
