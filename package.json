@@ -35,6 +35,7 @@
     "@angular/forms": "^21.1.0",
     "@angular/platform-browser": "^21.1.0",
     "@angular/router": "^21.1.0",
+    "adm-zip": "^0.5.16",
     "auto-launch": "^5.0.6",
     "chart.js": "^4.5.1",
     "electron-store": "^11.0.2",

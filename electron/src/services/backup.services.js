@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { dbPath, dbGet, dbRun } from './database.services.js';
+import AdmZip from 'adm-zip';
 
 /**
  * Service to handle database backups.
@@ -69,8 +70,9 @@ export const backupService = {
             }
 
             const results = [];
-            const date = new Date().toISOString().split('T')[0];
-            const backupFileName = `backup-${date}.db`;
+            const dayNames = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+            const dayName = dayNames[new Date().getDay()];
+            const backupFileName = `backup-${dayName}.zip`;
 
             for (const backupPath of backupPaths) {
                 try {
@@ -82,11 +84,16 @@ export const backupService = {
                     }
 
                     const destination = path.join(backupPath, backupFileName);
-                    fs.copyFileSync(dbPath, destination);
                     
-                    await this.cleanupOldBackups(backupPath);
+                    // Create zip archive
+                    const zip = new AdmZip();
+                    // Add the database file to the zip
+                    // We use the basename to avoid deep directory structures inside the zip
+                    zip.addLocalFile(dbPath);
+                    zip.writeZip(destination);
+                    
                     results.push({ path: backupPath, success: true });
-                    console.log(`Backup created successfully at: ${destination}`);
+                    console.log(`Zipped backup created successfully at: ${destination}`);
                 } catch (err) {
                     console.error(`Backup failed for path ${backupPath}: ${err.message}`);
                     results.push({ path: backupPath, success: false, error: err.message });
@@ -99,31 +106,12 @@ export const backupService = {
                 results: results 
             };
         } catch (error) {
-            logError(`Backup failed: ${error.message}`);
+            console.error(`Backup failed: ${error.message}`);
             return { success: false, error: error.message };
         }
     },
 
-    /**
-     * Keeps only the last 7 backups in the specified folder.
-     */
-    async cleanupOldBackups(backupPath) {
-        try {
-            const files = fs.readdirSync(backupPath)
-                .filter(f => f.startsWith('backup-') && f.endsWith('.db'))
-                .sort(); // Sorts by date because of YYYY-MM-DD format
 
-            if (files.length > 7) {
-                const toDelete = files.slice(0, files.length - 7);
-                for (const file of toDelete) {
-                    fs.unlinkSync(path.join(backupPath, file));
-                    logInfo(`Old backup deleted: ${file}`);
-                }
-            }
-        } catch (error) {
-            logError(`Cleanup of old backups failed: ${error.message}`);
-        }
-    },
 
     /**
      * Sets up the automatic backup schedule.
@@ -132,7 +120,7 @@ export const backupService = {
         this._autoBackupInterval = setInterval(async () => {
             const settings = await this.getSettings();
             if (settings.backup_frequency === 'daily') {
-                console.log('Starting scheduled daily backup...');
+                console.log('Starting scheduled daily zipped backup...');
                 await this.performBackup();
             }
         }, 24 * 60 * 60 * 1000);
@@ -140,12 +128,13 @@ export const backupService = {
         this._startupBackupTimeout = setTimeout(async () => {
             const settings = await this.getSettings();
             if (settings.backup_frequency === 'daily') {
-                const date = new Date().toISOString().split('T')[0];
+                const dayNames = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+                const dayName = dayNames[new Date().getDay()];
                 const backupPaths = settings.backup_paths;
                 
                 let needed = false;
                 for (const bp of backupPaths) {
-                    const expectedFile = path.join(bp, `backup-${date}.db`);
+                    const expectedFile = path.join(bp, `backup-${dayName}.zip`);
                     if (!fs.existsSync(expectedFile)) {
                         needed = true;
                         break;
@@ -153,7 +142,7 @@ export const backupService = {
                 }
 
                 if (needed) {
-                    console.log('Missing today\'s backup in at least one folder, performing scheduled backup...');
+                    console.log('Missing today\'s zipped backup in at least one folder, performing scheduled backup...');
                     await this.performBackup();
                 }
             }
