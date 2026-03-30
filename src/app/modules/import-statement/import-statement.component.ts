@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AccountService } from '../../services/account.service';
@@ -21,15 +21,16 @@ import { areSimilar } from '../../utils/string.utils';
   styleUrl: './import-statement.component.css'
 })
 export class ImportStatementComponent implements OnInit {
+  private importService = inject(ImportService);
   accounts = signal<Account[]>([]);
   selectedAccountId = this.importService.selectedAccountId;
   selectedPeriod = signal(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
   parsedStatements = this.importService.parsedStatements;
   readonly allMovements = computed(() =>
-    this.parsedStatements().flatMap((s, sIdx) =>
-      s.movements.map((m, mIdx) => ({ ...m, sIdx, mIdx }))
-    ).sort((a, b) => a.date.localeCompare(b.date))
+    this.parsedStatements().flatMap((s: ParsedStatement, sIdx: number) =>
+      s.movements.map((m: ParsedMovement, mIdx: number) => ({ ...m, sIdx, mIdx }))
+    ).sort((a: any, b: any) => a.date.localeCompare(b.date))
   );
 
   isParsing = signal(false);
@@ -52,8 +53,7 @@ export class ImportStatementComponent implements OnInit {
     private categoryService: CategoryService,
     private keywordService: KeywordService,
     private movementService: MovementService,
-    private dialog: DialogService,
-    private importService: ImportService
+    private dialog: DialogService
   ) { }
 
   async ngOnInit() {
@@ -383,7 +383,7 @@ export class ImportStatementComponent implements OnInit {
           }, true);
         }
 
-        await Promise.all(statement.movements.map(m => 
+        await Promise.all(statement.movements.map((m: ParsedMovement) => 
           this.movementService.addMovement({
             account_id: accId,
             description: m.description,
