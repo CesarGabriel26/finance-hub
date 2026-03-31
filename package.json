@@ -11,7 +11,9 @@
     "test": "ng test",
     "dev": "concurrently \"ng serve\" \"wait-on http://localhost:4200 && cross-env NODE_ENV=development electron .\"",
     "dist": "ng build --base-href ./ && cross-env NODE_ENV=production electron-builder",
-    "rebuild": "electron-rebuild -f -w sqlite3"
+    "rebuild": "electron-rebuild -f -w sqlite3",
+    "cap:sync": "npx cap sync",
+    "android:open": "npm run build && npx cap sync android && npx cap open android"
   },
   "prettier": {
     "printWidth": 100,

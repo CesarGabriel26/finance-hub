@@ -7,17 +7,24 @@ import { BillService } from './bill.service';
 import { InvestmentService } from './investment.service';
 import { CategoryService } from './category.service';
 import { getDayOfMonth, getDaysRemainingInMonth } from '../utils/date.utils';
+import { HolidaysService } from './api/holidays.service';
+import { FinancialWindowService } from './financial-window.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class InsightService {
-  private budgetService = inject(BudgetService);
-  private predictionService = inject(PredictionService);
-  private accountService = inject(AccountService);
-  private billService = inject(BillService);
-  private investmentService = inject(InvestmentService);
-  private categoryService = inject(CategoryService);
+
+  constructor(
+    private budgetService: BudgetService,
+    private predictionService: PredictionService,
+    private accountService: AccountService,
+    private billService: BillService,
+    private investmentService: InvestmentService,
+    private categoryService: CategoryService,
+    private holidaysService: HolidaysService,
+    private financialWindowService: FinancialWindowService
+  ) { }
 
   async generateInsights(period: string, dashboardProcessedData: any): Promise<Insight[]> {
     const insights: Insight[] = [];
@@ -28,12 +35,13 @@ export class InsightService {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
     const currentDay = now.getDate();
-    
+
     // Fetch external data concurrently
-    const [budgets, accounts, bills, assets, categories] = await Promise.all([
+    const [budgets, accounts, bills, pendingRevenues, assets, categories] = await Promise.all([
       this.budgetService.getBudgets(month, year),
       this.accountService.getAccounts(),
       this.billService.getBills('D', 'pending'),
+      this.billService.getBills('C', 'pending'),
       this.investmentService.getAssets(),
       this.categoryService.getCategories()
     ]);
@@ -61,7 +69,7 @@ export class InsightService {
     const reserveRecommended = expenses > 0 ? expenses * 6 : 0;
     const reserveMinimum = expenses > 0 ? expenses * 3 : 0;
     const totalAssets = totalLiquidity + totalInvestments;
-    
+
     if (expenses > 0) {
       if (totalAssets === 0) {
         insights.push({
@@ -95,53 +103,53 @@ export class InsightService {
 
     // 2. Liquidity vs Bills
     if (totalBalance < pendingBillsAmount) {
-       insights.push({
-         id: 'liquidity_risk',
-         type: 'risk',
-         title: 'Risco de Inadimplência',
-         description: `Seu saldo atual (R$ ${totalBalance.toFixed(2)}) não é suficiente para pagar as contas ativas do mês (R$ ${pendingBillsAmount.toFixed(2)}).`,
-         severity: 'critical',
-         priority: 130
-       });
+      insights.push({
+        id: 'liquidity_risk',
+        type: 'risk',
+        title: 'Risco de Inadimplência',
+        description: `Seu saldo atual (R$ ${totalBalance.toFixed(2)}) não é suficiente para pagar as contas ativas do mês (R$ ${pendingBillsAmount.toFixed(2)}).`,
+        severity: 'critical',
+        priority: 130
+      });
     } else if (totalBalance < 0) {
-       insights.push({
-         id: 'negative_balance_risk',
-         type: 'risk',
-         title: 'Uso de Limite/Cheque Especial',
-         description: `Seu saldo total está negativo (R$ ${totalBalance.toFixed(2)}). Cuidado com os altos juros.`,
-         severity: 'critical',
-         priority: 125
-       });
+      insights.push({
+        id: 'negative_balance_risk',
+        type: 'risk',
+        title: 'Uso de Limite/Cheque Especial',
+        description: `Seu saldo total está negativo (R$ ${totalBalance.toFixed(2)}). Cuidado com os altos juros.`,
+        severity: 'critical',
+        priority: 125
+      });
     }
 
     // 3. Idle Money
     if (totalBalance > (expenses * 2) && expenses > 0 && totalInvestments < totalBalance) {
       insights.push({
-         id: 'idle_money',
-         type: 'opportunity',
-         title: 'Dinheiro Parado',
-         description: 'Você possui um saldo livre considerável na conta. Considere investir para que este dinheiro rentabilize.',
-         severity: 'info',
-         priority: 60
+        id: 'idle_money',
+        type: 'opportunity',
+        title: 'Dinheiro Parado',
+        description: 'Você possui um saldo livre considerável na conta. Considere investir para que este dinheiro rentabilize.',
+        severity: 'info',
+        priority: 60
       });
     }
 
     // 4. Burn Rate / Ritmo de Gastos
     const daysInMonth = currentDay + getDaysRemainingInMonth();
     if (currentDay > 5 && revenues > 0) {
-       const dailyRate = expenses / currentDay;
-       const expectedMonthlyExpense = dailyRate * daysInMonth;
-       
-       if (expectedMonthlyExpense > revenues) {
-         insights.push({
-            id: 'high_burn_rate',
-            type: 'prediction',
-            title: 'Ritmo de Gastos Preocupante',
-            description: `Neste ritmo (R$ ${dailyRate.toFixed(2)}/dia), sua projeção de gastos do mês ultrapassará sua renda total.`,
-            severity: 'critical',
-            priority: 115
-         });
-       }
+      const dailyRate = expenses / currentDay;
+      const expectedMonthlyExpense = dailyRate * daysInMonth;
+
+      if (expectedMonthlyExpense > revenues) {
+        insights.push({
+          id: 'high_burn_rate',
+          type: 'prediction',
+          title: 'Ritmo de Gastos Preocupante',
+          description: `Neste ritmo (R$ ${dailyRate.toFixed(2)}/dia), sua projeção de gastos do mês ultrapassará sua renda total.`,
+          severity: 'critical',
+          priority: 115
+        });
+      }
     }
 
     // 5. Dynamic 50/30/20 Rule
@@ -152,10 +160,10 @@ export class InsightService {
     if (revenues > 0) {
       const fixedPct = (fixedSpent / revenues) * 100;
       const variablePct = (variableSpent / revenues) * 100;
-      
+
       let idealFixedPct = 50;
       let idealVarPct = 30;
-      
+
       // Adapt thresholds for lower incomes where survival takes more % naturally
       if (revenues <= 3000) {
         idealFixedPct = 65;
@@ -258,29 +266,29 @@ export class InsightService {
       });
     }
 
-    // 10. Safe Daily Spending (Conservative logic: Current Balance - Mandatory Bills - 10% Margin)
-    const daysRemaining = getDaysRemainingInMonth() || 1;
-    const monthStart = new Date(year, month - 1, 1);
-    const monthEnd = new Date(year, month, 0);
-    
-    const fixedCategories = new Set(categories.filter(c => c.is_fixed).map(c => c.id));
-    const essentialBillsTotal = bills.reduce((sum, bill) => {
-      const dueDate = new Date(bill.due_date);
-      const isFixed = bill.recurrence_classification === 'fixed' || (bill.category_id && fixedCategories.has(bill.category_id));
-      const inPeriod = dueDate >= monthStart && dueDate <= monthEnd;
-      return sum + (isFixed && inPeriod ? bill.amount : 0);
-    }, 0);
+    // 10. Safe Daily Spending (Conservative & Realistic)
+    const fixedCategoryIdsForWindow = new Set(categories.filter(c => c.is_fixed).map(c => c.id).filter(id => id !== undefined) as number[]);
 
-    const margemSeguranca = totalBalance * 0.1;
-    const saldoDisponivel = totalBalance - essentialBillsTotal - margemSeguranca;
-    const safeDaily = Math.max(0, saldoDisponivel / daysRemaining);
+    const financialWindow = await this.financialWindowService.calculateWindowMetrics(
+        totalBalance,
+        pendingRevenues,
+        bills,
+        fixedCategoryIdsForWindow
+    );
 
-    if (safeDaily > 0 && revenues > 0) {
+    const safeDailyRealistic = financialWindow.realisticSafeDaily;
+    const safeDailyOptimistic = financialWindow.optimisticSafeDaily;
+    const daysToNextIncome = financialWindow.daysToNextIncome;
+
+    if ((safeDailyOptimistic > 0 || safeDailyRealistic > 0) && revenues > 0) {
+      const minDaily = Math.min(safeDailyRealistic, safeDailyOptimistic);
+      const maxDaily = Math.max(safeDailyRealistic, safeDailyOptimistic);
+      
       insights.push({
         id: 'safe_spending',
         type: 'guidance',
         title: 'Gasto Diário Seguro',
-        description: `Para fechar o mês no azul, pode gastar até R$ ${safeDaily.toFixed(2)}/dia.`,
+        description: `Você pode gastar entre R$ ${minDaily.toFixed(0)} e R$ ${maxDaily.toFixed(0)} por dia dependendo da entrada da sua próxima renda.\n\n🟡 Você precisa manter esse ritmo por mais ${daysToNextIncome} dias\n💰 Após isso, sua renda entra novamente`,
         severity: 'info',
         priority: 95
       });
@@ -312,16 +320,17 @@ export class InsightService {
     const { revenues, expensesByCategoryId } = dashboardProcessedData;
     const [year, month] = period.split('-').map(Number);
 
-    const [budgets, accounts, bills, categories] = await Promise.all([
+    const [budgets, accounts, bills, pendingRevenues, categories] = await Promise.all([
       this.budgetService.getBudgets(month, year),
       this.accountService.getAccounts(),
       this.billService.getBills('D', 'pending'),
+      this.billService.getBills('C', 'pending'),
       this.categoryService.getCategories()
     ]);
 
     const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
     const fixedCategories = new Set(categories.filter(c => c.is_fixed).map(c => c.id));
-    
+
     // Contas vitais (fixas) que ainda não foram pagas no mês selecionado
     const [yearSel, monthSel] = period.split('-').map(Number);
     const monthStart = new Date(yearSel, monthSel - 1, 1);
@@ -346,14 +355,16 @@ export class InsightService {
     };
 
     // Safe Daily Limit Calculation (Replicated logic for consistency)
-    const now = new Date();
-    const isCurrentMonth = yearSel === now.getFullYear() && monthSel === (now.getMonth() + 1);
-    const currentDay = isCurrentMonth ? now.getDate() : 1;
-    const remainingDays = Math.max(1, monthEnd.getDate() - currentDay + 1);
-    
-    const margemSeguranca = totalBalance * 0.1;
-    const saldoDisponivel = totalBalance - essentialBillsTotal - margemSeguranca;
-    const safeDaily = Math.max(0, saldoDisponivel / remainingDays);
+    const fixedCategoryIdsForWindow = new Set(categories.filter(c => c.is_fixed).map(c => c.id).filter(id => id !== undefined) as number[]);
+
+    const financialWindow = await this.financialWindowService.calculateWindowMetrics(
+        totalBalance,
+        pendingRevenues,
+        bills,
+        fixedCategoryIdsForWindow
+    );
+
+    const safeDaily = Math.min(financialWindow.realisticSafeDaily, financialWindow.optimisticSafeDaily);
 
     // Impacto invisível
     if (revenues > 0) {
@@ -362,13 +373,13 @@ export class InsightService {
     }
 
     let budgetWarning = false;
-    
+
     if (categoryId) {
       const budget = budgets.find(b => b.category_id === categoryId);
       if (budget) {
         const spent = expensesByCategoryId[categoryId] || 0;
         result.invisibleImpact.budgetPercentage = (amount / budget.monthly_limit) * 100;
-        
+
         if (spent + amount > budget.monthly_limit) {
           budgetWarning = true;
           result.descriptions.push(`Este gasto fará você ultrapassar seu limite mensal para esta categoria em R$ ${((spent + amount) - budget.monthly_limit).toFixed(2)}.`);
@@ -411,18 +422,18 @@ export class InsightService {
 
   async explainExpenseVariation(dashboardProcessedData: any, prevDashboardProcessedData: any): Promise<any[]> {
     if (!dashboardProcessedData || !prevDashboardProcessedData) return [];
-    
+
     const categories = await this.categoryService.getCategories();
     const currentMap = dashboardProcessedData.expensesByCategoryId || {};
     const prevMap = prevDashboardProcessedData.expensesByCategoryId || {};
-    
+
     const variations: any[] = [];
-    
+
     for (const catIdStr of Object.keys(currentMap)) {
       const catId = Number(catIdStr);
       const currentVal = currentMap[catId];
       const prevVal = prevMap[catId] || 0;
-      
+
       const diff = currentVal - prevVal;
       if (diff > 50) { // só consideramos aumento maior que 50 reais como notável
         const catName = categories.find(c => c.id === catId)?.name || 'Outros';
@@ -436,7 +447,7 @@ export class InsightService {
         });
       }
     }
-    
+
     // Retorna os top 3 aumentos de despesa
     return variations.sort((a, b) => b.diff - a.diff).slice(0, 3);
   }
