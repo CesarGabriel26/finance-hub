@@ -1,0 +1,215 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import "tailwindcss";
+@import 'material-symbols';
+@import '@angular/cdk/overlay-prebuilt.css';
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-border: var(--border);
+    --color-success: var(--success);
+    --color-danger: var(--danger);
+    --radius-app-sm: var(--radius-sm);
+    --radius-app-md: var(--radius-md);
+    --radius-app-lg: var(--radius);
+}
+
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --background: #f8f8ff;
+    --foreground: oklch(0.153 0.006 107.1);
+    --card: white;
+    --card-foreground: oklch(0.153 0.006 107.1);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.153 0.006 107.1);
+    --primary: oklch(0.488 0.243 264.376);
+    --primary-foreground: oklch(0.97 0.014 254.604);
+    --secondary: oklch(0.967 0.001 286.375);
+    --secondary-foreground: oklch(0.21 0.006 285.885);
+    --muted: oklch(0.966 0.005 106.5);
+    --muted-foreground: oklch(0.58 0.031 107.3);
+    --accent: oklch(0.488 0.243 264.376);
+    --accent-foreground: oklch(0.97 0.014 254.604);
+    --destructive: oklch(0.577 0.245 27.325);
+    --danger: oklch(0.577 0.245 27.325);
+    --success: oklch(0.596 0.145 163.225);
+    --border: oklch(0.93 0.007 106.5);
+    --input: oklch(0.93 0.007 106.5);
+    --ring: oklch(0.737 0.021 106.9);
+    --chart-1: oklch(0.845 0.143 164.978);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.596 0.145 163.225);
+    --chart-4: oklch(0.508 0.118 165.612);
+    --chart-5: oklch(0.432 0.095 166.913);
+    --primary-hover: oklch(0.424 0.199 265.638);
+    --secondary-hover: oklch(0.93 0.007 106.5);
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius: 0.875rem;
+    --sidebar: white;
+    --sidebar-foreground: oklch(0.153 0.006 107.1);
+    --sidebar-primary: oklch(0.546 0.245 262.881);
+    --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+    --sidebar-accent: oklch(0.966 0.005 106.5);
+    --sidebar-accent-foreground: oklch(0.228 0.013 107.4);
+    --sidebar-border: oklch(0.93 0.007 106.5);
+    --sidebar-ring: oklch(0.737 0.021 106.9);
+}
+
+.dark {
+    --background: oklch(0.153 0.006 107.1);
+    --foreground: oklch(0.988 0.003 106.5);
+    --card: oklch(0.228 0.013 107.4);
+    --card-foreground: oklch(0.988 0.003 106.5);
+    --popover: oklch(0.228 0.013 107.4);
+    --popover-foreground: oklch(0.988 0.003 106.5);
+    --primary: oklch(0.424 0.199 265.638);
+    --primary-foreground: oklch(0.97 0.014 254.604);
+    --secondary: oklch(0.274 0.006 286.033);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.286 0.016 107.4);
+    --muted-foreground: oklch(0.737 0.021 106.9);
+    --accent: oklch(0.424 0.199 265.638);
+    --accent-foreground: oklch(0.97 0.014 254.604);
+    --destructive: oklch(0.704 0.191 22.216);
+    --danger: oklch(0.704 0.191 22.216);
+    --success: oklch(0.696 0.17 162.48);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.58 0.031 107.3);
+    --chart-1: oklch(0.845 0.143 164.978);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.596 0.145 163.225);
+    --chart-4: oklch(0.508 0.118 165.612);
+    --chart-5: oklch(0.432 0.095 166.913);
+    --primary-hover: oklch(0.623 0.214 259.815);
+    --secondary-hover: oklch(0.286 0.016 107.4);
+    --sidebar: oklch(0.228 0.013 107.4);
+    --sidebar-foreground: oklch(0.988 0.003 106.5);
+    --sidebar-primary: oklch(0.623 0.214 259.815);
+    --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+    --sidebar-accent: oklch(0.286 0.016 107.4);
+    --sidebar-accent-foreground: oklch(0.988 0.003 106.5);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.58 0.031 107.3);
+}
+
+html,
+body {
+    height: 100vh;
+    width: 100vw;
+    background-color: var(--background);
+}
+
+
+@layer components {
+
+    /* Botão Primário - Foco em Finanças Séria/Investimentos */
+    .primary-button {
+        @apply px-5 py-3 rounded-2xl font-bold text-center transition-all duration-150 active:mt-[4px] block select-none cursor-pointer;
+        background-color: var(--primary);
+        color: var(--primary-foreground);
+        border-color: var(--primary-hover);
+    }
+
+    .primary-button:hover {
+        filter: brightness(1.1);
+    }
+
+    /* Botão Secundário Gamificado - Estilo Puro Duolingo (Moedas/Quiz) */
+    .gamify-button {
+        @apply px-5 py-3 rounded-2xl font-bold text-center transition-all duration-150 border-b-4 active:border-b-0 active:mt-[4px] block select-none cursor-pointer;
+        background-color: var(--secondary);
+        color: var(--secondary-foreground);
+        border-color: #ccaa00;
+        /* Sombra sólida 3D inferior */
+    }
+
+    .gamify-button:hover {
+        background-color: var(--secondary-hover);
+    }
+
+    /* Card Financeiro Inteligente */
+    .finance-card {
+        @apply p-5 rounded-2xl border-2 transition-all duration-200 shadow-sm;
+        background-color: var(--card);
+        color: var(--card-foreground);
+        border-color: var(--border);
+    }
+
+    /* Badges de Feedback Rápido (Acertos, Erros, Saldo) */
+    .status-badge-success {
+        @apply px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1;
+        background-color: rgba(0, 122, 51, 0.12);
+        color: var(--success);
+    }
+
+    .status-badge-danger {
+        @apply px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1;
+        background-color: rgba(204, 51, 51, 0.12);
+        color: var(--danger);
+    }
+
+    /* Inputs de Valor/Orçamento */
+    .finance-input {
+        @apply w-full px-4 py-3 rounded-xl border-2 bg-transparent outline-none transition-all duration-200 text-lg;
+        border-color: var(--border);
+        color: var(--foreground);
+    }
+
+    .finance-input:focus {
+        border-color: var(--primary);
+    }
+
+    /* ==========================================================================
+     SIDE NAV LINKS (Estilo Financeiro + Gamificado)
+     ========================================================================== */
+
+    /* Estado Normal / Inativo */
+    .nav-link {
+        @apply flex items-center gap-3 px-4 py-3 mx-2 rounded-xl font-bold transition-all duration-150 cursor-pointer select-none text-base border-b-2 border-transparent;
+        color: var(--foreground);
+        opacity: 0.75;
+    }
+
+    /* Estado Hover (Passando o mouse) */
+    .nav-link:hover {
+        @apply opacity-100 scale-[1.01];
+        background-color: var(--border);
+        /* Usa a cor de borda suave como fundo sutil */
+        color: var(--primary);
+    }
+
+    /* Estado Active (Página Atual Selecionada) */
+    .nav-link-active {
+        @apply flex items-center gap-3 px-4 py-3 mx-2 rounded-xl font-black text-base transition-all duration-150 select-none;
+        @apply border-b-4 translate-y-[-2px] shadow-sm;
+        /* Efeito 3D sutil de botão pressionado/ativo */
+        background-color: var(--primary);
+        color: var(--primary-foreground);
+        border-color: var(--primary-hover);
+        /* Sombra sólida inferior */
+        opacity: 1 !important;
+    }
+
+    /* Ajuste para os ícones dentro dos links acompanharem as cores perfeitamente */
+    .nav-link svg,
+    .nav-link-active svg {
+        @apply w-5 transition-colors duration-150;
+        height: 5px;
+    }
+}

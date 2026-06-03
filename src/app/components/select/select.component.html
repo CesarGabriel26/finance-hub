@@ -1,0 +1,27 @@
+<!-- Botão de Trigger (Origem do Overlay) -->
+<div cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="toggleDropdown()"
+    class="w-full px-4 py-2 border border-gray-300 rounded-md bg-white flex justify-between items-center cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+    <span class="text-gray-700">{{ selectedLabel }}</span>
+    <span class="text-gray-400 transform transition-transform duration-200" [class.rotate-180]="isOpen()">
+        ▼
+    </span>
+</div>
+
+<!-- Menu Flutuante (Overlay) -->
+<ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="trigger" [cdkConnectedOverlayOpen]="isOpen()"
+    [cdkConnectedOverlayHasBackdrop]="true" cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+    (backdropClick)="isOpen.set(false)">
+
+    <!-- Lista estilizada com Tailwind -->
+    <ul
+        class="mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto focus:outline-none z-50">
+        @for (option of options; track option.value) {
+        <li (click)="selectOption(option)" [class.bg-blue-50]="option.value === selectedValue()"
+            [class.text-blue-600]="option.value === selectedValue()"
+            class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 select-none transition-colors">
+            {{ option.label }}
+        </li>
+        }
+    </ul>
+</ng-template>

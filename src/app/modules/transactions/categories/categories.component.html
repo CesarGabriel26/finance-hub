@@ -1,0 +1,52 @@
+<section class="h-full w-full grid grid-rows-[auto_1fr] gap-4">
+    <form [formGroup]="filters" class="bg-[var(--card)] p-4 rounded-xl shadow-lg grid grid-cols-[3fr_1fr_1fr] gap-4">
+        <input formControlName="filter" placeholder="Filtrar por texto..." type="text"
+            class="w-full px-4 py-2 border border-gray-300 rounded-md bg-white flex justify-between items-center cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <app-select formControlName="type" [options]="[
+            {value: 'A', label: 'Todos'},
+            {value: 'D', label: 'Despesa'},
+            {value: 'R', label: 'Receita'},
+        ]" placeholder="Selecionar tipo" />
+        <button
+            class="px-4 py-2 rounded-md flex justify-center items-center cursor-pointer select-none bg-[var(--primary)] text-[var(--primary-foreground)]">
+            <span class="material-symbols-outlined">add</span>
+            <span>Nova Categoria</span>
+        </button>
+    </form>
+
+    <div>
+        <app-data-table title="Categorias" description="Gerencie suas categorias de despesas e receitas."
+            [rows]="categories" [columns]="categoryColumns" [filter]="categoryFilter" [getRowId]="identifyCategory">
+
+            <ng-template #dataTableRow let-row>
+                <div class="grid grid-cols-[1fr_auto] w-full gap-4 items-center cursor-context-menu"
+                    [appContextMenuTriggerFor]="myContextMenu" [appContextMenuData]="row">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex-shrink-0">
+                            <span class="material-symbols-outlined text-xl">{{ row.icon || 'payments' }}</span>
+                        </div>
+
+                        <div class="flex flex-col min-w-0">
+                            <span class="font-semibold text-slate-900 truncate text-sm sm:text-base">
+                                {{ row.name }}
+                            </span>
+                            <span class="text-xs text-slate-500 truncate">
+                                {{ row.type === 'E' ? 'Despesa' : 'Receita' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <button [appContextMenuTriggerFor]="myContextMenu" [appContextMenuData]="row"
+                        appContextMenuTriggerType="click"
+                        class="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                        type="button" aria-label="Mais opções">
+                        <span class="material-symbols-outlined text-xl block">more_vert</span>
+                    </button>
+                </div>
+            </ng-template>
+        </app-data-table>
+    </div>
+</section>
+
+<app-context-menu #myContextMenu [items]="menuItems" />

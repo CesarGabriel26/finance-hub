@@ -1,0 +1,82 @@
+<aside class="h-full flex flex-col gap-4 border-r border-slate-300 w-64 p-4 text-slate-700 select-none">
+    <!-- Header/Logo -->
+    <div class="flex items-center gap-6 text-lg font-semibold px-2 py-3 text-slate-800">
+        <span class="material-symbols-outlined text-2xl">
+            account_balance
+        </span>
+        <span>Finance Hub</span>
+    </div>
+
+    <!-- Links de Navegação Dinâmicos com Scroll Customizado -->
+    <ul class="flex-1 flex flex-col gap-2 overflow-y-auto pr-1 scrollbar-thin">
+        @for (item of navLinks; track $index) {
+
+        <!-- CASO 1: Item é um Dropdown -->
+        @if ('items' in item) {
+        <li class="grid transition-all duration-300  w-full" [ngClass]="{
+                'grid-rows-[auto_1fr]': dropdowns().find(d => d.label === item.label)?.active,
+                'grid-rows-[auto_0fr]': !dropdowns().find(d => d.label === item.label)?.active
+            }">
+            <!-- Gatilho do Dropdown (Título Pai) -->
+            <div (click)="dropdowns().find(d => d.label === item.label)!.active = !dropdowns().find(d => d.label === item.label)?.active"
+                class="link flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors group">
+                <div class="flex items-center gap-6">
+                    <span class="material-symbols-outlined transition-colors">
+                        {{ item.icon }}
+                    </span>
+                    <span class="font-medium transition-colors">
+                        {{ item.label }}
+                    </span>
+                </div>
+                <span class="material-symbols-outlined text-lg transition-transform duration-200">
+                    expand_more
+                </span>
+            </div>
+
+            <!-- Sub-itens do Dropdown -->
+            <div class="overflow-hidden">
+                <ul class="pl-6 flex flex-col gap-1 border-l-2 border-slate-200 ml-5 mt-1">
+                    @for (subLink of item.items; track subLink.path) {
+                    <li class="block w-full">
+                        <a [routerLink]="subLink.path" routerLinkActive="font-semibold"
+                            [routerLinkActiveOptions]="{ exact: true }"
+                            class="link flex items-center gap-4 text-sm p-2 rounded-md transition-colors block w-full">
+                            @if (subLink.icon) {
+                            <span class="material-symbols-outlined text-lg">{{ subLink.icon }}</span>
+                            }
+                            <span>{{ subLink.label }}</span>
+                        </a>
+                    </li>
+                    }
+                </ul>
+            </div>
+        </li>
+        }
+
+        <!-- CASO 2: Item é um Link Simples -->
+        @else {
+        <li class="block w-full">
+            <a [routerLink]="item.path" routerLinkActive="font-semibold" [routerLinkActiveOptions]="{ exact: true }"
+                class="link flex items-center gap-6 p-2.5 rounded-lg transition-colors block w-full group">
+                <span class="material-symbols-outlined  transition-colors">
+                    {{ item.icon }}
+                </span>
+                <span class="font-medium  transition-colors">
+                    {{ item.label }}
+                </span>
+            </a>
+        </li>
+        }
+
+        }
+    </ul>
+
+    <!-- Footer / Botão de recolher -->
+    <div class="flex flex-col border-t border-slate-200 pt-2">
+        <div class="flex items-center justify-end px-2">
+            <span class="material-symbols-outlined cursor-pointer transition-colors" style="font-size: 1.75rem;">
+                arrow_menu_close
+            </span>
+        </div>
+    </div>
+</aside>
