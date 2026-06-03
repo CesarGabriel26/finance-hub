@@ -1,1 +1,395 @@
-<p>statement-import.component works!</p>
+<section class="h-full w-full grid grid-rows-[auto_auto_1fr] gap-6 max-w-7xl mx-auto pb-12 min-h-0">
+
+    <!-- Header Title -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="material-symbols-outlined text-3xl" style="color: var(--primary)">upload_file</span>
+                <h1 class="text-3xl font-extrabold" style="color: var(--foreground)">
+                    Importar Extrato Bancário
+                </h1>
+            </div>
+            <p class="text-sm" style="color: var(--muted-foreground)">
+                Envie arquivos no formato
+                <code class="px-1.5 py-0.5 rounded font-semibold font-mono text-xs"
+                    style="background: var(--muted); color: var(--primary)">.OFX</code>
+                de qualquer banco para reconciliar suas transações.
+            </p>
+        </div>
+    </div>
+
+    <!-- Step 1: Target Account Selection -->
+    <div class="flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+            <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                style="color: var(--muted-foreground)">
+                <span class="material-symbols-outlined text-base">account_balance</span>
+                1. Selecione a Conta Bancária de Destino
+            </h2>
+            <span *ngIf="parsedTransactions().length > 0" class="text-xs font-bold flex items-center gap-1"
+                style="color: var(--primary)">
+                <span class="material-symbols-outlined text-sm">check_circle</span>
+                Destino: {{ selectedAccountName() }}
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div *ngFor="let acc of accounts" (click)="selectedAccountId.set(acc.id)"
+                class="finance-card cursor-pointer flex items-center gap-3 relative overflow-hidden group transition-all duration-200"
+                [style.border-color]="selectedAccountId() === acc.id ? 'var(--primary)' : 'var(--border)'"
+                [style.background]="selectedAccountId() === acc.id ? 'color-mix(in oklch, var(--primary) 8%, var(--card))' : 'var(--card)'"
+                [class.translate-y-[-2px]]="selectedAccountId() === acc.id"
+                [class.shadow-md]="selectedAccountId() === acc.id">
+
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-sm transition-transform group-hover:scale-105"
+                    [ngClass]="acc.color">
+                    {{ acc.logo }}
+                </div>
+
+                <div class="flex flex-col min-w-0">
+                    <span class="font-bold text-sm truncate" style="color: var(--foreground)">{{ acc.name }}</span>
+                    <span class="text-xs" style="color: var(--muted-foreground)">Conta corrente</span>
+                </div>
+
+                <!-- Active check badge -->
+                <div *ngIf="selectedAccountId() === acc.id"
+                    class="absolute top-2 right-2 flex items-center justify-center" style="color: var(--primary)">
+                    <span class="material-symbols-outlined text-base font-bold">check_circle</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Upload or Display parsed data -->
+    <div class="flex flex-col gap-3 min-h-0">
+        <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+            style="color: var(--muted-foreground)">
+            <span class="material-symbols-outlined text-base">cloud_upload</span>
+            2. Carregue o arquivo de extrato
+        </h2>
+
+        <!-- Upload Zone -->
+        <div *ngIf="parsedTransactions().length === 0 && !isLoading()" (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)" (drop)="onDrop($event)"
+            class="flex flex-col items-center justify-center border-2 border-dashed rounded-3xl p-16 text-center transition-all duration-300 relative overflow-hidden"
+            [style.border-color]="isDragging() ? 'var(--primary)' : 'var(--border)'"
+            [style.background]="isDragging() ? 'color-mix(in oklch, var(--primary) 6%, var(--card))' : 'var(--card)'"
+            [class.scale-[1.005]]="isDragging()" [class.shadow-lg]="isDragging()">
+
+            <input type="file" id="ofx-file-input" (change)="onFileSelected($event)" accept=".ofx" class="hidden" />
+
+            <label for="ofx-file-input" class="cursor-pointer flex flex-col items-center gap-5 w-full">
+                <div class="w-20 h-20 rounded-3xl flex items-center justify-center shadow-md transition-all duration-300 hover:scale-105"
+                    style="background: color-mix(in oklch, var(--primary) 12%, var(--card)); color: var(--primary)">
+                    <span class="material-symbols-outlined text-4xl animate-bounce">upload</span>
+                </div>
+
+                <div class="flex flex-col gap-1.5 max-w-md">
+                    <span class="text-xl font-extrabold" style="color: var(--foreground)">Arraste seu arquivo .OFX
+                        aqui</span>
+                    <span class="text-sm" style="color: var(--muted-foreground)">ou clique para procurar em seus
+                        diretórios locais</span>
+                </div>
+
+                <div class="mt-2 flex items-center gap-3 text-xs" style="color: var(--muted-foreground)">
+                    <span class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">description</span>
+                        OFX de qualquer banco
+                    </span>
+                    <span class="w-1 h-1 rounded-full" style="background: var(--border)"></span>
+                    <span class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">security</span>
+                        Processamento 100% local
+                    </span>
+                </div>
+            </label>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="isLoading()"
+            class="flex flex-col items-center justify-center py-16 px-4 rounded-3xl border relative overflow-hidden"
+            style="background: var(--card); border-color: var(--border)">
+            <div class="scan-line"></div>
+
+            <div class="relative w-24 h-24 mb-6">
+                <div class="absolute inset-0 rounded-full border-4" style="border-color: var(--border)"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-t-transparent animate-spin"
+                    style="border-color: var(--primary); border-top-color: transparent"></div>
+                <div class="absolute inset-0 flex items-center justify-center animate-pulse"
+                    style="color: var(--primary)">
+                    <span class="material-symbols-outlined text-4xl">document_scanner</span>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-bold" style="color: var(--foreground)">Processando e Normalizando...</h3>
+            <p class="text-sm mt-1" style="color: var(--muted-foreground)">Lendo arquivo OFX, extraindo e categorizando
+                transações</p>
+        </div>
+
+        <!-- Parsed Data View -->
+        <div *ngIf="parsedTransactions().length > 0 && !isLoading()" class="flex flex-col gap-6 min-h-0">
+
+            <!-- Summary Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+                <!-- Metadata Card -->
+                <div class="finance-card flex flex-col justify-between min-h-[140px]">
+                    <div class="flex items-start justify-between">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold uppercase tracking-wider"
+                                style="color: var(--muted-foreground)">Metadados do Extrato</span>
+                            <span class="text-lg font-extrabold mt-2 truncate max-w-[180px]"
+                                style="color: var(--foreground)">{{ bankName() }}</span>
+                            <span class="text-xs font-mono mt-0.5" style="color: var(--muted-foreground)">Conta: {{
+                                accountNumber() }}</span>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                            style="background: var(--muted); color: var(--muted-foreground)">
+                            <span class="material-symbols-outlined">info</span>
+                        </div>
+                    </div>
+                    <div class="text-xs mt-3 pt-2"
+                        style="border-top: 1px solid var(--border); color: var(--muted-foreground)">
+                        Período: {{ periodStart() | date: 'dd/MM/yy' }} — {{ periodEnd() | date: 'dd/MM/yy' }}
+                    </div>
+                </div>
+
+                <!-- Income Card -->
+                <div class="finance-card flex flex-col justify-between min-h-[140px]">
+                    <div class="flex items-start justify-between">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold uppercase tracking-wider"
+                                style="color: var(--muted-foreground)">Entradas / Receitas</span>
+                            <span class="text-2xl font-black mt-2" style="color: var(--success)">
+                                +{{ totalIncome() | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                            </span>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                            style="background: color-mix(in oklch, var(--success) 12%, var(--card)); color: var(--success)">
+                            <span class="material-symbols-outlined">trending_up</span>
+                        </div>
+                    </div>
+                    <div class="text-xs mt-3 pt-2"
+                        style="border-top: 1px solid var(--border); color: var(--muted-foreground)">
+                        Total no extrato: {{ parsedTransactions().length }} transações
+                    </div>
+                </div>
+
+                <!-- Expense Card -->
+                <div class="finance-card flex flex-col justify-between min-h-[140px]">
+                    <div class="flex items-start justify-between">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold uppercase tracking-wider"
+                                style="color: var(--muted-foreground)">Saídas / Despesas</span>
+                            <span class="text-2xl font-black mt-2" style="color: var(--danger)">
+                                -{{ totalExpense() | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                            </span>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                            style="background: color-mix(in oklch, var(--danger) 12%, var(--card)); color: var(--danger)">
+                            <span class="material-symbols-outlined">trending_down</span>
+                        </div>
+                    </div>
+                    <div class="text-xs mt-3 pt-2"
+                        style="border-top: 1px solid var(--border); color: var(--muted-foreground)">
+                        Selecionadas: {{ totalTransactionsCount() }} de {{ parsedTransactions().length }}
+                    </div>
+                </div>
+
+                <!-- Net Balance Card -->
+                <div class="finance-card flex flex-col justify-between min-h-[140px]">
+                    <div class="flex items-start justify-between">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold uppercase tracking-wider"
+                                style="color: var(--muted-foreground)">Saldo do Extrato</span>
+                            <span class="text-2xl font-black mt-2"
+                                [style.color]="(totalIncome() - totalExpense()) >= 0 ? 'var(--success)' : 'var(--danger)'">
+                                {{ (totalIncome() - totalExpense()) >= 0 ? '+' : '' }}{{ (totalIncome() -
+                                totalExpense()) | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                            </span>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                            [style.background]="(totalIncome() - totalExpense()) >= 0 ? 'color-mix(in oklch, var(--success) 12%, var(--card))' : 'color-mix(in oklch, var(--danger) 12%, var(--card))'"
+                            [style.color]="(totalIncome() - totalExpense()) >= 0 ? 'var(--success)' : 'var(--danger)'">
+                            <span class="material-symbols-outlined">account_balance_wallet</span>
+                        </div>
+                    </div>
+                    <div class="text-xs mt-3 pt-2"
+                        style="border-top: 1px solid var(--border); color: var(--muted-foreground)">
+                        Destino: {{ selectedAccountName() }}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Preview Table Card -->
+            <!-- <div class="w-full overflow-hidden rounded-2xl shadow-sm grid grid-rows-[auto_1fr_auto] min-h-0"
+                style="background: var(--card); border: 1px solid var(--border)">
+
+                <div class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    style="border-bottom: 1px solid var(--border); background: var(--muted)">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style="background: color-mix(in oklch, var(--primary) 12%, var(--card)); color: var(--primary)">
+                            <span class="material-symbols-outlined text-lg">receipt_long</span>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm" style="color: var(--foreground)">Transações Encontradas</h3>
+                            <p class="text-xs" style="color: var(--muted-foreground)">Selecione, categorize e ajuste
+                                antes de importar</p>
+                        </div>
+                    </div>
+
+                    <button (click)="resetImport()"
+                        class="px-3.5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+                        style="border: 1px solid var(--border); color: var(--foreground); background: var(--card)"
+                        onmouseover="this.style.background='var(--secondary)'"
+                        onmouseout="this.style.background='var(--card)'">
+                        <span class="material-symbols-outlined text-base">cloud_sync</span>
+                        Trocar arquivo
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto overflow-y-auto min-h-0">
+                    <table class="w-full border-collapse text-left">
+                        <thead>
+                            <tr class="text-xs font-bold uppercase tracking-wider"
+                                style="border-bottom: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground)">
+                                <th class="py-3.5 px-4 w-12 text-center">
+                                    <input type="checkbox" [checked]="isAllSelected()"
+                                        (change)="toggleSelectAll($event)" class="rounded cursor-pointer" />
+                                </th>
+                                <th class="py-3.5 px-4 w-28">Data</th>
+                                <th class="py-3.5 px-4 min-w-[280px]">Estabelecimento / Descrição</th>
+                                <th class="py-3.5 px-4 w-56 text-center">Categoria</th>
+                                <th class="py-3.5 px-4 w-36 text-right">Valor</th>
+                                <th class="py-3.5 px-4 w-16 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let tx of parsedTransactions()" class="group transition-all duration-150"
+                                [style.opacity]="tx.ignored ? '0.45' : '1'"
+                                style="border-bottom: 1px solid var(--border)">
+
+                                <td class="py-3.5 px-4 text-center">
+                                    <input type="checkbox" [checked]="!tx.ignored" (change)="toggleIgnore(tx.id)"
+                                        class="rounded cursor-pointer" />
+                                </td>
+
+                                <td class="py-3.5 px-4 whitespace-nowrap text-sm font-medium"
+                                    style="color: var(--muted-foreground)">
+                                    {{ tx.date | date: 'dd MMM, yyyy' }}
+                                </td>
+
+                                <td class="py-3.5 px-4">
+                                    <div class="flex flex-col min-w-0">
+                                        <span class="font-bold text-sm truncate"
+                                            [style.color]="tx.ignored ? 'var(--muted-foreground)' : 'var(--foreground)'"
+                                            [style.text-decoration]="tx.ignored ? 'line-through' : 'none'"
+                                            [title]="tx.description">
+                                            {{ tx.description }}
+                                        </span>
+                                        <span class="truncate"
+                                            style="color: var(--muted-foreground); font-size: 0.65rem"
+                                            [title]="tx.originalDescription">
+                                            OFX: {{ tx.originalDescription }}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td class="py-3.5 px-4">
+                                    <div class="relative flex items-center justify-center">
+                                        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all border border-transparent w-44 cursor-pointer"
+                                            [ngClass]="getCategoryColorClass(tx.category)">
+                                            <span class="material-symbols-outlined text-base flex-shrink-0">{{
+                                                getCategoryIcon(tx.category) }}</span>
+                                            <span class="truncate flex-1 text-center">{{ tx.category }}</span>
+                                            <select [ngModel]="tx.category"
+                                                (ngModelChange)="setTransactionCategory(tx.id, $event)"
+                                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                [disabled]="tx.ignored">
+                                                <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}
+                                                </option>
+                                            </select>
+                                            <span
+                                                class="material-symbols-outlined text-sm opacity-60 flex-shrink-0">expand_more</span>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                                    <span class="text-sm font-extrabold tracking-tight"
+                                        [style.color]="tx.ignored ? 'var(--muted-foreground)' : (tx.type === 'credit' ? 'var(--success)' : 'var(--danger)')">
+                                        {{ tx.type === 'credit' ? '+' : '-' }}{{ tx.amount | currency: 'BRL' : 'symbol'
+                                        : '1.2-2' }}
+                                    </span>
+                                </td>
+
+                                <td class="py-3.5 px-4 text-center">
+                                    <button (click)="toggleIgnore(tx.id)"
+                                        class="p-1 rounded-lg transition-all cursor-pointer"
+                                        style="color: var(--muted-foreground)"
+                                        onmouseover="this.style.color='var(--danger)'; this.style.background='color-mix(in oklch, var(--danger) 10%, transparent)'"
+                                        onmouseout="this.style.color='var(--muted-foreground)'; this.style.background='transparent'"
+                                        [title]="tx.ignored ? 'Incluir transação' : 'Ignorar transação'">
+                                        <span class="material-symbols-outlined text-lg">{{ tx.ignored ? 'add_circle' :
+                                            'remove_circle' }}</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-5 flex flex-col sm:flex-row items-center justify-between gap-4"
+                    style="border-top: 1px solid var(--border); background: var(--muted)">
+                    <div class="text-xs" style="color: var(--muted-foreground)">
+                        As transações marcadas serão adicionadas ao histórico de
+                        <strong style="color: var(--foreground)">{{ selectedAccountName() }}</strong>.
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button (click)="resetImport()"
+                            class="px-5 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer"
+                            style="border: 1px solid var(--border); color: var(--foreground); background: var(--card)"
+                            onmouseover="this.style.background='var(--secondary)'"
+                            onmouseout="this.style.background='var(--card)'">
+                            Cancelar
+                        </button>
+                        <button (click)="confirmImport()"
+                            class="primary-button flex items-center gap-2 px-6 py-2.5 text-sm active:scale-95">
+                            <span class="material-symbols-outlined text-lg">check</span>
+                            <span>Importar {{ totalTransactionsCount() }} Transações</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div> -->
+
+        </div>
+    </div>
+
+    <!-- Success Toast -->
+    <!-- <div *ngIf="showSuccessToast()"
+        class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl max-w-md toast-slide-in"
+        style="background: var(--foreground); color: var(--background); border: 1px solid color-mix(in oklch, var(--border) 50%, transparent)">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 animate-bounce"
+            style="background: var(--success); color: white">
+            <span class="material-symbols-outlined text-xl">check</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+            <span class="font-extrabold text-sm">Importação Concluída com Sucesso!</span>
+            <span class="text-xs mt-0.5" style="opacity: 0.7">
+                Foram salvas <strong>{{ importedCount() }}</strong> transações na conta <strong>{{ selectedAccountName() }}</strong>.
+            </span>
+        </div>
+        <button (click)="showSuccessToast.set(false)"
+            class="ml-auto transition-opacity cursor-pointer"
+            style="opacity: 0.6"
+            onmouseover="this.style.opacity='1'"
+            onmouseout="this.style.opacity='0.6'">
+            <span class="material-symbols-outlined text-lg">close</span>
+        </button>
+    </div> -->
+
+</section>
