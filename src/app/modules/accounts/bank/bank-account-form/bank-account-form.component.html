@@ -1,0 +1,97 @@
+<form (submit)="submit($event)" [formGroup]="form" class="space-y-5">
+
+  <div class="mb-2">
+    <h3 class="text-foreground text-lg font-black tracking-tight">
+      {{ account ? 'Editar Conta Bancária' : 'Nova Conta Bancária' }}
+    </h3>
+    <p class="text-muted-foreground text-xs">
+      Configure os dados da conta para controlar seus saldos e investimentos.
+    </p>
+  </div>
+
+  <hr class="border-border my-2">
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+    <div class="flex flex-col gap-1.5">
+      <label for="name" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Nome da Conta
+      </label>
+      <app-input id="name" type="text" formControlName="name" placeholder="Ex: Nubank, Caixa, Carteira" />
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <label for="bankCode" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Banco da Conta
+      </label>
+      <app-select
+        id="bankCode"
+        formControlName="bankCode"
+        [options]="bankService.getAll()"
+        [searchable]="true"
+        searchPlaceholder="Buscar banco..."
+        placeholder="Selecione o banco"
+      />
+    </div>
+    <div class="flex flex-col gap-1.5 md:col-span-2">
+      <label for="accountNumber" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Numero da Conta
+      </label>
+      <app-input id="accountNumber" type="text" formControlName="accountNumber" placeholder="Ex: 12345-6" />
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+    <div class="flex flex-col gap-1.5">
+      <label for="type" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Tipo de Conta
+      </label>
+      <app-select id="type" formControlName="type" [options]="[{
+        label: 'Conta Corrente',
+        value: 'checking'
+      },{
+        label: 'Poupança',
+        value: 'savings'
+      },{
+        label: 'Investimentos',
+        value: 'investment'
+      },{
+        label: 'Dinheiro em Espécie',
+        value: 'cash'
+      }]" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="initialBalance" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        {{ account ? 'Saldo Atual' : 'Saldo Inicial' }}
+      </label>
+      <app-input id="initialBalance" [disabled]="account != undefined" prefix="R$ " type="currency"
+        formControlName="balance" placeholder="0,00" />
+    </div>
+
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+    <div class="flex flex-col gap-1.5">
+      <label for="color" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Cor de Identificação
+      </label>
+      <app-color-picker id="color" formControlName="color" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="icon" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Ícone
+      </label>
+      <app-icon-picker id="icon" formControlName="icon" />
+    </div>
+  </div>
+
+  <div class="pt-4 flex justify-end">
+    <button type="submit" [disabled]="form.invalid"
+      class="primary-button w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:filter-none">
+      {{ account ? 'Salvar Alterações' : 'Criar Conta' }}
+    </button>
+  </div>
+
+</form>

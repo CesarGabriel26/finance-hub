@@ -1,0 +1,28 @@
+@if ((modals$ | async); as activeModals) {
+@for (modal of activeModals; track $index) {
+
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 transition-opacity animate-fade-in"
+    (click)="modalService.close()">
+
+    <div class="w-full p-4 max-w-2xl max-h-[calc(100vh-2rem)] transform overflow-y-auto rounded-[var(--radius,0.875rem)] bg-[var(--card)] text-card-foreground shadow-2xl transition-all border border-border animate-scale-up grid grid-[auto_1fr]"
+        (click)="$event.stopPropagation()">
+
+        <header class="flex flex-row justify-end mb-2">
+            <button type="button"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-full cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground transition-colors duration-150"
+                (click)="modalService.close()">
+                <span class="sr-only">Fechar modal</span>
+                <span class="material-symbols-outlined text-xl select-none">
+                    close
+                </span>
+            </button>
+        </header>
+
+        <div class="w-full">
+            <ng-container *ngComponentOutlet="modal.component; inputs: modal.data"></ng-container>
+        </div>
+    </div>
+</div>
+
+}
+}

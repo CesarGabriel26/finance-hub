@@ -1,0 +1,69 @@
+<section class="h-full w-full grid grid-rows-[auto_1fr] gap-4">
+  <form [formGroup]="filters" class="bg-[var(--card)] p-4 rounded-xl shadow-lg grid grid-cols-1 lg:grid-cols-[2fr_1fr_auto] gap-4">
+    <app-input formControlName="description" placeholder="Filtrar por descricao..." />
+
+    <app-select formControlName="status" [options]="statusOptions" placeholder="Selecionar status" />
+
+    <button type="button" (click)="openModal()"
+      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none bg-[var(--primary)] text-[var(--primary-foreground)]">
+      <span class="material-symbols-outlined">add</span>
+      <span>Nova Conta a Pagar</span>
+    </button>
+  </form>
+
+  <div class="w-full flex-1 min-h-0">
+    <app-data-table title="Contas a Pagar" description="Acompanhe compromissos previstos para pagamento."
+      [rows]="payables()" [columns]="payableColumns" [getRowId]="identifyPayable">
+
+      <ng-template #dataTableRow let-row>
+        <div class="grid grid-cols-[minmax(16rem,1.6fr)_minmax(8rem,0.75fr)_minmax(9rem,0.8fr)_minmax(8rem,0.7fr)_auto] min-w-[56rem] w-full gap-4 items-center cursor-context-menu"
+          [appContextMenuTriggerFor]="payableContextMenu" [appContextMenuData]="row">
+
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-500/10 text-red-600 flex-shrink-0">
+              <span class="material-symbols-outlined text-xl">receipt_long</span>
+            </div>
+
+            <div class="flex flex-col min-w-0">
+              <span class="font-semibold text-[var(--foreground)] truncate text-sm sm:text-base">
+                {{ row.description }}
+              </span>
+              <span class="text-xs text-[var(--foreground)] opacity-50 truncate">
+                {{ row.payee || 'Sem beneficiario' }} - {{ getCategoryName(row.categoryId) }} - {{ getAccountName(row.accountId) }}
+              </span>
+            </div>
+          </div>
+
+          <span class="font-semibold text-red-700 truncate text-sm sm:text-base">
+            {{ row.amount | currency: 'BRL' }}
+          </span>
+
+          <div class="flex flex-col min-w-0">
+            <span class="font-semibold text-[var(--foreground)] truncate text-sm sm:text-base">
+              {{ formatDate(row.dueDate) }}
+            </span>
+            @if (row.paidAt) {
+            <span class="text-xs text-muted-foreground truncate">
+              Paga em {{ formatDate(row.paidAt) }}
+            </span>
+            }
+          </div>
+
+          <span class="inline-flex w-fit items-center justify-center rounded-full px-3 py-1 text-xs font-bold"
+            [ngClass]="getStatusClass(row)">
+            {{ getStatusLabel(row) }}
+          </span>
+
+          <button [appContextMenuTriggerFor]="payableContextMenu" [appContextMenuData]="row"
+            appContextMenuTriggerType="click"
+            class="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            type="button" aria-label="Mais opcoes">
+            <span class="material-symbols-outlined text-xl block">more_vert</span>
+          </button>
+        </div>
+      </ng-template>
+    </app-data-table>
+  </div>
+</section>
+
+<app-context-menu #payableContextMenu [items]="menuItems" />

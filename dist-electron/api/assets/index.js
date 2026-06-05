@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.registerDeleteAsset = exports.registerUpdateAsset = exports.registerInsertAsset = exports.registerGetAssetById = exports.registerGetAssets = void 0;
+var get_assets_1 = require("./get-assets");
+Object.defineProperty(exports, "registerGetAssets", { enumerable: true, get: function () { return get_assets_1.registerGetAssets; } });
+var get_asset_by_id_1 = require("./get-asset-by-id");
+Object.defineProperty(exports, "registerGetAssetById", { enumerable: true, get: function () { return get_asset_by_id_1.registerGetAssetById; } });
+var insert_asset_1 = require("./insert-asset");
+Object.defineProperty(exports, "registerInsertAsset", { enumerable: true, get: function () { return insert_asset_1.registerInsertAsset; } });
+var update_asset_1 = require("./update-asset");
+Object.defineProperty(exports, "registerUpdateAsset", { enumerable: true, get: function () { return update_asset_1.registerUpdateAsset; } });
+var delete_asset_1 = require("./delete-asset");
+Object.defineProperty(exports, "registerDeleteAsset", { enumerable: true, get: function () { return delete_asset_1.registerDeleteAsset; } });

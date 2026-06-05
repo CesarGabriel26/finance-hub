@@ -1,1 +1,76 @@
-<p>expense-budgets.component works!</p>
+<section class="h-full w-full grid grid-rows-[auto_auto_1fr] gap-4">
+  <form [formGroup]="filters" class="bg-[var(--card)] p-4 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4">
+    <app-input type="number" formControlName="month" placeholder="Mes" />
+    <app-input type="number" formControlName="year" placeholder="Ano" />
+    <button type="button" (click)="openModal()"
+      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none bg-[var(--primary)] text-[var(--primary-foreground)]">
+      <span class="material-symbols-outlined">add</span>
+      <span>Nova Meta</span>
+    </button>
+  </form>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
+      <span class="text-xs font-bold uppercase text-muted-foreground">Limite Total</span>
+      <strong class="block mt-2 text-xl text-foreground">{{ totalLimit() | currency: 'BRL' }}</strong>
+    </div>
+    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
+      <span class="text-xs font-bold uppercase text-muted-foreground">Gasto</span>
+      <strong class="block mt-2 text-xl text-foreground">{{ totalSpent() | currency: 'BRL' }}</strong>
+    </div>
+    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
+      <span class="text-xs font-bold uppercase text-muted-foreground">Saldo</span>
+      <strong class="block mt-2 text-xl" [class.text-red-700]="totalLimit() - totalSpent() < 0">
+        {{ totalLimit() - totalSpent() | currency: 'BRL' }}
+      </strong>
+    </div>
+  </div>
+
+  <div class="w-full flex-1 min-h-0">
+    <app-data-table title="Metas de Despesas" description="Limites por categoria no periodo selecionado."
+      [rows]="budgets()" [columns]="columns" [getRowId]="identifyBudget">
+      <ng-template #dataTableRow let-row>
+        <div class="grid grid-cols-[minmax(14rem,1fr)_minmax(11rem,0.7fr)_minmax(11rem,0.7fr)_auto] min-w-[54rem] w-full gap-4 items-center cursor-context-menu"
+          [appContextMenuTriggerFor]="budgetContextMenu" [appContextMenuData]="row">
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-muted text-muted-foreground flex-shrink-0"
+              [style.background-color]="(getCategory(row)?.color || '#64748b') + '1a'">
+              <span class="material-symbols-outlined text-xl" [style.color]="getCategory(row)?.color || '#64748b'">
+                {{ getCategory(row)?.icon || 'money_off' }}
+              </span>
+            </div>
+            <div class="min-w-0">
+              <span class="block font-semibold text-foreground truncate">{{ getCategory(row)?.name || 'Categoria' }}</span>
+              <span class="block text-xs text-muted-foreground truncate">
+                {{ progress(row).toFixed(0) }}% usado
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <span class="block text-sm font-semibold text-foreground">{{ spent(row) | currency: 'BRL' }}</span>
+            <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+              <div class="h-full rounded-full" [ngClass]="progressClass(row)" [style.width.%]="progress(row)"></div>
+            </div>
+          </div>
+
+          <div class="text-sm font-semibold">
+            <span class="block text-foreground">Limite {{ row.amountLimit | currency: 'BRL' }}</span>
+            <span class="text-xs" [class.text-red-700]="remaining(row) < 0" [class.text-muted-foreground]="remaining(row) >= 0">
+              Saldo {{ remaining(row) | currency: 'BRL' }}
+            </span>
+          </div>
+
+          <button [appContextMenuTriggerFor]="budgetContextMenu" [appContextMenuData]="row"
+            appContextMenuTriggerType="click"
+            class="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            type="button" aria-label="Mais opcoes">
+            <span class="material-symbols-outlined text-xl block">more_vert</span>
+          </button>
+        </div>
+      </ng-template>
+    </app-data-table>
+  </div>
+</section>
+
+<app-context-menu #budgetContextMenu [items]="menuItems" />

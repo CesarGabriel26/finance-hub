@@ -1,0 +1,83 @@
+<section class="h-full w-full grid grid-rows-[auto_1fr] gap-4 overflow-hidden">
+  <div class="bg-[var(--card)] p-4 rounded-xl shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-base font-black text-foreground">Metas de Poupanca</h2>
+      <p class="text-xs text-muted-foreground">Acompanhe objetivos, prazos e progresso acumulado.</p>
+    </div>
+    <button type="button" (click)="openModal()"
+      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none bg-[var(--primary)] text-[var(--primary-foreground)]">
+      <span class="material-symbols-outlined">add</span>
+      <span>Nova Meta</span>
+    </button>
+  </div>
+
+  <div class="w-full flex-1 min-h-0 overflow-auto">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      @for (goal of goals(); track goal.id) {
+      <article class="bg-[var(--card)] border border-border rounded-xl p-4 shadow-sm"
+        [appContextMenuTriggerFor]="goalContextMenu" [appContextMenuData]="goal">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="flex items-center justify-center w-11 h-11 rounded-full flex-shrink-0"
+              [style.background-color]="(goal.color || '#10B981') + '1a'">
+              <span class="material-symbols-outlined" [style.color]="goal.color || '#10B981'">
+                {{ goal.icon || 'savings' }}
+              </span>
+            </div>
+            <div class="min-w-0">
+              <h3 class="font-black text-foreground truncate">{{ goal.name }}</h3>
+              <p class="text-xs text-muted-foreground truncate">{{ goal.description || getAccountName(goal) }}</p>
+            </div>
+          </div>
+
+          <button [appContextMenuTriggerFor]="goalContextMenu" [appContextMenuData]="goal"
+            appContextMenuTriggerType="click"
+            class="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            type="button" aria-label="Mais opcoes">
+            <span class="material-symbols-outlined text-xl block">more_vert</span>
+          </button>
+        </div>
+
+        <div class="mt-5 grid grid-cols-2 gap-4">
+          <div>
+            <span class="text-xs text-muted-foreground">Atual</span>
+            <strong class="block text-foreground">{{ goal.currentAmount | currency: 'BRL' }}</strong>
+          </div>
+          <div>
+            <span class="text-xs text-muted-foreground">Alvo</span>
+            <strong class="block text-foreground">{{ goal.targetAmount | currency: 'BRL' }}</strong>
+          </div>
+          <div>
+            <span class="text-xs text-muted-foreground">Falta</span>
+            <strong class="block text-foreground">{{ remaining(goal) | currency: 'BRL' }}</strong>
+          </div>
+          <div>
+            <span class="text-xs text-muted-foreground">Prazo</span>
+            <strong class="block text-foreground">{{ goal.targetDate ? (goal.targetDate | date: 'dd/MM/yyyy') : '-' }}</strong>
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <div class="flex justify-between text-xs font-bold text-muted-foreground">
+            <span>{{ progress(goal).toFixed(0) }}%</span>
+            <span class="inline-flex rounded-full px-2 py-0.5" [ngClass]="statusClass(goal)">
+              {{ statusLabel(goal) }}
+            </span>
+          </div>
+          <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+            <div class="h-full rounded-full bg-emerald-600" [style.width.%]="progress(goal)"></div>
+          </div>
+        </div>
+      </article>
+      } @empty {
+      <div class="bg-[var(--card)] border border-border rounded-xl p-8 text-center xl:col-span-2">
+        <span class="material-symbols-outlined text-4xl text-muted-foreground">savings</span>
+        <h3 class="mt-3 text-lg font-black text-foreground">Nenhuma meta cadastrada</h3>
+        <p class="mt-1 text-sm text-muted-foreground">Crie metas para acompanhar seus objetivos financeiros.</p>
+      </div>
+      }
+    </div>
+  </div>
+</section>
+
+<app-context-menu #goalContextMenu [items]="menuItems" />

@@ -36,7 +36,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const path = __importStar(require("path"));
 const url = __importStar(require("url"));
-// Mantém referência global para evitar garbage collection
+const api_1 = require("./api");
+const market_rates_1 = require("./api/market-rates");
+const notifications_1 = require("./api/notifications");
+const db_1 = require("./db");
 let mainWindow = null;
 const isDev = !electron_1.app.isPackaged;
 function createWindow() {
@@ -45,7 +48,7 @@ function createWindow() {
         height: 800,
         minWidth: 900,
         minHeight: 600,
-        show: false, // Mostrar somente após estar pronto (evita flash branco)
+        show: false,
         frame: true,
         titleBarStyle: 'default',
         webPreferences: {
@@ -84,9 +87,12 @@ function createWindow() {
         mainWindow = null;
     });
 }
-// Inicializar o app quando o Electron estiver pronto
 electron_1.app.whenReady().then(() => {
+    (0, db_1.runMigrations)(); // ← cria/atualiza tabelas antes de qualquer handler IPC
+    void (0, market_rates_1.loadMarketRatesCache)();
     createWindow();
+    (0, api_1.initFinancialApi)();
+    (0, notifications_1.startDueNotificationsScheduler)();
     // macOS: recriar janela ao clicar no ícone do dock
     electron_1.app.on('activate', () => {
         if (electron_1.BrowserWindow.getAllWindows().length === 0) {
@@ -94,7 +100,6 @@ electron_1.app.whenReady().then(() => {
         }
     });
 });
-// Encerrar o app quando todas as janelas forem fechadas (exceto macOS)
 electron_1.app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         electron_1.app.quit();

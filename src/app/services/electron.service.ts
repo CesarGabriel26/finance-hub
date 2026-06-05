@@ -1,23 +1,27 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class ElectronService {
+
+  constructor(
+    private http: HttpClient
+  ) { }
+
   /** True quando rodando dentro do Electron */
   readonly isElectron: boolean = !!(
-    typeof window !== 'undefined' && window.electronAPI?.isElectron
+    typeof window !== 'undefined' && window.AppApi?.isElectron
   );
 
-  /** Retorna a versão do app Electron (undefined no browser) */
+  /** Versão do app Electron (undefined no browser) */
   async getVersion(): Promise<string | undefined> {
     if (!this.isElectron) return undefined;
-    return window.electronAPI?.getVersion();
+    return window.AppApi?.getVersion();
   }
 
-  /** Retorna a plataforma (win32 | darwin | linux) ou undefined no browser */
+  /** Plataforma (win32 | darwin | linux) ou undefined no browser */
   async getPlatform(): Promise<string | undefined> {
     if (!this.isElectron) return undefined;
-    return window.electronAPI?.getPlatform();
+    return window.AppApi?.getPlatform();
   }
 }

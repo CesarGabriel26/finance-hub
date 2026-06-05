@@ -1,8 +1,11 @@
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
+import { initFinancialApi } from './api';
+import { loadMarketRatesCache } from './api/market-rates';
+import { startDueNotificationsScheduler } from './api/notifications';
+import { runMigrations } from './db';
 
-// Mantém referência global para evitar garbage collection
 let mainWindow: BrowserWindow | null = null;
 
 const isDev = !app.isPackaged;
@@ -13,7 +16,7 @@ function createWindow(): void {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    show: false, // Mostrar somente após estar pronto (evita flash branco)
+    show: false,
     frame: true,
     titleBarStyle: 'default',
     webPreferences: {
@@ -58,9 +61,12 @@ function createWindow(): void {
   });
 }
 
-// Inicializar o app quando o Electron estiver pronto
 app.whenReady().then(() => {
+  runMigrations();   // ← cria/atualiza tabelas antes de qualquer handler IPC
+  void loadMarketRatesCache();
   createWindow();
+  initFinancialApi();
+  startDueNotificationsScheduler();
 
   // macOS: recriar janela ao clicar no ícone do dock
   app.on('activate', () => {
@@ -70,7 +76,6 @@ app.whenReady().then(() => {
   });
 });
 
-// Encerrar o app quando todas as janelas forem fechadas (exceto macOS)
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();

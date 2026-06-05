@@ -1,3 +1,322 @@
-<section class="w-full h-full">
+<section class="dashboard-shell h-full min-h-0 w-full overflow-x-hidden pr-1">
+    <div class="grid gap-2 min-h-full">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-2">
+            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase text-muted-foreground">Patrimonio</span>
+                    <span class="material-symbols-outlined text-emerald-700">account_balance_wallet</span>
+                </div>
+                <strong class="block mt-3 text-xl text-foreground">{{ netWorth() | currency: 'BRL' }}</strong>
+                <span class="text-xs text-muted-foreground">Contas + investimentos</span>
+            </article>
 
+            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase text-muted-foreground">Saldo em contas</span>
+                    <span class="material-symbols-outlined text-blue-700">account_balance</span>
+                </div>
+                <strong class="block mt-3 text-xl text-foreground">{{ totalBalance() | currency: 'BRL' }}</strong>
+                <span class="text-xs text-muted-foreground">{{ statementBalances().length }} saldos importados</span>
+            </article>
+
+            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase text-muted-foreground">Receitas do mes</span>
+                    <span class="material-symbols-outlined text-emerald-700">trending_up</span>
+                </div>
+                <strong class="block mt-3 text-xl text-emerald-700">{{ monthIncome() | currency: 'BRL' }}</strong>
+                <span class="text-xs text-muted-foreground">Entradas confirmadas</span>
+            </article>
+
+            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase text-muted-foreground">Despesas do mes</span>
+                    <span class="material-symbols-outlined text-red-700">trending_down</span>
+                </div>
+                <strong class="block mt-3 text-xl text-red-700">{{ monthExpense() | currency: 'BRL' }}</strong>
+                <span class="text-xs text-muted-foreground">Saidas confirmadas</span>
+            </article>
+
+            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase text-muted-foreground">Investimentos</span>
+                    <span class="material-symbols-outlined text-violet-700">query_stats</span>
+                </div>
+                <strong class="block mt-3 text-xl text-foreground">{{ investmentsValue() | currency: 'BRL' }}</strong>
+                <span class="text-xs" [ngClass]="resultClass(investmentReturn())">
+                    {{ investmentReturn() | currency: 'BRL' }} ({{ formatPercent(investmentReturnPercent()) }})
+                </span>
+            </article>
+
+            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase text-muted-foreground">Fluxo liquido</span>
+                    <span class="material-symbols-outlined" [ngClass]="resultClass(monthNet())">swap_vert</span>
+                </div>
+                <strong class="block mt-3 text-xl" [ngClass]="resultClass(monthNet())">{{ monthNet() | currency: 'BRL'
+                    }}</strong>
+                <span class="text-xs text-muted-foreground">Receitas - despesas</span>
+            </article>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[1.6fr_0.9fr] gap-2">
+            <section class="bg-card border border-border rounded-lg p-4 shadow-sm min-h-[18rem]">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-black text-foreground">Fluxo dos ultimos 6 meses</h2>
+                        <p class="text-xs text-muted-foreground">Comparativo de entradas, saidas e saldo mensal.</p>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs font-bold text-muted-foreground">
+                        <span class="inline-flex items-center gap-1"><span
+                                class="h-2 w-2 rounded-full bg-emerald-600"></span>Receita</span>
+                        <span class="inline-flex items-center gap-1"><span
+                                class="h-2 w-2 rounded-full bg-red-500"></span>Despesa</span>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-6 gap-3 h-52 items-end">
+                    @for (month of monthFlow(); track month.key) {
+                    <div class="h-full grid grid-rows-[1fr_auto] gap-2">
+                        <div class="h-full flex items-end justify-center gap-1 border-b border-border">
+                            <div class="w-4 rounded-t bg-emerald-600/80" [style.height.%]="barHeight(month.income)">
+                            </div>
+                            <div class="w-4 rounded-t bg-red-500/80" [style.height.%]="barHeight(month.expense)"></div>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-xs font-bold text-foreground uppercase">{{ month.label }}</span>
+                            <span class="text-[0.68rem]" [ngClass]="resultClass(month.balance ?? month.net)">
+                                {{ (month.balance ?? month.net) | currency: 'BRL' : 'symbol' : '1.0-0' }}
+                            </span>
+                            <span class="block text-[0.62rem] text-muted-foreground">
+                                {{ month.balance !== null ? 'Saldo' : 'Fluxo' }}
+                            </span>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </section>
+
+            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-black text-foreground">Saude financeira</h2>
+                        <p class="text-xs text-muted-foreground">Sinal rapido baseado em fluxo, orçamento e vencimentos.
+                        </p>
+                    </div>
+                    <span class="rounded-full px-3 py-1 text-xs font-black bg-emerald-500/10 text-emerald-700">
+                        {{ healthLabel() }}
+                    </span>
+                </div>
+
+                <div class="mt-5 flex items-center gap-5">
+                    <div class="relative grid h-28 w-28 place-items-center rounded-full"
+                        [style.background]="'conic-gradient(var(--success) ' + financialHealthScore() + '%, var(--muted) 0)'">
+                        <div class="grid h-20 w-20 place-items-center rounded-full bg-card">
+                            <strong class="text-2xl text-foreground">{{ financialHealthScore() }}</strong>
+                        </div>
+                    </div>
+                    <div class="grid gap-3 text-sm">
+                        <div class="flex items-center justify-between gap-8">
+                            <span class="text-muted-foreground">Orcamento usado</span>
+                            <strong class="text-foreground">{{ formatPercent(budgetUsage()) }}</strong>
+                        </div>
+                        <div class="flex items-center justify-between gap-8">
+                            <span class="text-muted-foreground">Atrasados</span>
+                            <strong [class.text-red-700]="overduePayablesAmount() > 0">{{ overduePayablesAmount() |
+                                currency: 'BRL' }}</strong>
+                        </div>
+                        <div class="flex items-center justify-between gap-8">
+                            <span class="text-muted-foreground">Metas ativas</span>
+                            <strong class="text-foreground">{{ savingGoals().length }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr_0.85fr] gap-2">
+            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-black text-foreground">Orcamentos do mes</h2>
+                        <p class="text-xs text-muted-foreground">Categorias mais pressionadas no periodo.</p>
+                    </div>
+                    <strong class="text-sm text-foreground">{{ totalBudgetSpent() | currency: 'BRL' }}</strong>
+                </div>
+
+                <div class="mt-4 grid gap-3 dashboard-list-scroll">
+                    @for (item of budgetInsights(); track item.budget.id) {
+                    <div>
+                        <div class="flex items-center justify-between gap-3 text-sm">
+                            <span class="font-semibold text-foreground truncate">{{ item.category?.name || 'Categoria'
+                                }}</span>
+                            <span class="text-xs text-muted-foreground">{{ item.spent | currency: 'BRL' }} / {{
+                                item.budget.amountLimit | currency: 'BRL' }}</span>
+                        </div>
+                        <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+                            <div class="h-full rounded-full" [ngClass]="progressClass(item.progress)"
+                                [style.width.%]="item.progress"></div>
+                        </div>
+                    </div>
+                    } @empty {
+                    <p class="text-sm text-muted-foreground">Nenhum orçamento configurado para o mês.</p>
+                    }
+                </div>
+            </section>
+
+            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-black text-foreground">Agenda financeira</h2>
+                        <p class="text-xs text-muted-foreground">Proximas contas a pagar e receber.</p>
+                    </div>
+                    <span class="material-symbols-outlined text-muted-foreground">calendar_month</span>
+                </div>
+
+                <div class="mt-4 grid gap-3 dashboard-list-scroll">
+                    @for (entry of upcomingEntries(); track entry.kind + entry.id) {
+                    <div class="grid grid-cols-[auto_1fr_auto] gap-3 items-center">
+                        <span class="grid h-9 w-9 place-items-center rounded-full"
+                            [ngClass]="entry.kind === 'receivable' ? 'bg-emerald-500/10 text-emerald-700' : 'bg-red-500/10 text-red-700'">
+                            <span class="material-symbols-outlined text-lg">
+                                {{ entry.kind === 'receivable' ? 'request_quote' : 'receipt_long' }}
+                            </span>
+                        </span>
+                        <div class="min-w-0">
+                            <span class="block text-sm font-semibold text-foreground truncate">{{ entry.description
+                                }}</span>
+                            <span class="text-xs text-muted-foreground">{{ entry.dueDate | date: 'dd/MM/yyyy' }}</span>
+                        </div>
+                        <strong class="text-sm"
+                            [ngClass]="entry.kind === 'receivable' ? 'text-emerald-700' : 'text-red-700'">
+                            {{ entry.amount | currency: 'BRL' }}
+                        </strong>
+                    </div>
+                    } @empty {
+                    <p class="text-sm text-muted-foreground">Nenhum vencimento pendente.</p>
+                    }
+                </div>
+            </section>
+
+            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-black text-foreground">Metas</h2>
+                        <p class="text-xs text-muted-foreground">Progresso dos principais objetivos.</p>
+                    </div>
+                    <strong class="text-sm text-foreground">{{ formatPercent(averageGoalProgress()) }}</strong>
+                </div>
+
+                <div class="mt-4 grid gap-3 dashboard-list-scroll">
+                    @for (goal of savingGoals(); track goal.id) {
+                    <div>
+                        <div class="flex items-center justify-between gap-3 text-sm">
+                            <span class="font-semibold text-foreground truncate">{{ goal.name }}</span>
+                            <span class="text-xs text-muted-foreground">{{ goalProgress(goal).toFixed(0) }}%</span>
+                        </div>
+                        <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+                            <div class="h-full rounded-full bg-emerald-600" [style.width.%]="goalProgress(goal)"></div>
+                        </div>
+                    </div>
+                    } @empty {
+                    <p class="text-sm text-muted-foreground">Nenhuma meta cadastrada.</p>
+                    }
+                </div>
+            </section>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr_0.85fr] gap-2">
+            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-black text-foreground">Transacoes recentes</h2>
+                        <p class="text-xs text-muted-foreground">Ultimas movimentacoes registradas.</p>
+                    </div>
+                    <span class="material-symbols-outlined text-muted-foreground">history</span>
+                </div>
+
+                <div class="mt-4 grid gap-3 dashboard-list-scroll dashboard-list-scroll--large">
+                    @for (transaction of recentTransactions(); track transaction.id) {
+                    <div class="grid grid-cols-[auto_1fr_auto] gap-3 items-center">
+                        <span class="grid h-9 w-9 place-items-center rounded-full bg-muted">
+                            <span class="material-symbols-outlined text-lg text-muted-foreground">
+                                {{ getTransactionCategory(transaction)?.icon || 'payments' }}
+                            </span>
+                        </span>
+                        <div class="min-w-0">
+                            <span class="block text-sm font-semibold text-foreground truncate">{{
+                                transaction.description }}</span>
+                            <span class="text-xs text-muted-foreground">{{ getAccountName(transaction) }} - {{
+                                transaction.date | date: 'dd/MM/yyyy' }}</span>
+                        </div>
+                        <strong class="text-sm" [ngClass]="resultClass(signedTransactionAmount(transaction))">
+                            {{ signedTransactionAmount(transaction) | currency: 'BRL' }}
+                        </strong>
+                    </div>
+                    } @empty {
+                    <p class="text-sm text-muted-foreground">Nenhuma transacao registrada.</p>
+                    }
+                </div>
+            </section>
+
+            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-black text-foreground">Gastos por categoria</h2>
+                        <p class="text-xs text-muted-foreground">Top categorias de despesa no mes.</p>
+                    </div>
+                    <strong class="text-sm text-red-700">{{ monthExpense() | currency: 'BRL' }}</strong>
+                </div>
+
+                <div class="mt-4 grid gap-3 dashboard-list-scroll">
+                    @for (row of categorySpending(); track row.category?.id || 'empty') {
+                    <div>
+                        <div class="flex items-center justify-between gap-3 text-sm">
+                            <span class="font-semibold text-foreground truncate">{{ row.category?.name || 'Sem despesas'
+                                }}</span>
+                            <span class="text-xs text-muted-foreground">{{ row.amount | currency: 'BRL' }}</span>
+                        </div>
+                        <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+                            <div class="h-full rounded-full bg-red-500" [style.width.%]="row.percent"></div>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </section>
+
+            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-black text-foreground">Investimentos</h2>
+                        <p class="text-xs text-muted-foreground">Resumo de carteira e retorno.</p>
+                    </div>
+                    <span class="material-symbols-outlined text-violet-700">monitoring</span>
+                </div>
+
+                <div class="mt-4 grid gap-4">
+                    <div>
+                        <span class="text-xs text-muted-foreground">Valor atual</span>
+                        <strong class="block text-xl text-foreground">{{ investmentsValue() | currency: 'BRL'
+                            }}</strong>
+                    </div>
+                    <div>
+                        <span class="text-xs text-muted-foreground">Resultado</span>
+                        <strong class="block text-lg" [ngClass]="resultClass(investmentReturn())">
+                            {{ investmentReturn() | currency: 'BRL' }} ({{ formatPercent(investmentReturnPercent()) }})
+                        </strong>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <span class="text-xs text-muted-foreground">Carteiras</span>
+                            <strong class="block text-foreground">{{ portfolios().length }}</strong>
+                        </div>
+                        <div>
+                            <span class="text-xs text-muted-foreground">Ativos</span>
+                            <strong class="block text-foreground">{{ portfolioAssets().length }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 </section>

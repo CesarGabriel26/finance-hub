@@ -10,7 +10,7 @@ import { DataFilter, filterRows, getValueByPath } from '../../utils/data-filter'
 
 export type DataTableAlign = 'left' | 'center' | 'right';
 
-export interface DataTableColumn<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface DataTableColumn<T> {
   key: keyof T | string;
   label: string;
   align?: DataTableAlign;
@@ -19,7 +19,7 @@ export interface DataTableColumn<T extends Record<string, unknown> = Record<stri
   formatter?: (value: unknown, row: T, index: number) => string | number | null | undefined;
 }
 
-export interface DataTableRowContext<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface DataTableRowContext<T> {
   $implicit: T;
   row: T;
   index: number;
@@ -33,7 +33,7 @@ export interface DataTableRowContext<T extends Record<string, unknown> = Record<
   styleUrl: './data-table.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DataTableComponent<T extends Record<string, unknown> = Record<string, unknown>> {
+export class DataTableComponent<T> {
   @Input() rows: readonly T[] = [];
   @Input() columns: readonly DataTableColumn<T>[] = [];
   @Input() filter?: DataFilter<T> | null;

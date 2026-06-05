@@ -1,0 +1,65 @@
+<div cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="toggle()"
+    class="flex gap-3 items-center w-full finance-input !py-2 cursor-pointer select-none"
+    [class.opacity-40]="disabled()" [class.cursor-not-allowed]="disabled()">
+
+    <div class="w-7 h-7 rounded-xl border border-border shadow-inner transition-colors duration-200"
+        [style.backgroundColor]="value()"></div>
+
+    <span class="text-sm font-bold text-foreground uppercase tracking-wider">
+        {{ value() }}
+    </span>
+</div>
+
+<ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="trigger" [cdkConnectedOverlayOpen]="isOpen()"
+    [cdkConnectedOverlayHasBackdrop]="true" cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+    (backdropClick)="isOpen.set(false)">
+
+    <div
+        class="mt-2 w-[320px] p-5 bg-[var(--popover)] border border-border rounded-[var(--radius-md,0.75rem)] shadow-2xl flex flex-col gap-4 z-50 animate-scale-up text-card-foreground">
+
+        <div #saturationPanel (mousedown)="startSatDrag($event)"
+            class="relative w-full h-44 rounded-xl cursor-crosshair overflow-hidden select-none"
+            [style.backgroundColor]="'hsl(' + hue() + ', 100%, 50%)'">
+
+            <div class="absolute inset-0 bg-gradient-to-r from-white to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+
+            <div class="absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white shadow-[0_0_4px_rgba(0,0,0,0.6)] pointer-events-none"
+                [style.left.%]="satPointerX()" [style.top.%]="satPointerY()" [style.backgroundColor]="value()">
+            </div>
+        </div>
+
+        <div (mousedown)="startHueDrag($event)" class="relative w-full h-4 rounded-full cursor-pointer select-none"
+            style="background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);">
+
+            <div class="absolute w-5 h-5 -mt-0.5 -ml-2.5 bg-white border border-slate-300 rounded-full shadow-md pointer-events-none flex items-center justify-center"
+                [style.left.%]="(hue() / 360) * 100">
+                <div class="w-2 h-2 rounded-full" [style.backgroundColor]="'hsl(' + hue() + ', 100%, 50%)'"></div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 w-full border border-border bg-background/50 rounded-xl px-3 py-2">
+            <div class="w-6 h-6 rounded-lg border border-border flex-none" [style.backgroundColor]="value()"></div>
+            <span class="text-muted-foreground font-bold text-sm select-none">#</span>
+            <input type="text" [value]="value().replace('#', '')" readonly
+                class="w-full bg-transparent border-none outline-none text-sm font-black text-foreground uppercase tracking-widest" />
+
+            <span class="text-xs font-bold px-2 py-1 bg-muted rounded-md text-muted-foreground select-none">
+                Hex
+            </span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-1">
+            <button type="button" (click)="generateRandomColor()"
+                class="secondary-button !py-2 !text-xs uppercase tracking-wider">
+                Aleatório
+            </button>
+
+            <button type="button" (click)="isOpen.set(false)"
+                class="primary-button !py-2 !text-xs uppercase tracking-wider">
+                Confirmar
+            </button>
+        </div>
+
+    </div>
+</ng-template>

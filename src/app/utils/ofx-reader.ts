@@ -16,4 +16,4 @@ export async function readOfx(fileContent: Blob | string): Promise<NormalizedOfx
   }
 
   return ofxInstance.toNormalized() as NormalizedOfxData;
-}
+}

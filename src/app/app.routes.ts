@@ -1,12 +1,14 @@
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './modules/dashboard/dashboard.component';
-import { InvestmentsDashboardComponent } from './modules/investments/investments-dashboard.component/investments-dashboard.component';
+import { InvestmentsDashboardComponent } from './modules/investments/investments-dashboard/investments-dashboard.component';
 import { TransactionsHistoryComponent } from './modules/transactions/history/history.component';
 import { StatementImportComponent } from './modules/transactions/statement-import/statement-import.component';
-import { TransactionCategoriesComponent } from './modules/transactions/categories/categories.component';
-import { SavingsTargetsComponent } from './modules/budget/savings-targets.component/savings-targets.component';
+import { SavingsTargetsComponent } from './modules/budget/savings-targets/savings-targets.component';
 import { ExpenseBudgetsComponent } from './modules/budget/expense-budgets/expense-budgets.component';
-import { BankAccountsComponent } from './modules/accounts/bank-accounts/bank-accounts.component';
+import { CategoriesListComponent } from './modules/categories/categories-list/categories-list.component';
+import { AccountsReceivableComponent } from './modules/accounts/receivable/accounts-receivable/accounts-receivable.component';
+import { AccountsPayableComponent } from './modules/accounts/payable/accounts-payable/accounts-payable.component';
+import { BankAccountsComponent } from './modules/accounts/bank/bank-accounts/bank-accounts.component';
 
 export const routes: Routes = [
     {
@@ -65,7 +67,7 @@ export const routes: Routes = [
                     },
                     {
                         path: 'categories',
-                        component: TransactionCategoriesComponent,
+                        component: CategoriesListComponent,
                         data: { label: 'Categorias', icon: 'category' }
                     }
                 ]
@@ -99,6 +101,16 @@ export const routes: Routes = [
                         path: '',
                         pathMatch: 'full',
                         redirectTo: 'bank-accounts'
+                    },
+                    {
+                        path: 'accounts-receivable',
+                        component: AccountsReceivableComponent,
+                        data: { label: 'Contas a Receber', icon: 'request_quote' }
+                    },
+                    {
+                        path: 'accounts-payable',
+                        component: AccountsPayableComponent,
+                        data: { label: 'Contas a Pagar', icon: 'receipt_long' }
                     },
                     {
                         path: 'bank-accounts',

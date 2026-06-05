@@ -1,110 +1,113 @@
-import { Component, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { readOfx } from '../../../utils/ofx-reader';
-
-interface ImportTransaction {
-  id: string;
-  date: Date;
-  description: string;
-  originalDescription: string;
-  amount: number;
-  type: 'credit' | 'debit';
-  category: string;
-  ignored: boolean;
-}
-
-interface BankAccount {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  logo: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-}
+import { DataTableColumn, DataTableComponent } from '../../../components/data-table/data-table.component';
+import { formatBytes, parseAndNormalizeOfx } from '../../../utils/helpers/ofx-parser.helper';
+import { autoCategorize } from '../../../utils/helpers/category-rule.helper';
+import { Account, AccountType, Category, ImportedTransaction } from '../../../models';
+import { OfxParseResult } from '../../../models/ofx.model';
+import { AccountsService } from '../../../services/accounts.service';
+import { AccountStatementBalancesService } from '../../../services/account-statement-balances.service';
+import { BankService } from '../../../services/banks.service';
+import { CategoriesService } from '../../../services/categories.service';
+import { TransactionsService } from '../../../services/transactions.service';
 
 @Component({
-  selector: 'app-statement-import.component',
-  imports: [CommonModule, FormsModule],
+  selector: 'app-statement-import',
+  imports: [CommonModule, FormsModule, DataTableComponent, DatePipe],
   templateUrl: './statement-import.component.html',
   styleUrl: './statement-import.component.css',
 })
-export class StatementImportComponent {
-  // ── UI state ──────────────────────────────────────────────
+export class StatementImportComponent implements OnInit {
+  private readonly accountsService = inject(AccountsService);
+  private readonly statementBalancesService = inject(AccountStatementBalancesService);
+  private readonly bankService = inject(BankService);
+  private readonly categoriesService = inject(CategoriesService);
+  private readonly transactionsService = inject(TransactionsService);
+
+  // ── Definição de Colunas da Tabela ────────────────────────
+  readonly transactionColumns: DataTableColumn<ImportedTransaction>[] = [
+    { key: 'select', label: '', width: '40px' },
+    { key: 'description', label: 'Transação' },
+    { key: 'category', label: 'Categoria', width: '220px' },
+    { key: 'date', label: 'Data', width: '120px' },
+    { key: 'amount', label: 'Valor', align: 'right', width: '130px' },
+    { key: 'actions', label: '', align: 'right', width: '60px' },
+  ];
+
+  // ── Estados Reativos (Signals) ────────────────────────────
+  readonly categories = signal<Category[]>([]);
+  readonly accounts = signal<Account[]>([]);
   readonly isDragging = signal(false);
-  readonly isLoading  = signal(false);
-
-  // ── File / parse state ────────────────────────────────────
-  readonly fileName      = signal('');
-  readonly fileSize      = signal('');
-  readonly bankName      = signal('');
+  readonly isLoading = signal(false);
+  readonly fileName = signal('');
+  readonly fileSize = signal('');
+  readonly bankName = signal('');
+  readonly bankCode = signal('');
   readonly accountNumber = signal('');
-  readonly periodStart   = signal<Date | null>(null);
-  readonly periodEnd     = signal<Date | null>(null);
+  readonly accountType = signal<AccountType>('checking');
+  readonly accountAutomationMessage = signal('');
+  readonly periodStart = signal<Date | null>(null);
+  readonly periodEnd = signal<Date | null>(null);
+  readonly statementPeriod = signal('');
+  readonly initialBalance = signal<number | null>(null);
+  readonly finalBalance = signal<number | null>(null);
+  readonly balanceDate = signal<Date | null>(null);
+  readonly statementTotalCredits = signal(0);
+  readonly statementTotalDebits = signal(0);
+  readonly statementNetAmount = signal(0);
 
-  // ── Transactions ──────────────────────────────────────────
-  readonly parsedTransactions = signal<ImportTransaction[]>([]);
+  readonly parsedTransactions = signal<ImportedTransaction[]>([]);
+  readonly selectedAccountId = signal('');
 
-  // ── Toast / confirmation ──────────────────────────────────
-  readonly showSuccessToast = signal(false);
-  readonly importedCount    = signal(0);
-
-  // ── Account selection ─────────────────────────────────────
-  readonly selectedAccountId = signal('1');
-
-  // ── Static data ───────────────────────────────────────────
-  readonly accounts: BankAccount[] = [
-    { id: '1', name: 'Nubank',          icon: 'account_balance', color: 'bg-purple-600', logo: '🟣' },
-    { id: '2', name: 'Itaú',            icon: 'account_balance', color: 'bg-orange-500', logo: '🟠' },
-    { id: '3', name: 'Banco Inter',     icon: 'account_balance', color: 'bg-orange-600', logo: '🟡' },
-    { id: '4', name: 'Banco do Brasil', icon: 'account_balance', color: 'bg-yellow-400', logo: '🔵' },
-  ];
-
-  readonly categories: Category[] = [
-    { id: '1', name: 'Alimentação', icon: 'fastfood',               color: 'text-amber-500 bg-amber-50' },
-    { id: '2', name: 'Transporte',  icon: 'directions_car',         color: 'text-blue-500 bg-blue-50' },
-    { id: '3', name: 'Moradia',     icon: 'home',                   color: 'text-indigo-500 bg-indigo-50' },
-    { id: '4', name: 'Receitas',    icon: 'account_balance_wallet',  color: 'text-emerald-500 bg-emerald-50' },
-    { id: '5', name: 'Lazer',       icon: 'sports_esports',         color: 'text-pink-500 bg-pink-50' },
-    { id: '6', name: 'Saúde',       icon: 'medical_services',       color: 'text-rose-500 bg-rose-50' },
-    { id: '7', name: 'Outros',      icon: 'payments',               color: 'text-slate-500 bg-slate-100' },
-  ];
-
-  // ── Computed (derived) state ──────────────────────────────
+  // ── Estados Derivados (Computed) ──────────────────────────
   readonly selectedAccountName = computed(() =>
-    this.accounts.find(a => a.id === this.selectedAccountId())?.name ?? ''
+    this.accounts().find(a => a.id === this.selectedAccountId())?.name ?? 'Nenhuma selecionada'
   );
 
   readonly activeTx = computed(() =>
-    this.parsedTransactions().filter(tx => !tx.ignored)
+    this.parsedTransactions()
   );
 
   readonly totalIncome = computed(() =>
     this.activeTx()
-      .filter(tx => tx.type === 'credit')
-      .reduce((sum, tx) => sum + tx.amount, 0)
+      .filter(tx => !tx.ignored && tx.direction === 'credit')
+      .reduce((sum, tx) => sum + (tx.amountAbs ?? 0), 0)
   );
 
   readonly totalExpense = computed(() =>
     this.activeTx()
-      .filter(tx => tx.type === 'debit')
-      .reduce((sum, tx) => sum + tx.amount, 0)
+      .filter(tx => !tx.ignored && tx.direction === 'debit')
+      .reduce((sum, tx) => sum + (tx.amountAbs ?? 0), 0)
   );
 
-  readonly totalTransactionsCount = computed(() => this.activeTx().length);
+  readonly totalTransactionsCount = computed(() =>
+    this.activeTx().filter(tx => !tx.ignored).length
+  );
 
   readonly isAllSelected = computed(() => {
     const txs = this.parsedTransactions();
     return txs.length > 0 && txs.every(tx => !tx.ignored);
   });
 
-  // ── Drag & drop ───────────────────────────────────────────
+  async ngOnInit() {
+    try {
+      const [accs, cats] = await Promise.all([
+        this.accountsService.getAll(),
+        this.categoriesService.getAll()
+      ]);
+      this.accounts.set(accs);
+      this.categories.set(cats);
+
+      if (accs.length > 0) {
+        this.selectedAccountId.set(accs[0].id);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar contas e categorias:', err);
+    }
+  }
+
+  // ── Eventos de Drag & Drop / Upload ───────────────────────
   onDragOver(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
@@ -131,7 +134,7 @@ export class StatementImportComponent {
     if (files && files.length > 0) await this.processFile(files[0]);
   }
 
-  // ── File processing ───────────────────────────────────────
+  // ── Processamento do Arquivo ──────────────────────────────
   async processFile(file: File) {
     if (!file.name.toLowerCase().endsWith('.ofx')) {
       alert('Por favor, selecione um arquivo no formato .OFX');
@@ -140,52 +143,38 @@ export class StatementImportComponent {
 
     this.isLoading.set(true);
     this.fileName.set(file.name);
-    this.fileSize.set(this.formatBytes(file.size));
+    this.fileSize.set(formatBytes(file.size));
 
     try {
-      const normalizedData = await readOfx(file);
+      const result = await parseAndNormalizeOfx(file);
+      const cats = this.categories();
 
-      if (!normalizedData?.transactions) {
-        throw new Error('Nenhuma transação encontrada no arquivo OFX.');
-      }
-
-      const transactions: ImportTransaction[] = normalizedData.transactions.map((tx, idx) => {
-        const rawAmount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount ?? 0);
-        const direction: 'credit' | 'debit' = tx.direction === 'credit' || rawAmount > 0 ? 'credit' : 'debit';
-        const parsedDate = tx.postedAt ? new Date(tx.postedAt) : new Date();
-        const description = tx.descriptionNormalized || tx.description || 'Transação sem descrição';
-
+      // Mapeia e tenta auto-categorizar ligando com o banco
+      const transactions = result.transactions.map(tx => {
+        const categoryName = autoCategorize(tx.descriptionNormalized || tx.description);
+        const matched = cats.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
         return {
-          id: tx.fitId || `tx-${Date.now()}-${idx}`,
-          date: parsedDate,
-          description: this.capitalizeWords(description),
-          originalDescription: tx.description ?? '',
-          amount: Math.abs(rawAmount),
-          type: direction,
-          category: this.autoCategorize(description),
-          ignored: false,
+          ...tx,
+          categoryId: matched?.id ?? null,
+          ignored: false
         };
       });
 
-      // Sort newest first
-      transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
       this.parsedTransactions.set(transactions);
+      this.bankName.set(result.institution.bankName);
+      this.accountNumber.set(result.account.accountNumber ?? '');
+      this.periodStart.set(result.periodStart);
+      this.periodEnd.set(result.periodEnd);
+      this.statementPeriod.set(result.statementPeriod);
+      this.initialBalance.set(result.initialBalance);
+      this.finalBalance.set(result.finalBalance);
+      this.balanceDate.set(result.balanceDate);
+      this.statementTotalCredits.set(result.totalCredits);
+      this.statementTotalDebits.set(result.totalDebits);
+      this.statementNetAmount.set(result.netAmount);
 
-      // Metadata
-      const firstTx = normalizedData.transactions[0];
-      this.bankName.set(firstTx?.institution?.['org'] || 'Banco Importado');
-      this.accountNumber.set(firstTx?.account?.['accountId'] || '—');
-
-      // Date range
-      const dates = transactions.map(t => t.date.getTime());
-      this.periodStart.set(new Date(Math.min(...dates)));
-      this.periodEnd.set(new Date(Math.max(...dates)));
-
-      // Auto-detect destination account by bank name
-      const detected = this.accounts.find(
-        acc => this.bankName().toLowerCase().includes(acc.name.toLowerCase())
-      );
-      if (detected) this.selectedAccountId.set(detected.id);
+      // Auto-seleção de conta baseada no nome do banco se possível
+      await this.selectOrCreateStatementAccount(result);
 
     } catch (error) {
       console.error('Erro ao ler arquivo OFX:', error);
@@ -196,16 +185,16 @@ export class StatementImportComponent {
     }
   }
 
-  // ── Transaction mutations ─────────────────────────────────
-  setTransactionCategory(txId: string, categoryName: string) {
+  // ── Mutações de Transação ─────────────────────────────────
+  setTransactionCategory(txId: string, categoryId: string | null) {
     this.parsedTransactions.update(txs =>
-      txs.map(tx => tx.id === txId ? { ...tx, category: categoryName } : tx)
+      txs.map(tx => tx.fitId === txId ? { ...tx, categoryId } : tx)
     );
   }
 
   toggleIgnore(txId: string) {
     this.parsedTransactions.update(txs =>
-      txs.map(tx => tx.id === txId ? { ...tx, ignored: !tx.ignored } : tx)
+      txs.map(tx => tx.fitId === txId ? { ...tx, ignored: !tx.ignored } : tx)
     );
   }
 
@@ -216,61 +205,251 @@ export class StatementImportComponent {
     );
   }
 
-  // ── Import confirmation ───────────────────────────────────
-  confirmImport() {
-    const count = this.activeTx().length;
-    if (count === 0) {
-      alert('Nenhuma transação selecionada para importação.');
-      return;
-    }
-    this.importedCount.set(count);
-    this.showSuccessToast.set(true);
-    setTimeout(() => {
-      this.showSuccessToast.set(false);
-      this.resetImport();
-    }, 4500);
-  }
-
-  // ── Reset ─────────────────────────────────────────────────
   resetImport() {
     this.parsedTransactions.set([]);
     this.fileName.set('');
     this.fileSize.set('');
     this.bankName.set('');
+    this.bankCode.set('');
     this.accountNumber.set('');
+    this.accountType.set('checking');
+    this.accountAutomationMessage.set('');
     this.periodStart.set(null);
     this.periodEnd.set(null);
+    this.statementPeriod.set('');
+    this.initialBalance.set(null);
+    this.finalBalance.set(null);
+    this.balanceDate.set(null);
+    this.statementTotalCredits.set(0);
+    this.statementTotalDebits.set(0);
+    this.statementNetAmount.set(0);
   }
 
-  // ── Helpers ───────────────────────────────────────────────
-  autoCategorize(desc: string): string {
-    const d = desc.toLowerCase();
-    if (/uber|99taxis|cabify|posto|combustivel|pedagio|gasolina/.test(d))                                    return 'Transporte';
-    if (/ifood|restaurante|mcdonald|cafe|starbucks|padaria|supermercado|carrefour|bistr|alimento|\bbar\b/.test(d)) return 'Alimentação';
-    if (/aluguel|condominio|\bluz\b|energia|copasa|cemig|sabesp|internet|claro|vivo|\btim\b|\bgas\b/.test(d)) return 'Moradia';
-    if (/salario|salário|recebido|rendimento|provento/.test(d))                                              return 'Receitas';
-    if (/netflix|spotify|steam|cinema|hbo|disney|ingresso|\bjogo\b|lazer|shopping|livraria/.test(d))        return 'Lazer';
-    if (/farmacia|drogaria|hospital|medico|consulta|exame|saude|dentista/.test(d))                          return 'Saúde';
-    return 'Outros';
+  async confirmImport() {
+    if (this.totalTransactionsCount() === 0) {
+      alert('Nenhuma transação selecionada para importação.');
+      return;
+    }
+
+    const accountId = this.selectedAccountId();
+    if (!accountId) {
+      alert('Por favor, selecione uma conta de destino.');
+      return;
+    }
+
+    this.isLoading.set(true);
+
+    try {
+      const selectedTransactions = this.activeTx()
+        .filter(tx => !tx.ignored);
+      const fitIds = selectedTransactions
+        .map(tx => tx.fitId)
+        .filter((fitId): fitId is string => Boolean(fitId));
+      const existingTransactions = fitIds.length > 0
+        ? await this.transactionsService.getAll({
+          accountId: { eq: accountId },
+          fitId: { in: fitIds },
+        })
+        : [];
+      const existingFitIds = new Set(existingTransactions.map(tx => tx.fitId).filter(Boolean));
+      const duplicateCount = selectedTransactions.filter(tx => tx.fitId && existingFitIds.has(tx.fitId)).length;
+
+      const payload = selectedTransactions
+        .filter(tx => !tx.fitId || !existingFitIds.has(tx.fitId))
+        .map(tx => {
+          const dateObj = tx.postedAt ? new Date(tx.postedAt) : new Date();
+          const dateStr = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
+
+          return {
+            accountId,
+            categoryId: tx.categoryId ?? null,
+            description: tx.descriptionNormalized || tx.description,
+            originalDescription: tx.description || null,
+            amount: tx.amountAbs ?? 0,
+            type: tx.direction,
+            date: dateStr,
+            ignored: false,
+            fitId: tx.fitId || null
+          };
+        });
+
+      if (payload.length > 0) {
+        await this.transactionsService.insert(payload);
+      }
+      await this.persistStatementBalance(accountId);
+      this.transactionsService.updated.emit();
+      const duplicateMessage = duplicateCount > 0
+        ? ` ${duplicateCount} transacao(oes) duplicada(s) foram ignoradas.`
+        : '';
+      alert(`Importacao concluida com sucesso!${duplicateMessage}`);
+      this.resetImport();
+    } catch (error) {
+      console.error('Erro ao salvar transações:', error);
+      alert('Ocorreu um erro ao salvar as transações importadas no banco.');
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 
-  formatBytes(bytes: number, decimals = 2): string {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(Math.max(0, decimals))) + ' ' + sizes[i];
+  private async selectOrCreateStatementAccount(result: OfxParseResult): Promise<void> {
+    const accountType = this.mapOfxAccountType(result.account.accountType);
+    const bankCode = this.bankService.resolveBankCode(
+      result.account.bankId ?? result.institution.bankId,
+      result.institution.bankName,
+    );
+    const accountNumber = this.normalizeAccountNumber(result.account.accountNumber);
+
+    this.accountType.set(accountType);
+    this.bankCode.set(bankCode);
+    this.accountNumber.set(result.account.accountNumber ?? '');
+
+    const existing = this.findStatementAccount(accountType, bankCode, accountNumber, result.institution.bankName);
+    if (existing) {
+      this.selectedAccountId.set(existing.id);
+      this.accountAutomationMessage.set(`Conta selecionada automaticamente: ${existing.name}`);
+      return;
+    }
+
+    const bank = bankCode ? this.bankService.getBankByCode(bankCode) : undefined;
+    const bankName = bank?.name || result.institution.bankName || 'Banco Importado';
+    const created = await this.accountsService.insert({
+      name: this.buildAccountName(bankName, accountType, accountNumber),
+      type: accountType,
+      bankCode,
+      accountNumber,
+      balance: result.finalBalance ?? 0,
+      color: this.accountColor(accountType),
+      icon: this.accountIcon(accountType),
+    });
+
+    this.accounts.update(accounts => [...accounts, created]);
+    this.selectedAccountId.set(created.id);
+    this.accountAutomationMessage.set(`Conta criada automaticamente: ${created.name}`);
+    this.accountsService.updated.emit();
   }
 
-  capitalizeWords(str: string): string {
-    return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  private findStatementAccount(
+    accountType: AccountType,
+    bankCode: string,
+    accountNumber: string,
+    bankName: string,
+  ): Account | undefined {
+    const normalizedBankName = this.normalizeText(bankName);
+    const candidates = this.accounts().filter(account => {
+      const sameType = account.type === accountType;
+      const sameBank = bankCode
+        ? account.bankCode === bankCode
+        : this.normalizeText(account.name).includes(normalizedBankName);
+
+      return sameType && sameBank;
+    });
+
+    if (accountNumber) {
+      const byNumber = candidates.find(account =>
+        this.normalizeAccountNumber(account.accountNumber) === accountNumber
+      );
+      if (byNumber) return byNumber;
+    }
+
+    return candidates.find(account => !account.accountNumber) ?? candidates[0];
   }
 
-  getCategoryIcon(categoryName: string): string {
-    return this.categories.find(c => c.name === categoryName)?.icon ?? 'payments';
+  private mapOfxAccountType(accountType: string | null): AccountType {
+    const normalized = this.normalizeText(accountType);
+
+    if (/sav|poup/.test(normalized)) return 'savings';
+    if (/money|invest|broker|corret/.test(normalized)) return 'investment';
+
+    return 'checking';
   }
 
-  getCategoryColorClass(categoryName: string): string {
-    return this.categories.find(c => c.name === categoryName)?.color ?? 'text-slate-500 bg-slate-100';
+  private buildAccountName(bankName: string, accountType: AccountType, accountNumber: string): string {
+    const suffix = accountNumber ? ` ${accountNumber}` : '';
+    return `${bankName} - ${this.accountTypeLabel(accountType)}${suffix}`;
+  }
+
+  private accountTypeLabel(accountType: AccountType): string {
+    const labels: Record<AccountType, string> = {
+      checking: 'Conta Corrente',
+      savings: 'Poupanca',
+      cash: 'Dinheiro',
+      investment: 'Investimentos',
+    };
+
+    return labels[accountType];
+  }
+
+  private accountIcon(accountType: AccountType): string {
+    const icons: Record<AccountType, string> = {
+      checking: 'account_balance',
+      savings: 'savings',
+      cash: 'payments',
+      investment: 'account_balance_wallet',
+    };
+
+    return icons[accountType];
+  }
+
+  private accountColor(accountType: AccountType): string {
+    const colors: Record<AccountType, string> = {
+      checking: '#2563eb',
+      savings: '#16a34a',
+      cash: '#f59e0b',
+      investment: '#7c3aed',
+    };
+
+    return colors[accountType];
+  }
+
+  private normalizeAccountNumber(value?: string | null): string {
+    return (value ?? '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  }
+
+  private normalizeText(value?: string | null): string {
+    return (value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .toLowerCase();
+  }
+
+  private async persistStatementBalance(accountId: string): Promise<void> {
+    const finalBalance = this.finalBalance();
+    if (finalBalance === null) return;
+
+    await this.statementBalancesService.upsert({
+      accountId,
+      period: this.statementPeriod() || this.periodFromDate(this.periodEnd()) || new Date().toISOString().slice(0, 7),
+      statementStartDate: this.toIsoDate(this.periodStart()),
+      statementEndDate: this.toIsoDate(this.periodEnd()),
+      initialBalance: this.initialBalance(),
+      finalBalance,
+      totalCredits: this.statementTotalCredits(),
+      totalDebits: this.statementTotalDebits(),
+      netAmount: this.statementNetAmount(),
+      transactionCount: this.parsedTransactions().length,
+      bankName: this.bankName() || null,
+      accountNumber: this.accountNumber() || null,
+      fileName: this.fileName() || null,
+      importedAt: new Date().toISOString(),
+    });
+
+    await this.accountsService.update(accountId, { balance: finalBalance });
+    this.statementBalancesService.updated.emit();
+    this.accountsService.updated.emit();
+  }
+
+  private toIsoDate(date: Date | null): string | null {
+    if (!date) return null;
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  private periodFromDate(date: Date | null): string | null {
+    return this.toIsoDate(date)?.slice(0, 7) ?? null;
   }
 }

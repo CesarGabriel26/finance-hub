@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.registerDeleteSavingGoal = exports.registerUpdateSavingGoal = exports.registerInsertSavingGoal = exports.registerGetSavingGoalById = exports.registerGetSavingGoals = void 0;
+var get_saving_goals_1 = require("./get-saving-goals");
+Object.defineProperty(exports, "registerGetSavingGoals", { enumerable: true, get: function () { return get_saving_goals_1.registerGetSavingGoals; } });
+var get_saving_goal_by_id_1 = require("./get-saving-goal-by-id");
+Object.defineProperty(exports, "registerGetSavingGoalById", { enumerable: true, get: function () { return get_saving_goal_by_id_1.registerGetSavingGoalById; } });
+var insert_saving_goal_1 = require("./insert-saving-goal");
+Object.defineProperty(exports, "registerInsertSavingGoal", { enumerable: true, get: function () { return insert_saving_goal_1.registerInsertSavingGoal; } });
+var update_saving_goal_1 = require("./update-saving-goal");
+Object.defineProperty(exports, "registerUpdateSavingGoal", { enumerable: true, get: function () { return update_saving_goal_1.registerUpdateSavingGoal; } });
+var delete_saving_goal_1 = require("./delete-saving-goal");
+Object.defineProperty(exports, "registerDeleteSavingGoal", { enumerable: true, get: function () { return delete_saving_goal_1.registerDeleteSavingGoal; } });

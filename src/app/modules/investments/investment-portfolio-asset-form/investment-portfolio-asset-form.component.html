@@ -1,0 +1,178 @@
+<form (submit)="submit($event)" [formGroup]="form" class="space-y-5">
+  <div class="mb-2">
+    <h3 class="text-foreground text-lg font-black tracking-tight">
+      {{ asset ? 'Editar Ativo' : 'Adicionar Ativo' }}
+    </h3>
+    <p class="text-muted-foreground text-xs">
+      Registre quantidade, preco medio, cotacao atual e dados de alocacao.
+    </p>
+  </div>
+
+  <hr class="border-border my-2">
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="flex flex-col gap-1.5">
+      <label for="ticker" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Ticker</label>
+      <app-input id="ticker" formControlName="ticker" placeholder="PETR4, HGLG11, CDB XP" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="asset-type" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Classe</label>
+      <app-select id="asset-type" formControlName="type" [options]="[
+        { value: 'stock', label: 'Acao' },
+        { value: 'fii', label: 'FII' },
+        { value: 'etf', label: 'ETF' },
+        { value: 'bdr', label: 'BDR' },
+        { value: 'reit', label: 'REIT' },
+        { value: 'international_stock', label: 'Acao Internacional' },
+        { value: 'cdb', label: 'CDB' },
+        { value: 'lci_lca', label: 'LCI/LCA' },
+        { value: 'treasury', label: 'Tesouro' },
+        { value: 'crypto', label: 'Cripto' },
+        { value: 'fund', label: 'Fundo' },
+        { value: 'other', label: 'Outro' }
+      ]" />
+    </div>
+
+    <div class="flex flex-col gap-1.5 md:col-span-2">
+      <label for="asset-name" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Nome</label>
+      <app-input id="asset-name" formControlName="name" placeholder="Nome completo do ativo" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="broker" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Corretora</label>
+      <app-input id="broker" formControlName="broker" placeholder="XP, Inter, BTG..." />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="sector" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Setor</label>
+      <app-input id="sector" formControlName="sector" placeholder="Bancos, Logistica, Tecnologia..." />
+    </div>
+
+    @if (!isFixedIncome()) {
+    <div class="flex flex-col gap-1.5">
+      <label for="quantity" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Quantidade</label>
+      <app-input id="quantity" type="number" formControlName="quantity" placeholder="0" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="purchase-date" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Data Base</label>
+      <app-input id="purchase-date" type="date" formControlName="purchaseDate" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="average-price" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Preco Medio</label>
+      <app-input id="average-price" type="currency" prefix="R$ " formControlName="averagePrice" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="current-price" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Preco Atual</label>
+      <app-input id="current-price" type="currency" prefix="R$ " formControlName="currentPrice" />
+    </div>
+    } @else {
+    <div class="flex flex-col gap-1.5">
+      <label for="fixed-invested" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Valor Aplicado</label>
+      <app-input id="fixed-invested" type="currency" prefix="R$ " formControlName="fixedIncomeInvestedAmount" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="fixed-gross" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Valor Bruto Atual</label>
+      <app-input id="fixed-gross" type="currency" prefix="R$ " formControlName="fixedIncomeGrossAmount" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="fixed-net" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Valor Liquido Atual</label>
+      <app-input id="fixed-net" type="currency" prefix="R$ " formControlName="fixedIncomeNetAmount" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="purchase-date" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Data da Aplicacao</label>
+      <app-input id="purchase-date" type="date" formControlName="purchaseDate" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="fixed-indexer" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Indexador</label>
+      <app-select id="fixed-indexer" formControlName="fixedIncomeIndexer" [options]="[
+        { value: 'cdi', label: 'CDI' },
+        { value: 'selic', label: 'Selic' },
+        { value: 'ipca', label: 'IPCA' },
+        { value: 'prefixed', label: 'Prefixado' },
+        { value: 'igpm', label: 'IGP-M' },
+        { value: 'other', label: 'Outro' }
+      ]" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="fixed-rate-type" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Formato da Taxa</label>
+      <app-select id="fixed-rate-type" formControlName="fixedIncomeRateType" [options]="[
+        { value: 'percent_indexer', label: '% do indexador' },
+        { value: 'indexer_plus', label: 'Indexador + taxa' },
+        { value: 'annual', label: 'Taxa anual' }
+      ]" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="fixed-rate" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Taxa (%)</label>
+      <app-input id="fixed-rate" type="number" formControlName="fixedIncomeRate" placeholder="100" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="fixed-maturity" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Vencimento</label>
+      <app-input id="fixed-maturity" type="date" formControlName="fixedIncomeMaturityDate" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="fixed-liquidity" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Liquidez</label>
+      <app-select id="fixed-liquidity" formControlName="fixedIncomeLiquidity" [options]="[
+        { value: 'daily', label: 'Diaria' },
+        { value: 'maturity', label: 'No vencimento' },
+        { value: 'custom', label: 'Personalizada' }
+      ]" />
+    </div>
+
+    <label class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-foreground">
+      <input type="checkbox" formControlName="fixedIncomeTaxExempt"
+        class="h-4 w-4 rounded border-border bg-card text-[var(--primary)]">
+      Isento de IR
+    </label>
+    }
+
+    <div class="flex flex-col gap-1.5">
+      <label for="target" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Alvo (%)</label>
+      <app-input id="target" type="number" formControlName="targetAllocation" placeholder="0" />
+    </div>
+
+    @if (!isFixedIncome()) {
+    <div class="flex flex-col gap-1.5">
+      <label for="dy" class="text-foreground text-xs font-extrabold uppercase tracking-wider">DY (%)</label>
+      <app-input id="dy" type="number" formControlName="dividendYield" placeholder="0" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="annual-income" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Renda Anual</label>
+      <app-input id="annual-income" type="currency" prefix="R$ " formControlName="annualIncome" />
+    </div>
+    }
+
+    <div class="flex flex-col gap-1.5">
+      <label for="asset-currency" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Moeda</label>
+      <app-select id="asset-currency" formControlName="currency" [options]="[
+        { value: 'BRL', label: 'BRL' },
+        { value: 'USD', label: 'USD' },
+        { value: 'EUR', label: 'EUR' }
+      ]" />
+    </div>
+
+    <div class="flex flex-col gap-1.5 md:col-span-2">
+      <label for="asset-notes" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Observacoes</label>
+      <app-input id="asset-notes" formControlName="notes" placeholder="Tese, pontos de atencao, gatilhos..." />
+    </div>
+  </div>
+
+  <div class="pt-4 flex justify-end">
+    <button type="submit" [disabled]="form.invalid"
+      class="primary-button w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:filter-none">
+      {{ asset ? 'Salvar Ativo' : 'Adicionar Ativo' }}
+    </button>
+  </div>
+</form>

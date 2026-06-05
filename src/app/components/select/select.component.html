@@ -1,27 +1,69 @@
-<!-- Botão de Trigger (Origem do Overlay) -->
-<div cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="toggleDropdown()"
-    class="w-full px-4 py-2 border border-gray-300 rounded-md bg-white flex justify-between items-center cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-    <span class="text-gray-700">{{ selectedLabel }}</span>
-    <span class="text-gray-400 transform transition-transform duration-200" [class.rotate-180]="isOpen()">
-        ▼
-    </span>
+<div
+  cdkOverlayOrigin
+  #trigger="cdkOverlayOrigin"
+  (click)="toggleDropdown()"
+  class="w-full px-4 py-2 border border-border rounded-[var(--radius-sm,0.5rem)] bg-transparent flex justify-between items-center gap-2 cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-ring"
+>
+  <span class="text-foreground text-sm font-medium truncate min-w-0">{{ selectedLabel }}</span>
+  <span
+    class="material-symbols-outlined text-foreground transform transition-transform duration-200 select-none"
+    [class.rotate-180]="isOpen()"
+  >
+    arrow_drop_down
+  </span>
 </div>
 
-<!-- Menu Flutuante (Overlay) -->
-<ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="trigger" [cdkConnectedOverlayOpen]="isOpen()"
-    [cdkConnectedOverlayHasBackdrop]="true" cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
-    (backdropClick)="isOpen.set(false)">
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="trigger"
+  [cdkConnectedOverlayOpen]="isOpen()"
+  [cdkConnectedOverlayHasBackdrop]="true"
+  [cdkConnectedOverlayWidth]="trigger.elementRef.nativeElement.offsetWidth"
+  cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+  (backdropClick)="closeDropdown()"
+>
+  <div
+    class="mt-1 w-full bg-[var(--popover)] border border-border rounded-[var(--radius-md,0.75rem)] shadow-lg overflow-hidden focus:outline-none z-50"
+  >
+    @if (searchable) {
+      <div class="p-2 border-b border-border">
+        <div
+          class="flex items-center gap-2 rounded-md border border-border bg-transparent px-3 py-2 focus-within:border-primary transition-colors"
+        >
+          <span class="material-symbols-outlined text-muted-foreground text-lg select-none">search</span>
+          <input
+            #searchInput
+            type="search"
+            [placeholder]="searchPlaceholder"
+            [value]="searchTerm()"
+            (input)="updateSearch($event)"
+            (click)="$event.stopPropagation()"
+            class="w-full bg-transparent border-none outline-none text-foreground text-sm font-medium focus:ring-0"
+          />
+        </div>
+      </div>
+    }
 
-    <!-- Lista estilizada com Tailwind -->
-    <ul
-        class="mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto focus:outline-none z-50">
-        @for (option of options; track option.value) {
-        <li (click)="selectOption(option)" [class.bg-blue-50]="option.value === selectedValue()"
-            [class.text-blue-600]="option.value === selectedValue()"
-            class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 select-none transition-colors">
-            {{ option.label }}
+    <ul class="max-h-60 overflow-auto focus:outline-none scrollbar-thin">
+      @for (option of filteredOptions(); track option.value) {
+        <li
+          (click)="selectOption(option)"
+          [ngClass]="{
+            'bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] font-bold':
+              option.value === selectedValue()
+          }"
+          class="px-4 flex items-center gap-2 py-2 hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-foreground)] cursor-pointer text-[var(--popover-foreground)] text-sm select-none transition-colors duration-150"
+        >
+          @if (option.icon) {
+            <span class="material-symbols-outlined">{{ option.icon }}</span>
+          }
+          <span class="truncate">{{ option.label }}</span>
         </li>
-        }
+      } @empty {
+        <li class="px-4 py-3 text-muted-foreground text-sm select-none">
+          {{ emptyMessage }}
+        </li>
+      }
     </ul>
+  </div>
 </ng-template>

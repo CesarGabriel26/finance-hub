@@ -1,6 +1,6 @@
-<aside class="h-full flex flex-col gap-4 border-r border-slate-300 w-64 p-4 text-slate-700 select-none">
+<aside class="h-full flex flex-col gap-4 border-r border-sidebar-border w-64 p-4 text-sidebar-foreground select-none">
     <!-- Header/Logo -->
-    <div class="flex items-center gap-6 text-lg font-semibold px-2 py-3 text-slate-800">
+    <div class="flex items-center gap-6 text-lg font-semibold px-2 py-3 text-[var(--sidebar-foreground)]">
         <span class="material-symbols-outlined text-2xl">
             account_balance
         </span>
@@ -19,7 +19,7 @@
             }">
             <!-- Gatilho do Dropdown (Título Pai) -->
             <div (click)="dropdowns().find(d => d.label === item.label)!.active = !dropdowns().find(d => d.label === item.label)?.active"
-                class="link flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors group">
+                class="nav-link flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors group">
                 <div class="flex items-center gap-6">
                     <span class="material-symbols-outlined transition-colors">
                         {{ item.icon }}
@@ -35,12 +35,12 @@
 
             <!-- Sub-itens do Dropdown -->
             <div class="overflow-hidden">
-                <ul class="pl-6 flex flex-col gap-1 border-l-2 border-slate-200 ml-5 mt-1">
+                <ul class="pl-6 flex flex-col gap-1 border-l-2 border-sidebar-border ml-5 mt-1">
                     @for (subLink of item.items; track subLink.path) {
                     <li class="block w-full">
-                        <a [routerLink]="subLink.path" routerLinkActive="font-semibold"
+                        <a [routerLink]="subLink.path" routerLinkActive="font-semibold nav-link-active"
                             [routerLinkActiveOptions]="{ exact: true }"
-                            class="link flex items-center gap-4 text-sm p-2 rounded-md transition-colors block w-full">
+                            class="nav-link flex items-center gap-4 text-sm p-2 rounded-md transition-colors block w-full rounded-l-none">
                             @if (subLink.icon) {
                             <span class="material-symbols-outlined text-lg">{{ subLink.icon }}</span>
                             }
@@ -56,8 +56,9 @@
         <!-- CASO 2: Item é um Link Simples -->
         @else {
         <li class="block w-full">
-            <a [routerLink]="item.path" routerLinkActive="font-semibold" [routerLinkActiveOptions]="{ exact: true }"
-                class="link flex items-center gap-6 p-2.5 rounded-lg transition-colors block w-full group">
+            <a [routerLink]="item.path" routerLinkActive="font-semibold nav-link-active"
+                [routerLinkActiveOptions]="{ exact: true }"
+                class="nav-link flex items-center gap-6 p-2.5 rounded-lg transition-colors block w-full group">
                 <span class="material-symbols-outlined  transition-colors">
                     {{ item.icon }}
                 </span>
@@ -72,7 +73,7 @@
     </ul>
 
     <!-- Footer / Botão de recolher -->
-    <div class="flex flex-col border-t border-slate-200 pt-2">
+    <div class="flex flex-col border-t border-sidebar-border pt-2">
         <div class="flex items-center justify-end px-2">
             <span class="material-symbols-outlined cursor-pointer transition-colors" style="font-size: 1.75rem;">
                 arrow_menu_close

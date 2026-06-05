@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.registerDeleteAccount = exports.registerUpdateAccount = exports.registerInsertAccount = exports.registerGetAccountById = exports.registerGetAccounts = void 0;
+var get_accounts_1 = require("./get-accounts");
+Object.defineProperty(exports, "registerGetAccounts", { enumerable: true, get: function () { return get_accounts_1.registerGetAccounts; } });
+var get_account_by_id_1 = require("./get-account-by-id");
+Object.defineProperty(exports, "registerGetAccountById", { enumerable: true, get: function () { return get_account_by_id_1.registerGetAccountById; } });
+var insert_account_1 = require("./insert-account");
+Object.defineProperty(exports, "registerInsertAccount", { enumerable: true, get: function () { return insert_account_1.registerInsertAccount; } });
+var update_account_1 = require("./update-account");
+Object.defineProperty(exports, "registerUpdateAccount", { enumerable: true, get: function () { return update_account_1.registerUpdateAccount; } });
+var delete_account_1 = require("./delete-account");
+Object.defineProperty(exports, "registerDeleteAccount", { enumerable: true, get: function () { return delete_account_1.registerDeleteAccount; } });

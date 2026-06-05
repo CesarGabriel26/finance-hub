@@ -1,0 +1,55 @@
+<form (submit)="submit($event)" [formGroup]="form" class="space-y-5">
+  <div class="mb-2">
+    <h3 class="text-foreground text-lg font-black tracking-tight">
+      {{ transaction ? 'Editar Transacao' : 'Nova Transacao' }}
+    </h3>
+    <p class="text-muted-foreground text-xs">
+      Registre uma movimentacao manual vinculada a uma conta.
+    </p>
+  </div>
+
+  <hr class="border-border my-2">
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="flex flex-col gap-1.5 md:col-span-2">
+      <label for="tx-account" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Conta</label>
+      <app-select id="tx-account" formControlName="accountId" [options]="accountOptions()" placeholder="Selecione a conta" />
+    </div>
+
+    <div class="flex flex-col gap-1.5 md:col-span-2">
+      <label for="tx-description" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Descricao</label>
+      <app-input id="tx-description" formControlName="description" placeholder="Ex: Mercado, salario, aluguel" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="tx-type" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Tipo</label>
+      <app-select id="tx-type" formControlName="type" [options]="[
+        { value: 'debit', label: 'Despesa' },
+        { value: 'credit', label: 'Receita' },
+        { value: 'transfer', label: 'Transferencia' }
+      ]" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="tx-amount" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Valor</label>
+      <app-input id="tx-amount" type="currency" prefix="R$ " formControlName="amount" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="tx-date" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Data</label>
+      <app-input id="tx-date" type="date" formControlName="date" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="tx-category" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Categoria</label>
+      <app-select id="tx-category" formControlName="categoryId" [options]="categoryOptions()" placeholder="Selecione" />
+    </div>
+  </div>
+
+  <div class="pt-4 flex justify-end">
+    <button type="submit" [disabled]="form.invalid"
+      class="primary-button w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:filter-none">
+      {{ transaction ? 'Salvar Transacao' : 'Criar Transacao' }}
+    </button>
+  </div>
+</form>

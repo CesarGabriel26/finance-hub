@@ -1,0 +1,16 @@
+<div
+  class="relative flex items-center w-full !p-0 focus-within:border-primary transition-all duration-200 border border-border rounded-md"
+  [class.opacity-40]="disabled()" [class.cursor-not-allowed]="disabled()">
+
+  @if (prefix) {
+  <span class="pl-4 pr-2 text-muted-foreground font-bold text-sm select-none flex-none">
+    {{ prefix }}
+  </span>
+  }
+
+  <input [attr.id]="id" [disabled]="disabled()" [type]="type === 'currency' ? 'text' : type" [placeholder]="placeholder"
+    [value]="type === 'currency' ? displayValue() : value()" (input)="onInput($event)" (blur)="onTouched()"
+    class="w-full h-full bg-transparent border-none outline-none text-foreground text-sm font-medium px-4 py-2.5 focus:ring-0"
+    [class.pl-0]="prefix" [class.cursor-not-allowed]="disabled()" />
+
+</div>

@@ -9,6 +9,7 @@
   "files": [
     "dist/finance-hub/browser/**/*",
     "dist-electron/**/*",
+    "electron/db/migrations/**/*",
     "package.json"
   ],
   "extraMetadata": {

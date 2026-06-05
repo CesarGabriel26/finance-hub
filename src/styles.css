@@ -115,12 +115,16 @@ body {
     background-color: var(--background);
 }
 
+button {
+    cursor: pointer;
+}
+
 
 @layer components {
 
     /* Botão Primário - Foco em Finanças Séria/Investimentos */
     .primary-button {
-        @apply px-5 py-3 rounded-2xl font-bold text-center transition-all duration-150 active:mt-[4px] block select-none cursor-pointer;
+        @apply px-5 py-3 rounded-2xl font-bold text-center transition-all duration-150 block select-none cursor-pointer;
         background-color: var(--primary);
         color: var(--primary-foreground);
         border-color: var(--primary-hover);
@@ -130,17 +134,15 @@ body {
         filter: brightness(1.1);
     }
 
-    /* Botão Secundário Gamificado - Estilo Puro Duolingo (Moedas/Quiz) */
-    .gamify-button {
-        @apply px-5 py-3 rounded-2xl font-bold text-center transition-all duration-150 border-b-4 active:border-b-0 active:mt-[4px] block select-none cursor-pointer;
+    .secondary-button {
+        @apply px-5 py-3 rounded-2xl font-bold text-center transition-all duration-150 block select-none cursor-pointer;
         background-color: var(--secondary);
         color: var(--secondary-foreground);
-        border-color: #ccaa00;
-        /* Sombra sólida 3D inferior */
+        border-color: var(--secondary-hover);
     }
 
-    .gamify-button:hover {
-        background-color: var(--secondary-hover);
+    .secondary-button:hover {
+        filter: brightness(0.9);
     }
 
     /* Card Financeiro Inteligente */
@@ -164,13 +166,6 @@ body {
         color: var(--danger);
     }
 
-    /* Inputs de Valor/Orçamento */
-    .finance-input {
-        @apply w-full px-4 py-3 rounded-xl border-2 bg-transparent outline-none transition-all duration-200 text-lg;
-        border-color: var(--border);
-        color: var(--foreground);
-    }
-
     .finance-input:focus {
         border-color: var(--primary);
     }
@@ -181,35 +176,49 @@ body {
 
     /* Estado Normal / Inativo */
     .nav-link {
-        @apply flex items-center gap-3 px-4 py-3 mx-2 rounded-xl font-bold transition-all duration-150 cursor-pointer select-none text-base border-b-2 border-transparent;
-        color: var(--foreground);
-        opacity: 0.75;
+        @apply flex items-center gap-3 px-2 py-3 rounded-xl font-bold transition-all duration-150 cursor-pointer select-none text-base;
+        color: var(--sidebar-foreground);
     }
 
     /* Estado Hover (Passando o mouse) */
     .nav-link:hover {
-        @apply opacity-100 scale-[1.01];
-        background-color: var(--border);
+        background-color: var(--sidebar-accent);
         /* Usa a cor de borda suave como fundo sutil */
-        color: var(--primary);
+        color: var(--sidebar-accent-foreground);
     }
 
     /* Estado Active (Página Atual Selecionada) */
+    .nav-link-active:hover,
     .nav-link-active {
-        @apply flex items-center gap-3 px-4 py-3 mx-2 rounded-xl font-black text-base transition-all duration-150 select-none;
-        @apply border-b-4 translate-y-[-2px] shadow-sm;
-        /* Efeito 3D sutil de botão pressionado/ativo */
-        background-color: var(--primary);
-        color: var(--primary-foreground);
-        border-color: var(--primary-hover);
-        /* Sombra sólida inferior */
+        @apply flex items-center gap-3 px-4 py-3 rounded-xl font-black text-base transition-all duration-150 select-none;
+        background-color: var(--sidebar-primary);
+        color: var(--sidebar-primary-foreground);
         opacity: 1 !important;
     }
 
-    /* Ajuste para os ícones dentro dos links acompanharem as cores perfeitamente */
-    .nav-link svg,
-    .nav-link-active svg {
-        @apply w-5 transition-colors duration-150;
-        height: 5px;
+    /* Scrollbar Customizada e Discreta para a lista de links */
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        /* slate-300 */
+        border-radius: 20px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+        /* slate-400 */
+    }
+
+    /* Suporte para Firefox */
+    .scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
     }
 }

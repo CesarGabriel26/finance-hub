@@ -1,0 +1,54 @@
+<form (submit)="submit($event)" [formGroup]="form" class="space-y-5">
+  <div class="mb-2">
+    <h3 class="text-foreground text-lg font-black tracking-tight">
+      {{ category ? 'Editar Categoria' : 'Nova Categoria' }}
+    </h3>
+    <p class="text-muted-foreground text-xs">
+      Configure nome, tipo, cor e icone para organizar seus lancamentos.
+    </p>
+  </div>
+
+  <hr class="border-border my-2">
+
+  <div class="grid grid-cols-1 gap-4">
+    <div class="flex flex-col gap-1.5">
+      <label for="category-name" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Nome da Categoria
+      </label>
+      <app-input id="category-name" type="text" formControlName="name" placeholder="Ex: Alimentacao, Salario, Moradia" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="category-type" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Tipo
+      </label>
+      <app-select id="category-type" formControlName="type" [options]="[
+        { label: 'Despesa', value: 'expense' },
+        { label: 'Receita', value: 'income' }
+      ]" />
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="flex flex-col gap-1.5">
+      <label for="category-color" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Cor de Identificacao
+      </label>
+      <app-color-picker id="category-color" formControlName="color" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="category-icon" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Icone
+      </label>
+      <app-icon-picker id="category-icon" formControlName="icon" />
+    </div>
+  </div>
+
+  <div class="pt-4 flex justify-end">
+    <button type="submit" [disabled]="form.invalid"
+      class="primary-button w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:filter-none">
+      {{ category ? 'Salvar Alteracoes' : 'Criar Categoria' }}
+    </button>
+  </div>
+</form>

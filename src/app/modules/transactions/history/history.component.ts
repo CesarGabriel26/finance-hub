@@ -1,23 +1,18 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { Component } from '@angular/core';
-import {
-  DataTableColumn,
-  DataTableComponent,
-} from '../../../components/data-table/data-table.component';
-import { DataFilter } from '../../../utils/data-filter';
-import { SelectComponent } from '../../../components/select/select.component';
-import { DateRangeInputComponent, DateRange } from '../../../components/date-range-input/date-range-input.component';
-import { ContextMenuComponent, ContextMenuTriggerDirective, ContextMenuItem } from '../../../components/context-menu/context-menu.component';
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-
-interface TransactionTableRow extends Record<string, unknown> {
-  id: string;
-  icon: string;
-  merchant: string;
-  category: string;
-  date: Date;
-  amount: number;
-}
+import { Component, OnInit, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { ContextMenuComponent, ContextMenuItem, ContextMenuTriggerDirective } from '../../../components/context-menu/context-menu.component';
+import { DataTableColumn, DataTableComponent } from '../../../components/data-table/data-table.component';
+import { DateRange, DateRangeInputComponent } from '../../../components/date-range-input/date-range-input.component';
+import { InputComponent } from '../../../components/input/input.component';
+import { SelectComponent, SelectOption } from '../../../components/select/select.component';
+import { Account, Category, Transaction } from '../../../models';
+import { AccountsService } from '../../../services/accounts.service';
+import { CategoriesService } from '../../../services/categories.service';
+import { ModalService } from '../../../services/modal.service';
+import { TransactionsService } from '../../../services/transactions.service';
+import { TransactionFormComponent } from '../transaction-form/transaction-form.component';
 
 @Component({
   selector: 'app-history.component',
@@ -30,105 +25,156 @@ interface TransactionTableRow extends Record<string, unknown> {
     DateRangeInputComponent,
     ContextMenuComponent,
     ContextMenuTriggerDirective,
-    FormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    InputComponent,
   ],
   templateUrl: './history.component.html',
   styleUrl: './history.component.css',
 })
-export class TransactionsHistoryComponent {
+export class TransactionsHistoryComponent implements OnInit {
+  transactions = signal<Transaction[]>([]);
+  accounts = signal<Account[]>([]);
+  categories = signal<Category[]>([]);
+  accountOptions = signal<SelectOption[]>([{ value: '', label: 'Todas' }]);
 
-  readonly menuItems: ContextMenuItem<TransactionTableRow>[] = [
+  readonly menuItems: ContextMenuItem<Transaction>[] = [
     {
-      label: 'Visualizar detalhes',
-      icon: 'visibility',
-      onClick: (tx) => alert(`Visualizando detalhes de: ${tx.merchant}`),
-    },
-    {
-      label: 'Editar transação',
+      label: 'Editar transacao',
       icon: 'edit',
-      onClick: (tx) => alert(`Editando transação: ${tx.merchant}`),
+      onClick: transaction => this.openModal(transaction),
     },
     {
-      isSeparator: true,
-    },
-    {
-      label: 'Excluir transação',
+      label: 'Excluir transacao',
       icon: 'delete',
-      onClick: (tx) => alert(`Excluindo transação de valor ${tx.amount}`),
-      isDisabled: (tx) => tx.amount > 1000, // Exemplo: não permite excluir recebimentos maiores que 1000
-    }
+      onClick: transaction => this.delete(transaction),
+    },
   ];
 
   filters = new FormGroup({
-    filter: new FormControl<string>(''),
-    account: new FormControl<number | null>(null),
+    filter: new FormControl<string>('', { nonNullable: true }),
+    account: new FormControl<string>('', { nonNullable: true }),
     dateRange: new FormControl<DateRange | null>(null),
-    type: new FormControl<string>('a'),
-  })
+    type: new FormControl<string>('', { nonNullable: true }),
+  });
 
-  readonly transactions: TransactionTableRow[] = [
-    {
-      id: 'tx-001',
-      icon: 'local_cafe',
-      merchant: 'Blue Bottle Coffee',
-      category: 'Food & Drink',
-      date: new Date('2026-06-02T10:24:00'),
-      amount: -6.5,
-      currency: 'BRL'
-    },
-    {
-      id: 'tx-002',
-      icon: 'shopping_cart',
-      merchant: 'Whole Foods Market',
-      category: 'Groceries',
-      date: new Date('2026-06-01T15:10:00'),
-      amount: -142.3,
-      currency: 'BRL'
-    },
-    {
-      id: 'tx-003',
-      icon: 'account_balance_wallet',
-      merchant: 'Stripe Payout',
-      category: 'Income',
-      date: new Date('2026-05-30T09:00:00'),
-      amount: 4200,
-      currency: 'BRL'
-    },
-    {
-      id: 'tx-004',
-      icon: 'directions_car',
-      merchant: 'Uber Technologies',
-      category: 'Transport',
-      date: new Date('2026-05-29T18:36:00'),
-      amount: -24.1,
-      currency: 'BRL'
-    },
-    {
-      id: 'tx-005',
-      icon: 'calendar_month',
-      merchant: 'Netflix Subscription',
-      category: 'Entertainment',
-      date: new Date('2026-05-28T08:00:00'),
-      amount: -19.99,
-      currency: 'BRL'
-    },
-  ];
-
-  readonly transactionColumns: DataTableColumn<TransactionTableRow>[] = [
-    { key: 'merchant', label: 'Estabelecimento' },
-    { key: 'category', label: 'Categoria' },
+  readonly transactionColumns: DataTableColumn<Transaction>[] = [
+    { key: 'description', label: 'Descricao' },
+    { key: 'categoryId', label: 'Categoria' },
     { key: 'date', label: 'Data' },
     { key: 'amount', label: 'Valor', align: 'right' },
   ];
 
-  readonly transactionFilter: DataFilter<TransactionTableRow> | null = null;
+  constructor(
+    private transactionsService: TransactionsService,
+    private accountsService: AccountsService,
+    private categoriesService: CategoriesService,
+    private modalService: ModalService,
+  ) {}
 
-  identifyTransaction(row: TransactionTableRow): string {
+  ngOnInit(): void {
+    this.loadReferences();
+    this.search();
+
+    this.transactionsService.updated.subscribe(() => this.search());
+
+    this.filters.valueChanges
+      .pipe(
+        debounceTime(350),
+        distinctUntilChanged(),
+      )
+      .subscribe(() => this.search());
+  }
+
+  identifyTransaction(row: Transaction): string {
     return row.id;
   }
 
-  isIncome(row: TransactionTableRow): boolean {
-    return row.amount > 0;
+  openModal(transaction?: Transaction): void {
+    this.modalService.open(TransactionFormComponent, { transaction });
+  }
+
+  search(): void {
+    const payload: Record<string, unknown> = {};
+
+    if (this.filters.value.filter) {
+      payload['description'] = { like: this.filters.value.filter };
+    }
+
+    if (this.filters.value.account) {
+      payload['accountId'] = { eq: this.filters.value.account };
+    }
+
+    if (this.filters.value.type) {
+      payload['type'] = { eq: this.filters.value.type };
+    }
+
+    const range = this.filters.value.dateRange;
+    if (range?.start && range?.end) {
+      payload['date'] = { between: [range.start, range.end] };
+    } else if (range?.start) {
+      payload['date'] = { gte: range.start };
+    } else if (range?.end) {
+      payload['date'] = { lte: range.end };
+    }
+
+    const filters = Object.keys(payload).length > 0 ? payload : undefined;
+    this.transactionsService.getAll(filters).then(response => {
+      this.transactions.set(response);
+    });
+  }
+
+  delete(transaction: Transaction): void {
+    this.transactionsService.delete(transaction.id).then(() => {
+      this.transactionsService.updated.emit();
+    });
+  }
+
+  getCategory(transaction: Transaction): Category | undefined {
+    return this.categories().find(category => category.id === transaction.categoryId);
+  }
+
+  getCategoryName(transaction: Transaction): string {
+    return this.getCategory(transaction)?.name ?? 'Sem categoria';
+  }
+
+  getAccountName(transaction: Transaction): string {
+    return this.accounts().find(account => account.id === transaction.accountId)?.name ?? 'Sem conta';
+  }
+
+  signedAmount(transaction: Transaction): number {
+    if (transaction.type === 'debit') return -Math.abs(transaction.amount);
+    return Math.abs(transaction.amount);
+  }
+
+  isIncome(transaction: Transaction): boolean {
+    return this.signedAmount(transaction) > 0;
+  }
+
+  typeLabel(transaction: Transaction): string {
+    const labels: Record<Transaction['type'], string> = {
+      credit: 'Receita',
+      debit: 'Despesa',
+      transfer: 'Transferencia',
+    };
+
+    return labels[transaction.type];
+  }
+
+  private loadReferences(): void {
+    Promise.all([
+      this.accountsService.getAll(),
+      this.categoriesService.getAll(),
+    ]).then(([accounts, categories]) => {
+      this.accounts.set(accounts);
+      this.categories.set(categories);
+      this.accountOptions.set([
+        { value: '', label: 'Todas' },
+        ...accounts.map(account => ({
+          value: account.id,
+          label: account.name,
+          icon: account.icon ?? undefined,
+        })),
+      ]);
+    });
   }
 }

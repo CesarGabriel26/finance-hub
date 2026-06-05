@@ -1,25 +1,24 @@
 <ng-template let-data let-close="close">
-    <div class="bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] focus:outline-none z-50">
+    <div
+        class="bg-[var(--popover)] border border-border rounded-[var(--radius-md,0.75rem)] shadow-xl overflow-hidden min-w-[180px] focus:outline-none z-50">
         @for (item of items; track $index) {
-            @if (item.isVisible ? item.isVisible(data) : true) {
-                @if (item.isSeparator) {
-                    <hr class="border-gray-100 my-1">
-                } @else {
-                    <button type="button"
-                            [disabled]="item.isDisabled ? item.isDisabled(data) : false"
-                            (click)="item.onClick!(data); close()"
-                            class="w-full text-left px-4 py-2 text-sm flex items-center gap-3 transition-colors duration-150 cursor-pointer select-none
-                                   disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent
-                                   text-gray-700 hover:bg-gray-50 active:bg-gray-100">
-                        @if (item.icon) {
-                            <span class="material-symbols-outlined text-lg text-gray-400 select-none">
-                                {{ item.icon }}
-                            </span>
-                        }
-                        <span class="flex-grow select-none">{{ item.label }}</span>
-                    </button>
-                }
+        @if (item.isVisible ? item.isVisible(data) : true) {
+        @if (item.isSeparator) {
+        <hr class="border-border my-1">
+        } @else {
+        <button type="button" [disabled]="item.isDisabled ? item.isDisabled(data) : false"
+            (click)="item.onClick!(data); close()" class="w-full text-left px-4 py-2 text-sm flex items-center gap-3 transition-colors duration-150 cursor-pointer select-none
+                                    disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent
+                                    text-foreground hover:bg-muted active:bg-muted">
+            @if (item.icon) {
+            <span class="material-symbols-outlined text-lg text-muted-foreground select-none">
+                {{ item.icon }}
+            </span>
             }
+            <span class="flex-grow select-none">{{ item.label }}</span>
+        </button>
+        }
+        }
         }
     </div>
 </ng-template>
