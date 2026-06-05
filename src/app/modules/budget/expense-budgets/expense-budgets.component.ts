@@ -131,7 +131,9 @@ export class ExpenseBudgetsComponent implements OnInit {
   }
 
   remaining(budget: Budget): number {
-    return budget.amountLimit - this.spent(budget);
+    return budget.targetKind === 'minimum'
+      ? this.spent(budget) - budget.amountLimit
+      : budget.amountLimit - this.spent(budget);
   }
 
   progress(budget: Budget): number {
@@ -141,9 +143,23 @@ export class ExpenseBudgetsComponent implements OnInit {
 
   progressClass(budget: Budget): string {
     const progress = this.progress(budget);
+    if (budget.targetKind === 'minimum') {
+      if (progress >= 100) return 'bg-emerald-600';
+      if (progress >= budget.alertPercent) return 'bg-amber-500';
+      return 'bg-red-600';
+    }
+
     if (progress >= 100) return 'bg-red-600';
-    if (progress >= 80) return 'bg-amber-500';
+    if (progress >= budget.alertPercent) return 'bg-amber-500';
     return 'bg-emerald-600';
+  }
+
+  targetLabel(budget: Budget): string {
+    return budget.targetKind === 'minimum' ? 'Meta minima' : 'Limite';
+  }
+
+  balanceLabel(budget: Budget): string {
+    return budget.targetKind === 'minimum' ? 'Progresso' : 'Saldo';
   }
 
   totalLimit(): number {

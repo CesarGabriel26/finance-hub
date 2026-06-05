@@ -34,6 +34,10 @@
               <span class="text-xs text-[var(--foreground)] opacity-50 truncate">
                 {{ row.payer || 'Sem pagador' }} - {{ getCategoryName(row.categoryId) }} - {{
                 getAccountName(row.accountId) }}
+                @if (row.isRecurring) {
+                - {{ row.recurrenceClassification === 'fixed' ? 'Fixa' : 'Variavel' }}
+                - {{ row.currentInstallment }}/{{ row.totalInstallments }}
+                }
               </span>
             </div>
           </div>

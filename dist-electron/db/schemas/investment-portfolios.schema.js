@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.investmentPortfolioAssets = exports.investmentPortfolios = void 0;
+exports.investmentAssetSnapshots = exports.investmentPortfolioAssets = exports.investmentPortfolios = void 0;
 const sqlite_core_1 = require("drizzle-orm/sqlite-core");
 exports.investmentPortfolios = (0, sqlite_core_1.sqliteTable)('investment_portfolios', {
     id: (0, sqlite_core_1.text)('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -73,4 +73,27 @@ exports.investmentPortfolioAssets = (0, sqlite_core_1.sqliteTable)('investment_p
     portfolioIdx: (0, sqlite_core_1.index)('idx_investment_portfolio_assets_portfolio').on(table.portfolioId),
     tickerIdx: (0, sqlite_core_1.index)('idx_investment_portfolio_assets_ticker').on(table.ticker),
     typeIdx: (0, sqlite_core_1.index)('idx_investment_portfolio_assets_type').on(table.type),
+}));
+exports.investmentAssetSnapshots = (0, sqlite_core_1.sqliteTable)('investment_asset_snapshots', {
+    id: (0, sqlite_core_1.text)('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    assetId: (0, sqlite_core_1.text)('asset_id')
+        .notNull()
+        .references(() => exports.investmentPortfolioAssets.id, { onDelete: 'cascade' }),
+    portfolioId: (0, sqlite_core_1.text)('portfolio_id')
+        .notNull()
+        .references(() => exports.investmentPortfolios.id, { onDelete: 'cascade' }),
+    snapshotDate: (0, sqlite_core_1.text)('snapshot_date').notNull(),
+    investedAmount: (0, sqlite_core_1.real)('invested_amount').notNull().default(0),
+    grossAmount: (0, sqlite_core_1.real)('gross_amount').notNull().default(0),
+    netAmount: (0, sqlite_core_1.real)('net_amount').notNull().default(0),
+    resultAmount: (0, sqlite_core_1.real)('result_amount').notNull().default(0),
+    quantity: (0, sqlite_core_1.real)('quantity').notNull().default(0),
+    currentPrice: (0, sqlite_core_1.real)('current_price').notNull().default(0),
+    notes: (0, sqlite_core_1.text)('notes'),
+    createdAt: (0, sqlite_core_1.text)('created_at').$defaultFn(() => new Date().toISOString()),
+}, (table) => ({
+    assetDateUnique: (0, sqlite_core_1.unique)('unique_investment_asset_snapshot_date').on(table.assetId, table.snapshotDate),
+    assetIdx: (0, sqlite_core_1.index)('idx_investment_asset_snapshots_asset').on(table.assetId),
+    portfolioIdx: (0, sqlite_core_1.index)('idx_investment_asset_snapshots_portfolio').on(table.portfolioId),
+    dateIdx: (0, sqlite_core_1.index)('idx_investment_asset_snapshots_date').on(table.snapshotDate),
 }));

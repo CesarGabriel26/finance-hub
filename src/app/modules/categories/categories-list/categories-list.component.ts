@@ -49,6 +49,7 @@ export class CategoriesListComponent implements OnInit {
   readonly categoryColumns: DataTableColumn<Category>[] = [
     { key: 'name', label: 'Nome' },
     { key: 'type', label: 'Tipo' },
+    { key: 'isFixed', label: 'Recorrencia' },
   ];
 
   constructor(

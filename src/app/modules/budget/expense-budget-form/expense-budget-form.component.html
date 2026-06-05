@@ -20,6 +20,24 @@
       <label for="budget-limit" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Limite Mensal</label>
       <app-input id="budget-limit" type="currency" prefix="R$ " formControlName="amountLimit" />
     </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="budget-kind" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Tipo de Meta</label>
+      <app-select id="budget-kind" formControlName="targetKind" [options]="[
+        { value: 'maximum', label: 'Gastar no maximo' },
+        { value: 'minimum', label: 'Cumprir no minimo' }
+      ]" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="budget-alert" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Alerta (%)</label>
+      <app-input id="budget-alert" type="number" formControlName="alertPercent" placeholder="80" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="budget-notes" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Observacoes</label>
+      <app-input id="budget-notes" formControlName="notes" placeholder="Contexto da meta" />
+    </div>
   </div>
 
   <div class="pt-4 flex justify-end">

@@ -41,6 +41,12 @@ electron_1.contextBridge.exposeInMainWorld('CategoriesApi', {
     update: (id, data) => electron_1.ipcRenderer.invoke('categories:update', id, data),
     delete: (id) => electron_1.ipcRenderer.invoke('categories:delete', id),
 });
+electron_1.contextBridge.exposeInMainWorld('CategoryRulesApi', {
+    getAll: () => electron_1.ipcRenderer.invoke('category-rules:get-all'),
+    insert: (data) => electron_1.ipcRenderer.invoke('category-rules:insert', data),
+    update: (id, data) => electron_1.ipcRenderer.invoke('category-rules:update', id, data),
+    delete: (id) => electron_1.ipcRenderer.invoke('category-rules:delete', id),
+});
 // ── Transactions ──────────────────────────────────────────────────────────────
 electron_1.contextBridge.exposeInMainWorld('TransactionsApi', {
     getAll: (query) => electron_1.ipcRenderer.invoke('transactions:get-all', query),
@@ -75,6 +81,8 @@ electron_1.contextBridge.exposeInMainWorld('InvestmentPortfoliosApi', {
     insertAsset: (data) => electron_1.ipcRenderer.invoke('investment-portfolios:insert-asset', data),
     updateAsset: (id, data) => electron_1.ipcRenderer.invoke('investment-portfolios:update-asset', id, data),
     deleteAsset: (id) => electron_1.ipcRenderer.invoke('investment-portfolios:delete-asset', id),
+    getAssetSnapshots: (portfolioId) => electron_1.ipcRenderer.invoke('investment-portfolios:get-asset-snapshots', portfolioId),
+    insertAssetSnapshot: (data) => electron_1.ipcRenderer.invoke('investment-portfolios:insert-asset-snapshot', data),
 });
 electron_1.contextBridge.exposeInMainWorld('MarketRatesApi', {
     getCache: () => electron_1.ipcRenderer.invoke('market-rates:get-cache'),
@@ -98,4 +106,16 @@ electron_1.contextBridge.exposeInMainWorld('SavingGoalsApi', {
     insert: (data) => electron_1.ipcRenderer.invoke('saving-goals:insert', data),
     update: (id, data) => electron_1.ipcRenderer.invoke('saving-goals:update', id, data),
     delete: (id) => electron_1.ipcRenderer.invoke('saving-goals:delete', id),
+});
+electron_1.contextBridge.exposeInMainWorld('MonthlyClosingsApi', {
+    getAll: () => electron_1.ipcRenderer.invoke('monthly-closings:get-all'),
+    upsert: (data) => electron_1.ipcRenderer.invoke('monthly-closings:upsert', data),
+});
+electron_1.contextBridge.exposeInMainWorld('AccountReconciliationsApi', {
+    getAll: (period) => electron_1.ipcRenderer.invoke('account-reconciliations:get-all', period),
+    upsert: (data) => electron_1.ipcRenderer.invoke('account-reconciliations:upsert', data),
+});
+electron_1.contextBridge.exposeInMainWorld('MaintenanceApi', {
+    backup: () => electron_1.ipcRenderer.invoke('maintenance:backup'),
+    restore: () => electron_1.ipcRenderer.invoke('maintenance:restore'),
 });

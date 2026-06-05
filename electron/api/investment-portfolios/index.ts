@@ -7,3 +7,7 @@ export { registerGetInvestmentPortfolioAssets } from './get-investment-portfolio
 export { registerInsertInvestmentPortfolioAsset } from './insert-investment-portfolio-asset';
 export { registerUpdateInvestmentPortfolioAsset } from './update-investment-portfolio-asset';
 export { registerDeleteInvestmentPortfolioAsset } from './delete-investment-portfolio-asset';
+export {
+  registerGetInvestmentAssetSnapshots,
+  registerInsertInvestmentAssetSnapshot,
+} from './investment-asset-snapshots';

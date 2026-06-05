@@ -1,4 +1,5 @@
 export type AccountReceivableStatus = 'pending' | 'received' | 'overdue' | 'canceled';
+export type AccountReceivableRecurrenceClassification = 'fixed' | 'variable';
 
 export interface AccountReceivable {
   id: string;
@@ -8,8 +9,13 @@ export interface AccountReceivable {
   dueDate: string;
   receivedAt: string | null;
   status: AccountReceivableStatus;
+  isRecurring: boolean;
+  recurrenceClassification: AccountReceivableRecurrenceClassification | null;
+  totalInstallments: number;
+  currentInstallment: number;
   accountId: string | null;
   categoryId: string | null;
+  settlementTransactionId: string | null;
   notes: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -23,8 +29,13 @@ export interface NewAccountReceivable {
   dueDate: string;
   receivedAt?: string | null;
   status?: AccountReceivableStatus;
+  isRecurring?: boolean;
+  recurrenceClassification?: AccountReceivableRecurrenceClassification | null;
+  totalInstallments?: number;
+  currentInstallment?: number;
   accountId?: string | null;
   categoryId?: string | null;
+  settlementTransactionId?: string | null;
   notes?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;

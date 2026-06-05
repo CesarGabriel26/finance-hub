@@ -36,7 +36,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.db = void 0;
+exports.db = exports.dbPath = void 0;
+exports.closeDatabase = closeDatabase;
+exports.checkpointDatabase = checkpointDatabase;
 exports.runMigrations = runMigrations;
 const better_sqlite3_1 = require("drizzle-orm/better-sqlite3");
 const migrator_1 = require("drizzle-orm/better-sqlite3/migrator");
@@ -47,14 +49,24 @@ const path_1 = __importDefault(require("path"));
 const electron_1 = require("electron");
 // Caminho do banco dentro do diretório do app (AppData em prod, raiz do projeto em dev)
 const dbBasePath = electron_1.app.isPackaged ? electron_1.app.getPath('userData') : electron_1.app.getAppPath();
-const dbPath = path_1.default.join(dbBasePath, 'financehub.db');
-console.log(`[DB] Arquivo SQLite: ${dbPath}`);
-const sqlite = new better_sqlite3_2.default(dbPath);
+exports.dbPath = path_1.default.join(dbBasePath, 'financehub.db');
+console.log(`[DB] Arquivo SQLite: ${exports.dbPath}`);
+const sqlite = new better_sqlite3_2.default(exports.dbPath);
 // Força chaves estrangeiras (desligadas por padrão no SQLite)
 sqlite.pragma('foreign_keys = ON');
 // WAL melhora performance em leituras/escritas concorrentes
 sqlite.pragma('journal_mode = WAL');
 exports.db = (0, better_sqlite3_1.drizzle)(sqlite, { schema });
+function closeDatabase() {
+    if (sqlite.open) {
+        sqlite.close();
+    }
+}
+function checkpointDatabase() {
+    if (sqlite.open) {
+        sqlite.pragma('wal_checkpoint(TRUNCATE)');
+    }
+}
 /**
  * Insere categorias padrão se a tabela de categorias estiver vazia.
  */
@@ -70,19 +82,19 @@ function seedDefaultCategories() {
             // ── Despesas do dia a dia (expense) ──────────────────────────────────
             { name: 'Alimentação', type: 'expense', icon: 'restaurant', color: '#f97316' },
             { name: 'Transporte', type: 'expense', icon: 'directions_car', color: '#3b82f6' },
-            { name: 'Moradia', type: 'expense', icon: 'home', color: '#6366f1' },
+            { name: 'Moradia', type: 'expense', icon: 'home', color: '#6366f1', isFixed: true },
             { name: 'Lazer & Entretenimento', type: 'expense', icon: 'sports_esports', color: '#ec4899' },
-            { name: 'Saúde', type: 'expense', icon: 'medical_services', color: '#ef4444' },
-            { name: 'Educação', type: 'expense', icon: 'school', color: '#a855f7' },
+            { name: 'Saúde', type: 'expense', icon: 'medical_services', color: '#ef4444', isFixed: true },
+            { name: 'Educação', type: 'expense', icon: 'school', color: '#a855f7', isFixed: true },
             { name: 'Compras & Vestuário', type: 'expense', icon: 'shopping_bag', color: '#14b8a6' },
-            { name: 'Impostos & Taxas', type: 'expense', icon: 'receipt_long', color: '#64748b' },
-            { name: 'Seguros', type: 'expense', icon: 'shield', color: '#0ea5e9' },
+            { name: 'Impostos & Taxas', type: 'expense', icon: 'receipt_long', color: '#64748b', isFixed: true },
+            { name: 'Seguros', type: 'expense', icon: 'shield', color: '#0ea5e9', isFixed: true },
             { name: 'Outras Despesas', type: 'expense', icon: 'payments', color: '#94a3b8' },
             // ── Despesas de Investimentos (expense) ───────────────────────────────
             { name: 'Investimentos - Aportes', type: 'expense', icon: 'savings', color: '#10b981' },
             { name: 'Investimentos - Taxas/Corretagem', type: 'expense', icon: 'account_balance_wallet', color: '#06b6d4' },
             // ── Receitas do dia a dia (income) ───────────────────────────────────
-            { name: 'Salário & Pró-labore', type: 'income', icon: 'work', color: '#10b981' },
+            { name: 'Salário & Pró-labore', type: 'income', icon: 'work', color: '#10b981', isFixed: true },
             { name: 'Prestação de Serviços', type: 'income', icon: 'handshake', color: '#06b6d4' },
             { name: 'Reembolsos', type: 'income', icon: 'price_check', color: '#0ea5e9' },
             { name: 'Outras Receitas', type: 'income', icon: 'add_card', color: '#f59e0b' },

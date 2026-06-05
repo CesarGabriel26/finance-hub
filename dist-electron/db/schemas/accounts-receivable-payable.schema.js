@@ -14,8 +14,15 @@ exports.accountsReceivable = (0, sqlite_core_1.sqliteTable)('accounts_receivable
     status: (0, sqlite_core_1.text)('status', { enum: ['pending', 'received', 'overdue', 'canceled'] })
         .notNull()
         .default('pending'),
+    isRecurring: (0, sqlite_core_1.integer)('is_recurring', { mode: 'boolean' }).notNull().default(false),
+    recurrenceClassification: (0, sqlite_core_1.text)('recurrence_classification', {
+        enum: ['fixed', 'variable'],
+    }),
+    totalInstallments: (0, sqlite_core_1.integer)('total_installments').notNull().default(1),
+    currentInstallment: (0, sqlite_core_1.integer)('current_installment').notNull().default(1),
     accountId: (0, sqlite_core_1.text)('account_id').references(() => accounts_schema_1.accounts.id, { onDelete: 'set null' }),
     categoryId: (0, sqlite_core_1.text)('category_id').references(() => categories_schema_1.categories.id, { onDelete: 'set null' }),
+    settlementTransactionId: (0, sqlite_core_1.text)('settlement_transaction_id'),
     notes: (0, sqlite_core_1.text)('notes'),
     createdAt: (0, sqlite_core_1.text)('created_at').$defaultFn(() => new Date().toISOString()),
     updatedAt: (0, sqlite_core_1.text)('updated_at').$defaultFn(() => new Date().toISOString()),
@@ -33,8 +40,15 @@ exports.accountsPayable = (0, sqlite_core_1.sqliteTable)('accounts_payable', {
     status: (0, sqlite_core_1.text)('status', { enum: ['pending', 'paid', 'overdue', 'canceled'] })
         .notNull()
         .default('pending'),
+    isRecurring: (0, sqlite_core_1.integer)('is_recurring', { mode: 'boolean' }).notNull().default(false),
+    recurrenceClassification: (0, sqlite_core_1.text)('recurrence_classification', {
+        enum: ['fixed', 'variable'],
+    }),
+    totalInstallments: (0, sqlite_core_1.integer)('total_installments').notNull().default(1),
+    currentInstallment: (0, sqlite_core_1.integer)('current_installment').notNull().default(1),
     accountId: (0, sqlite_core_1.text)('account_id').references(() => accounts_schema_1.accounts.id, { onDelete: 'set null' }),
     categoryId: (0, sqlite_core_1.text)('category_id').references(() => categories_schema_1.categories.id, { onDelete: 'set null' }),
+    settlementTransactionId: (0, sqlite_core_1.text)('settlement_transaction_id'),
     notes: (0, sqlite_core_1.text)('notes'),
     createdAt: (0, sqlite_core_1.text)('created_at').$defaultFn(() => new Date().toISOString()),
     updatedAt: (0, sqlite_core_1.text)('updated_at').$defaultFn(() => new Date().toISOString()),

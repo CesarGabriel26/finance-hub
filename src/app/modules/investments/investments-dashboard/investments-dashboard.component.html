@@ -1,4 +1,4 @@
-<section class="h-full w-full grid grid-rows-[auto_auto_auto_1fr] gap-4 overflow-hidden">
+<section class="h-full w-full grid grid-rows-[auto_auto_auto_auto_1fr] gap-4 overflow-hidden">
   <div class="bg-[var(--card)] p-4 rounded-xl shadow-lg grid grid-cols-1 xl:grid-cols-[1.2fr_auto_auto_auto] gap-4 items-center">
     <app-select [formControl]="selectedPortfolioId" [options]="portfolioOptions()" placeholder="Selecionar carteira" />
 
@@ -61,15 +61,20 @@
     </div>
 
     <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
-      <span class="text-xs font-bold uppercase text-muted-foreground">Resultado</span>
+      <span class="text-xs font-bold uppercase text-muted-foreground">Resultado Bruto</span>
       <strong class="block mt-2 text-xl" [ngClass]="resultClass(totalResult())">
         {{ totalResult() | currency: portfolio.currency }}
       </strong>
       <span class="text-xs text-muted-foreground">{{ formatPercent(totalResultPercent()) }} sobre o custo</span>
+      @if (totalTaxWithheld() > 0) {
+      <span class="block text-xs text-muted-foreground">
+        Liquido: {{ totalNetResult() | currency: portfolio.currency }} | IR: {{ totalTaxWithheld() | currency: portfolio.currency }}
+      </span>
+      }
     </div>
 
     <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
-      <span class="text-xs font-bold uppercase text-muted-foreground">Renda Anual</span>
+      <span class="text-xs font-bold uppercase text-muted-foreground">Rendimento</span>
       <strong class="block mt-2 text-xl text-foreground">{{ annualIncome() | currency: portfolio.currency }}</strong>
       <span class="text-xs text-muted-foreground">Yield: {{ formatPercent(portfolioYield()) }}</span>
     </div>
@@ -89,6 +94,29 @@
       </button>
     </div>
   </div>
+
+  @if (snapshotEvolution().length > 0) {
+  <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
+    <div class="flex items-center justify-between gap-4 mb-3">
+      <div>
+        <span class="text-xs font-bold uppercase text-muted-foreground">Historico da Carteira</span>
+        <strong class="block mt-1 text-sm text-foreground">Ultima captura: {{ lastSnapshotDate() }}</strong>
+      </div>
+      <span class="text-xs text-muted-foreground">{{ assetSnapshots().length }} snapshots</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+      @for (item of snapshotEvolution(); track item.date) {
+      <div class="rounded-md border border-border p-3 bg-[var(--muted)]">
+        <span class="block text-xs font-bold text-muted-foreground">{{ item.date | date: 'dd/MM/yyyy' }}</span>
+        <strong class="block mt-1 text-sm text-foreground">{{ item.net | currency: portfolio.currency }}</strong>
+        <span class="block text-xs" [ngClass]="resultClass(item.result)">
+          Resultado {{ item.result | currency: portfolio.currency }}
+        </span>
+      </div>
+      }
+    </div>
+  </div>
+  }
 
   @if (isBeginnerMode()) {
   <div class="w-full flex-1 min-h-0">
@@ -111,7 +139,7 @@
 
           <div class="text-right">
             <strong class="block text-sm text-foreground">{{ currentValue(row) | currency: row.currency }}</strong>
-            <span class="text-xs text-muted-foreground">hoje</span>
+            <span class="text-xs text-muted-foreground">{{ isFixedIncomeAsset(row) ? 'liquido hoje' : 'hoje' }}</span>
           </div>
 
           <div class="text-right min-w-[8rem]">
@@ -119,6 +147,9 @@
               {{ formatPercent(resultPercent(row)) }}
             </strong>
             <span class="text-xs text-muted-foreground">resultado</span>
+            @if (isFixedIncomeAsset(row) && taxWithheldValue(row) > 0) {
+            <span class="block text-xs text-muted-foreground">IR/IOF {{ taxWithheldValue(row) | currency: row.currency }}</span>
+            }
           </div>
         </div>
       </ng-template>
@@ -140,7 +171,7 @@
 
           <span class="text-sm font-semibold text-foreground truncate">{{ row.quantity }}</span>
           <span class="text-sm font-semibold text-foreground truncate">{{ row.averagePrice | currency: row.currency }}</span>
-          <span class="text-sm font-semibold text-foreground truncate">{{ row.currentPrice | currency: row.currency }}</span>
+          <span class="text-sm font-semibold text-foreground truncate">{{ grossCurrentValue(row) | currency: row.currency }}</span>
           <span class="text-sm font-semibold text-foreground truncate">{{ currentValue(row) | currency: row.currency }}</span>
           <span class="text-sm font-semibold" [ngClass]="resultClass(resultValue(row))">
             {{ resultValue(row) | currency: row.currency }}

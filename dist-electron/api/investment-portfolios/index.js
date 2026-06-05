@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerDeleteInvestmentPortfolioAsset = exports.registerUpdateInvestmentPortfolioAsset = exports.registerInsertInvestmentPortfolioAsset = exports.registerGetInvestmentPortfolioAssets = exports.registerDeleteInvestmentPortfolio = exports.registerUpdateInvestmentPortfolio = exports.registerInsertInvestmentPortfolio = exports.registerGetInvestmentPortfolioById = exports.registerGetInvestmentPortfolios = void 0;
+exports.registerInsertInvestmentAssetSnapshot = exports.registerGetInvestmentAssetSnapshots = exports.registerDeleteInvestmentPortfolioAsset = exports.registerUpdateInvestmentPortfolioAsset = exports.registerInsertInvestmentPortfolioAsset = exports.registerGetInvestmentPortfolioAssets = exports.registerDeleteInvestmentPortfolio = exports.registerUpdateInvestmentPortfolio = exports.registerInsertInvestmentPortfolio = exports.registerGetInvestmentPortfolioById = exports.registerGetInvestmentPortfolios = void 0;
 var get_investment_portfolios_1 = require("./get-investment-portfolios");
 Object.defineProperty(exports, "registerGetInvestmentPortfolios", { enumerable: true, get: function () { return get_investment_portfolios_1.registerGetInvestmentPortfolios; } });
 var get_investment_portfolio_by_id_1 = require("./get-investment-portfolio-by-id");
@@ -19,3 +19,6 @@ var update_investment_portfolio_asset_1 = require("./update-investment-portfolio
 Object.defineProperty(exports, "registerUpdateInvestmentPortfolioAsset", { enumerable: true, get: function () { return update_investment_portfolio_asset_1.registerUpdateInvestmentPortfolioAsset; } });
 var delete_investment_portfolio_asset_1 = require("./delete-investment-portfolio-asset");
 Object.defineProperty(exports, "registerDeleteInvestmentPortfolioAsset", { enumerable: true, get: function () { return delete_investment_portfolio_asset_1.registerDeleteInvestmentPortfolioAsset; } });
+var investment_asset_snapshots_1 = require("./investment-asset-snapshots");
+Object.defineProperty(exports, "registerGetInvestmentAssetSnapshots", { enumerable: true, get: function () { return investment_asset_snapshots_1.registerGetInvestmentAssetSnapshots; } });
+Object.defineProperty(exports, "registerInsertInvestmentAssetSnapshot", { enumerable: true, get: function () { return investment_asset_snapshots_1.registerInsertInvestmentAssetSnapshot; } });

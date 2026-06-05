@@ -1,0 +1,60 @@
+<section class="h-full w-full grid grid-rows-[auto_auto_1fr] gap-4 overflow-hidden">
+  <form [formGroup]="form" class="bg-[var(--card)] p-4 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-[1fr_1fr_2fr_auto] gap-4">
+    <app-input type="number" formControlName="month" placeholder="Mes" />
+    <app-input type="number" formControlName="year" placeholder="Ano" />
+    <app-input formControlName="notes" placeholder="Observacoes do fechamento" />
+    <button type="button" (click)="closeMonth()"
+      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none bg-[var(--primary)] text-[var(--primary-foreground)]">
+      <span class="material-symbols-outlined">lock</span>
+      <span>Fechar Mes</span>
+    </button>
+  </form>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
+      <span class="text-xs font-bold uppercase text-muted-foreground">Receitas</span>
+      <strong class="block mt-2 text-xl text-success">{{ incomeTotal() | currency: 'BRL' }}</strong>
+    </div>
+    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
+      <span class="text-xs font-bold uppercase text-muted-foreground">Despesas</span>
+      <strong class="block mt-2 text-xl text-danger">{{ expenseTotal() | currency: 'BRL' }}</strong>
+    </div>
+    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
+      <span class="text-xs font-bold uppercase text-muted-foreground">Resultado</span>
+      <strong class="block mt-2 text-xl" [class.text-danger]="balanceTotal() < 0">{{ balanceTotal() | currency: 'BRL' }}</strong>
+    </div>
+    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
+      <span class="text-xs font-bold uppercase text-muted-foreground">Orcamento usado</span>
+      <strong class="block mt-2 text-xl text-foreground">{{ budgetSpentTotal() | currency: 'BRL' }}</strong>
+      <span class="text-xs text-muted-foreground">Limite {{ budgetLimitTotal() | currency: 'BRL' }}</span>
+    </div>
+    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
+      <span class="text-xs font-bold uppercase text-muted-foreground">Investimentos</span>
+      <strong class="block mt-2 text-xl text-foreground">{{ investedTotal() | currency: 'BRL' }}</strong>
+    </div>
+  </div>
+
+  <div class="bg-[var(--card)] rounded-xl border border-border shadow-sm overflow-y-auto">
+    <div class="p-4 border-b border-border flex items-center justify-between">
+      <span class="text-xs font-bold uppercase text-muted-foreground">Fechamentos salvos</span>
+      @if (message()) {
+      <span class="text-xs font-bold text-success">{{ message() }}</span>
+      }
+    </div>
+    <div class="divide-y divide-border">
+      @for (closing of closings(); track closing.id) {
+      <div class="p-4 grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center min-w-[44rem]">
+        <div>
+          <strong class="block text-sm text-foreground">{{ closing.period }}</strong>
+          <span class="block text-xs text-muted-foreground">{{ closing.closedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <span class="text-sm font-semibold" [class.text-danger]="closing.balanceTotal < 0">{{ closing.balanceTotal | currency: 'BRL' }}</span>
+        <span class="text-sm font-semibold text-foreground">{{ closing.investedTotal | currency: 'BRL' }}</span>
+        <span class="text-xs font-bold uppercase text-muted-foreground">{{ closing.status }}</span>
+      </div>
+      } @empty {
+      <div class="p-6 text-sm text-muted-foreground">Nenhum mes fechado ainda.</div>
+      }
+    </div>
+  </div>
+</section>

@@ -46,6 +46,13 @@ contextBridge.exposeInMainWorld('CategoriesApi', {
   delete: (id: string) => ipcRenderer.invoke('categories:delete', id),
 });
 
+contextBridge.exposeInMainWorld('CategoryRulesApi', {
+  getAll: () => ipcRenderer.invoke('category-rules:get-all'),
+  insert: (data: unknown) => ipcRenderer.invoke('category-rules:insert', data),
+  update: (id: string, data: unknown) => ipcRenderer.invoke('category-rules:update', id, data),
+  delete: (id: string) => ipcRenderer.invoke('category-rules:delete', id),
+});
+
 // ── Transactions ──────────────────────────────────────────────────────────────
 contextBridge.exposeInMainWorld('TransactionsApi', {
   getAll: (query?: unknown) => ipcRenderer.invoke('transactions:get-all', query),
@@ -83,6 +90,8 @@ contextBridge.exposeInMainWorld('InvestmentPortfoliosApi', {
   insertAsset: (data: unknown) => ipcRenderer.invoke('investment-portfolios:insert-asset', data),
   updateAsset: (id: string, data: unknown) => ipcRenderer.invoke('investment-portfolios:update-asset', id, data),
   deleteAsset: (id: string) => ipcRenderer.invoke('investment-portfolios:delete-asset', id),
+  getAssetSnapshots: (portfolioId: string) => ipcRenderer.invoke('investment-portfolios:get-asset-snapshots', portfolioId),
+  insertAssetSnapshot: (data: unknown) => ipcRenderer.invoke('investment-portfolios:insert-asset-snapshot', data),
 });
 
 contextBridge.exposeInMainWorld('MarketRatesApi', {
@@ -110,4 +119,19 @@ contextBridge.exposeInMainWorld('SavingGoalsApi', {
   insert: (data: unknown) => ipcRenderer.invoke('saving-goals:insert', data),
   update: (id: string, data: unknown) => ipcRenderer.invoke('saving-goals:update', id, data),
   delete: (id: string) => ipcRenderer.invoke('saving-goals:delete', id),
+});
+
+contextBridge.exposeInMainWorld('MonthlyClosingsApi', {
+  getAll: () => ipcRenderer.invoke('monthly-closings:get-all'),
+  upsert: (data: unknown) => ipcRenderer.invoke('monthly-closings:upsert', data),
+});
+
+contextBridge.exposeInMainWorld('AccountReconciliationsApi', {
+  getAll: (period?: string) => ipcRenderer.invoke('account-reconciliations:get-all', period),
+  upsert: (data: unknown) => ipcRenderer.invoke('account-reconciliations:upsert', data),
+});
+
+contextBridge.exposeInMainWorld('MaintenanceApi', {
+  backup: () => ipcRenderer.invoke('maintenance:backup'),
+  restore: () => ipcRenderer.invoke('maintenance:restore'),
 });

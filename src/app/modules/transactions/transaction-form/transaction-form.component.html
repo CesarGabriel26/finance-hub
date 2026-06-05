@@ -44,6 +44,11 @@
       <label for="tx-category" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Categoria</label>
       <app-select id="tx-category" formControlName="categoryId" [options]="categoryOptions()" placeholder="Selecione" />
     </div>
+
+    <div class="flex flex-col gap-1.5 md:col-span-2">
+      <label for="tx-tags" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Tags</label>
+      <app-input id="tx-tags" formControlName="tags" placeholder="#viagem, #familia, #ir" />
+    </div>
   </div>
 
   <div class="pt-4 flex justify-end">

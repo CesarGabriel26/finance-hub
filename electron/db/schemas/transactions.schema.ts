@@ -12,6 +12,7 @@ export const transactions = sqliteTable('transactions', {
     type: text('type', { enum: ['credit', 'debit', 'transfer'] }).notNull(),
     date: text('date').notNull(), // Datas no SQLite guardadas como strings ISO ou YYYY-MM-DD
     ignored: integer('ignored', { mode: 'boolean' }).default(false),
+    tags: text('tags').notNull().default(''),
 
     // Para transferências entre as contas do próprio usuário
     transferAccountId: text('transfer_account_id').references(() => accounts.id, { onDelete: 'set null' }),

@@ -13,6 +13,7 @@ export interface Transaction {
   /** Data no formato ISO ou YYYY-MM-DD */
   date: string;
   ignored: boolean | null;
+  tags: string;
   /** Para transferências entre contas do próprio usuário */
   transferAccountId: string | null;
   /** Identificador único do OFX para evitar duplicados */
@@ -31,6 +32,7 @@ export interface NewTransaction {
   type: TransactionType;
   date: string;
   ignored?: boolean | null;
+  tags?: string;
   transferAccountId?: string | null;
   fitId?: string | null;
   createdAt?: string | null;
@@ -134,4 +136,7 @@ export interface ImportedTransaction {
   // ── Estado temporário de revisão no app ─────────────────────────────────────
   ignored?: boolean;
   categoryId?: string | null;
+  duplicate?: boolean;
+  suggestedCategoryId?: string | null;
+  categorySource?: 'rule' | 'auto' | 'fallback' | 'manual';
 }

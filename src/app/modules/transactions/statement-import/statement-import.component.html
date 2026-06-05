@@ -106,7 +106,7 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 @for (acc of accounts(); track acc.id) {
-                <div (click)="selectedAccountId.set(acc.id)"
+                <div (click)="selectAccount(acc.id)"
                     class="finance-card cursor-pointer flex items-center gap-3 relative overflow-hidden group transition-all duration-200"
                     [style.border-color]="selectedAccountId() === acc.id ? 'var(--primary)' : 'var(--border)'"
                     [style.background]="selectedAccountId() === acc.id ? 'color-mix(in oklch, var(--primary) 8%, var(--card))' : 'var(--card)'"
@@ -247,6 +247,9 @@
                     </div>
                     <div class="text-xs mt-2 pt-2 border-t border-[var(--border)] text-[var(--muted-foreground)]">
                         Selecionadas: {{ totalTransactionsCount() }} de {{ parsedTransactions().length }}
+                        @if (duplicateTransactionsCount() > 0) {
+                        | Duplicadas: {{ duplicateTransactionsCount() }}
+                        }
                     </div>
                 </div>
 
@@ -271,6 +274,9 @@
                     </div>
                     <div class="text-xs mt-2 pt-2 border-t border-[var(--border)] text-[var(--muted-foreground)]">
                         Destino: {{ selectedAccountName() }}
+                        @if (uncategorizedTransactionsCount() > 0) {
+                        | Sem categoria: {{ uncategorizedTransactionsCount() }}
+                        }
                     </div>
                 </div>
             </div>
@@ -321,6 +327,13 @@
                                         title="Descrição bruta do arquivo OFX">
                                         OFX: {{ row.description }}
                                     </span>
+                                    @if (row.duplicate) {
+                                    <span class="text-xxs font-bold text-amber-700">Duplicada ja importada</span>
+                                    } @else if (row.categorySource === 'rule') {
+                                    <span class="text-xxs font-bold text-[var(--primary)]">Categoria por regra</span>
+                                    } @else if (row.categorySource === 'fallback') {
+                                    <span class="text-xxs font-bold text-amber-700">Revisar categoria sugerida</span>
+                                    }
                                 </div>
                             </div>
 

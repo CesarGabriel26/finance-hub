@@ -30,6 +30,10 @@
               </span>
               <span class="text-xs text-[var(--foreground)] opacity-50 truncate">
                 {{ row.payee || 'Sem beneficiario' }} - {{ getCategoryName(row.categoryId) }} - {{ getAccountName(row.accountId) }}
+                @if (row.isRecurring) {
+                - {{ row.recurrenceClassification === 'fixed' ? 'Fixa' : 'Variavel' }}
+                - {{ row.currentInstallment }}/{{ row.totalInstallments }}
+                }
               </span>
             </div>
           </div>

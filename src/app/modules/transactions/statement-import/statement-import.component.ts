@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { DataTableColumn, DataTableComponent } from '../../../components/data-table/data-table.component';
 import { formatBytes, parseAndNormalizeOfx } from '../../../utils/helpers/ofx-parser.helper';
 import { autoCategorize } from '../../../utils/helpers/category-rule.helper';
-import { Account, AccountType, Category, ImportedTransaction } from '../../../models';
+import { Account, AccountType, Category, CategoryRule, ImportedTransaction } from '../../../models';
 import { OfxParseResult } from '../../../models/ofx.model';
 import { AccountsService } from '../../../services/accounts.service';
 import { AccountStatementBalancesService } from '../../../services/account-statement-balances.service';
 import { BankService } from '../../../services/banks.service';
+import { CategoryRulesService } from '../../../services/category-rules.service';
 import { CategoriesService } from '../../../services/categories.service';
 import { TransactionsService } from '../../../services/transactions.service';
 
@@ -22,6 +23,7 @@ export class StatementImportComponent implements OnInit {
   private readonly accountsService = inject(AccountsService);
   private readonly statementBalancesService = inject(AccountStatementBalancesService);
   private readonly bankService = inject(BankService);
+  private readonly categoryRulesService = inject(CategoryRulesService);
   private readonly categoriesService = inject(CategoriesService);
   private readonly transactionsService = inject(TransactionsService);
 
@@ -37,6 +39,7 @@ export class StatementImportComponent implements OnInit {
 
   // ── Estados Reativos (Signals) ────────────────────────────
   readonly categories = signal<Category[]>([]);
+  readonly categoryRules = signal<CategoryRule[]>([]);
   readonly accounts = signal<Account[]>([]);
   readonly isDragging = signal(false);
   readonly isLoading = signal(false);
@@ -85,6 +88,14 @@ export class StatementImportComponent implements OnInit {
     this.activeTx().filter(tx => !tx.ignored).length
   );
 
+  readonly duplicateTransactionsCount = computed(() =>
+    this.parsedTransactions().filter(tx => tx.duplicate).length
+  );
+
+  readonly uncategorizedTransactionsCount = computed(() =>
+    this.activeTx().filter(tx => !tx.ignored && !tx.categoryId).length
+  );
+
   readonly isAllSelected = computed(() => {
     const txs = this.parsedTransactions();
     return txs.length > 0 && txs.every(tx => !tx.ignored);
@@ -92,12 +103,14 @@ export class StatementImportComponent implements OnInit {
 
   async ngOnInit() {
     try {
-      const [accs, cats] = await Promise.all([
+      const [accs, cats, rules] = await Promise.all([
         this.accountsService.getAll(),
-        this.categoriesService.getAll()
+        this.categoriesService.getAll(),
+        this.categoryRulesService.getAll(),
       ]);
       this.accounts.set(accs);
       this.categories.set(cats);
+      this.categoryRules.set(rules);
 
       if (accs.length > 0) {
         this.selectedAccountId.set(accs[0].id);
@@ -151,11 +164,12 @@ export class StatementImportComponent implements OnInit {
 
       // Mapeia e tenta auto-categorizar ligando com o banco
       const transactions = result.transactions.map(tx => {
-        const categoryName = autoCategorize(tx.descriptionNormalized || tx.description);
-        const matched = cats.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+        const matched = this.matchCategoryForTransaction(tx, cats);
         return {
           ...tx,
-          categoryId: matched?.id ?? null,
+          categoryId: matched.category?.id ?? null,
+          suggestedCategoryId: matched.category?.id ?? null,
+          categorySource: matched.source,
           ignored: false
         };
       });
@@ -175,6 +189,7 @@ export class StatementImportComponent implements OnInit {
 
       // Auto-seleção de conta baseada no nome do banco se possível
       await this.selectOrCreateStatementAccount(result);
+      await this.markDuplicatesForSelectedAccount();
 
     } catch (error) {
       console.error('Erro ao ler arquivo OFX:', error);
@@ -186,10 +201,20 @@ export class StatementImportComponent implements OnInit {
   }
 
   // ── Mutações de Transação ─────────────────────────────────
-  setTransactionCategory(txId: string, categoryId: string | null) {
+  async setTransactionCategory(txId: string, categoryId: string | null) {
+    const transaction = this.parsedTransactions().find(tx => tx.fitId === txId);
     this.parsedTransactions.update(txs =>
-      txs.map(tx => tx.fitId === txId ? { ...tx, categoryId } : tx)
+      txs.map(tx => tx.fitId === txId ? { ...tx, categoryId, categorySource: 'manual' } : tx)
     );
+
+    if (transaction && categoryId && categoryId !== transaction.suggestedCategoryId) {
+      await this.offerCategoryRuleLearning(transaction, categoryId);
+    }
+  }
+
+  async selectAccount(accountId: string) {
+    this.selectedAccountId.set(accountId);
+    await this.markDuplicatesForSelectedAccount();
   }
 
   toggleIgnore(txId: string) {
@@ -281,7 +306,10 @@ export class StatementImportComponent implements OnInit {
       const duplicateMessage = duplicateCount > 0
         ? ` ${duplicateCount} transacao(oes) duplicada(s) foram ignoradas.`
         : '';
-      alert(`Importacao concluida com sucesso!${duplicateMessage}`);
+      const learningMessage = this.uncategorizedTransactionsCount() > 0
+        ? ` ${this.uncategorizedTransactionsCount()} transacao(oes) ficaram sem categoria.`
+        : '';
+      alert(`Importacao concluida com sucesso!${duplicateMessage}${learningMessage}`);
       this.resetImport();
     } catch (error) {
       console.error('Erro ao salvar transações:', error);
@@ -289,6 +317,106 @@ export class StatementImportComponent implements OnInit {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private matchCategoryForTransaction(
+    transaction: ImportedTransaction,
+    categories: Category[],
+  ): { category: Category | undefined; source: ImportedTransaction['categorySource'] } {
+    const description = this.normalizeText(
+      `${transaction.descriptionNormalized || ''} ${transaction.description || ''} ${transaction.memo || ''}`,
+    );
+    const type = transaction.direction === 'credit' ? 'income' : 'expense';
+    const rules = this.categoryRules()
+      .filter(rule => rule.categoryType === type || !rule.categoryType)
+      .sort((a, b) => b.priority - a.priority || b.keyword.length - a.keyword.length);
+    const rule = rules.find(candidate => description.includes(this.normalizeText(candidate.keyword)));
+
+    if (rule) {
+      return { category: categories.find(category => category.id === rule.categoryId), source: 'rule' };
+    }
+
+    const categoryName = autoCategorize(transaction.descriptionNormalized || transaction.description);
+    const matchedByName = categories.find(category =>
+      category.type === type &&
+      this.normalizeText(category.name) === this.normalizeText(categoryName)
+    );
+    if (matchedByName) return { category: matchedByName, source: 'auto' };
+
+    const fallbackName = type === 'income' ? 'Outras Receitas' : 'Outras Despesas';
+    return {
+      category: categories.find(category =>
+        category.type === type &&
+        this.normalizeText(category.name) === this.normalizeText(fallbackName)
+      ),
+      source: 'fallback',
+    };
+  }
+
+  private async markDuplicatesForSelectedAccount(): Promise<void> {
+    const accountId = this.selectedAccountId();
+    const fitIds = this.parsedTransactions()
+      .map(tx => tx.fitId)
+      .filter((fitId): fitId is string => Boolean(fitId));
+
+    if (!accountId || fitIds.length === 0) return;
+
+    const existingTransactions = await this.transactionsService.getAll({
+      accountId: { eq: accountId },
+      fitId: { in: fitIds },
+    });
+    const existingFitIds = new Set(existingTransactions.map(tx => tx.fitId).filter(Boolean));
+
+    this.parsedTransactions.update(txs =>
+      txs.map(tx => {
+        const duplicate = Boolean(tx.fitId && existingFitIds.has(tx.fitId));
+
+        return {
+          ...tx,
+          duplicate,
+          ignored: duplicate ? true : tx.ignored,
+        };
+      })
+    );
+  }
+
+  private async offerCategoryRuleLearning(
+    transaction: ImportedTransaction,
+    categoryId: string,
+  ): Promise<void> {
+    const keyword = this.buildRuleKeyword(transaction);
+    if (!keyword || this.categoryRules().some(rule =>
+      this.normalizeText(rule.keyword) === this.normalizeText(keyword)
+    )) {
+      return;
+    }
+
+    const category = this.categories().find(item => item.id === categoryId);
+    const shouldLearn = confirm(
+      `Criar uma regra para categorizar descricoes parecidas com "${keyword}" como "${category?.name ?? 'categoria selecionada'}"?`,
+    );
+    if (!shouldLearn) return;
+
+    try {
+      const created = await this.categoryRulesService.insert({
+        keyword,
+        categoryId,
+        priority: 50,
+        createdByUser: true,
+      });
+      this.categoryRules.update(rules => [...rules, created]);
+      this.categoryRulesService.updated.emit();
+    } catch (error) {
+      console.warn('Nao foi possivel criar a regra automaticamente:', error);
+    }
+  }
+
+  private buildRuleKeyword(transaction: ImportedTransaction): string {
+    const source = (transaction.descriptionNormalized || transaction.description || transaction.memo || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return source.length > 36 ? source.slice(0, 36).trim() : source;
   }
 
   private async selectOrCreateStatementAccount(result: OfxParseResult): Promise<void> {

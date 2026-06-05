@@ -30,6 +30,15 @@ export class ExpenseBudgetFormComponent implements OnInit {
       nonNullable: true,
       validators: [Validators.required, Validators.min(0.01)],
     }),
+    targetKind: new FormControl<'maximum' | 'minimum'>('maximum', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    alertPercent: new FormControl<number>(80, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(1), Validators.max(100)],
+    }),
+    notes: new FormControl<string>('', { nonNullable: true }),
   });
 
   constructor(
@@ -56,6 +65,9 @@ export class ExpenseBudgetFormComponent implements OnInit {
       this.form.patchValue({
         categoryId: this.budget.categoryId,
         amountLimit: this.budget.amountLimit,
+        targetKind: this.budget.targetKind ?? 'maximum',
+        alertPercent: this.budget.alertPercent ?? 80,
+        notes: this.budget.notes ?? '',
       });
     }
   }
@@ -70,6 +82,9 @@ export class ExpenseBudgetFormComponent implements OnInit {
     const payload: NewBudget = {
       categoryId: raw.categoryId,
       amountLimit: Number(raw.amountLimit),
+      targetKind: raw.targetKind,
+      alertPercent: Number(raw.alertPercent) || 80,
+      notes: raw.notes.trim() || null,
       periodMonth: this.budget?.periodMonth ?? this.month,
       periodYear: this.budget?.periodYear ?? this.year,
     };

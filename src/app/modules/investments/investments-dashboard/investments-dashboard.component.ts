@@ -4,7 +4,13 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ContextMenuComponent, ContextMenuItem, ContextMenuTriggerDirective } from '../../../components/context-menu/context-menu.component';
 import { DataTableColumn, DataTableComponent } from '../../../components/data-table/data-table.component';
 import { SelectComponent, SelectOption } from '../../../components/select/select.component';
-import { InvestmentPortfolio, InvestmentPortfolioAsset, MarketRate, MarketRatesCache } from '../../../models';
+import {
+  InvestmentAssetSnapshot,
+  InvestmentPortfolio,
+  InvestmentPortfolioAsset,
+  MarketRate,
+  MarketRatesCache,
+} from '../../../models';
 import { InvestmentPortfoliosService } from '../../../services/investment-portfolios.service';
 import { MarketRatesService } from '../../../services/market-rates.service';
 import { ModalService } from '../../../services/modal.service';
@@ -28,6 +34,7 @@ import { InvestmentPortfolioFormComponent } from '../investment-portfolio-form/i
 export class InvestmentsDashboardComponent implements OnInit {
   portfolios = signal<InvestmentPortfolio[]>([]);
   assets = signal<InvestmentPortfolioAsset[]>([]);
+  assetSnapshots = signal<InvestmentAssetSnapshot[]>([]);
   portfolioOptions = signal<SelectOption[]>([]);
   marketRates = signal<MarketRatesCache>({
     rates: [],
@@ -128,15 +135,42 @@ export class InvestmentsDashboardComponent implements OnInit {
   }
 
   investedValue(asset: InvestmentPortfolioAsset): number {
+    if (this.isFixedIncomeAsset(asset)) {
+      return this.amountOrFallback(asset.fixedIncomeInvestedAmount, asset.quantity * asset.averagePrice);
+    }
+
     return asset.quantity * asset.averagePrice;
   }
 
   currentValue(asset: InvestmentPortfolioAsset): number {
+    if (this.isFixedIncomeAsset(asset)) {
+      const grossAmount = this.amountOrFallback(asset.fixedIncomeGrossAmount, asset.quantity * asset.currentPrice);
+      return this.amountOrFallback(asset.fixedIncomeNetAmount, grossAmount);
+    }
+
     return asset.quantity * asset.currentPrice;
   }
 
+  grossCurrentValue(asset: InvestmentPortfolioAsset): number {
+    if (this.isFixedIncomeAsset(asset)) {
+      return this.amountOrFallback(asset.fixedIncomeGrossAmount, this.currentValue(asset));
+    }
+
+    return this.currentValue(asset);
+  }
+
   resultValue(asset: InvestmentPortfolioAsset): number {
+    return this.grossCurrentValue(asset) - this.investedValue(asset);
+  }
+
+  netResultValue(asset: InvestmentPortfolioAsset): number {
     return this.currentValue(asset) - this.investedValue(asset);
+  }
+
+  taxWithheldValue(asset: InvestmentPortfolioAsset): number {
+    if (!this.isFixedIncomeAsset(asset)) return 0;
+
+    return Math.max(0, this.grossCurrentValue(asset) - this.currentValue(asset));
   }
 
   resultPercent(asset: InvestmentPortfolioAsset): number {
@@ -153,7 +187,15 @@ export class InvestmentsDashboardComponent implements OnInit {
   }
 
   totalResult(): number {
-    return this.totalCurrent() - this.totalInvested();
+    return this.assets().reduce((sum, asset) => sum + this.resultValue(asset), 0);
+  }
+
+  totalNetResult(): number {
+    return this.assets().reduce((sum, asset) => sum + this.netResultValue(asset), 0);
+  }
+
+  totalTaxWithheld(): number {
+    return this.assets().reduce((sum, asset) => sum + this.taxWithheldValue(asset), 0);
   }
 
   totalResultPercent(): number {
@@ -162,7 +204,7 @@ export class InvestmentsDashboardComponent implements OnInit {
   }
 
   annualIncome(): number {
-    return this.assets().reduce((sum, asset) => sum + asset.annualIncome, 0);
+    return this.assets().reduce((sum, asset) => sum + this.incomeValue(asset), 0);
   }
 
   portfolioYield(): number {
@@ -177,6 +219,40 @@ export class InvestmentsDashboardComponent implements OnInit {
 
   targetGap(asset: InvestmentPortfolioAsset): number {
     return this.allocation(asset) - asset.targetAllocation;
+  }
+
+  snapshotEvolution(): Array<{ date: string; gross: number; net: number; result: number }> {
+    const grouped = new Map<string, { date: string; gross: number; net: number; result: number }>();
+
+    for (const snapshot of this.assetSnapshots()) {
+      const current = grouped.get(snapshot.snapshotDate) ?? {
+        date: snapshot.snapshotDate,
+        gross: 0,
+        net: 0,
+        result: 0,
+      };
+      current.gross += snapshot.grossAmount;
+      current.net += snapshot.netAmount;
+      current.result += snapshot.resultAmount;
+      grouped.set(snapshot.snapshotDate, current);
+    }
+
+    return Array.from(grouped.values())
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5);
+  }
+
+  lastSnapshotDate(): string {
+    const latest = this.snapshotEvolution()[0]?.date;
+    return latest ? this.formatShortDate(latest) : 'Sem historico';
+  }
+
+  incomeValue(asset: InvestmentPortfolioAsset): number {
+    if (this.isFixedIncomeAsset(asset)) {
+      return Math.max(0, this.resultValue(asset));
+    }
+
+    return asset.annualIncome;
   }
 
   typeLabel(asset: InvestmentPortfolioAsset): string {
@@ -281,6 +357,11 @@ export class InvestmentsDashboardComponent implements OnInit {
     return 'text-muted-foreground';
   }
 
+  private amountOrFallback(value: number | null | undefined, fallback: number): number {
+    const amount = Number(value);
+    return Number.isFinite(amount) && amount > 0 ? amount : fallback;
+  }
+
   private formatShortDate(value: string): string {
     const [year, month, day] = value.slice(0, 10).split('-');
     return year && month && day ? `${day}/${month}/${year}` : value;
@@ -326,11 +407,16 @@ export class InvestmentsDashboardComponent implements OnInit {
   private loadAssets(portfolioId: string): void {
     if (!portfolioId) {
       this.assets.set([]);
+      this.assetSnapshots.set([]);
       return;
     }
 
-    this.portfolioService.getAssets(portfolioId).then(assets => {
+    Promise.all([
+      this.portfolioService.getAssets(portfolioId),
+      this.portfolioService.getAssetSnapshots(portfolioId),
+    ]).then(([assets, snapshots]) => {
       this.assets.set(assets);
+      this.assetSnapshots.set(snapshots);
     });
   }
 }

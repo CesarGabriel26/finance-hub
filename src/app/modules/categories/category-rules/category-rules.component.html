@@ -1,0 +1,82 @@
+<section class="h-full w-full grid grid-rows-[auto_1fr] gap-4 overflow-hidden">
+  <form [formGroup]="form" (submit)="submit($event)"
+    class="bg-[var(--card)] p-4 rounded-xl shadow-lg grid grid-cols-1 xl:grid-cols-[1.2fr_1.4fr_0.5fr_auto_auto] gap-4 items-end">
+    <div class="flex flex-col gap-1.5">
+      <label for="rule-keyword" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Palavra-chave
+      </label>
+      <app-input id="rule-keyword" formControlName="keyword" placeholder="Ex: mercado, aluguel, uber" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="rule-category" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Categoria
+      </label>
+      <app-select id="rule-category" formControlName="categoryId" [options]="categoryOptions()"
+        placeholder="Selecionar categoria" [searchable]="true" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="rule-priority" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Prioridade
+      </label>
+      <app-input id="rule-priority" type="number" formControlName="priority" placeholder="0" />
+    </div>
+
+    <button type="submit" [disabled]="form.invalid"
+      class="primary-button h-10 disabled:opacity-50 disabled:cursor-not-allowed">
+      {{ editingRule() ? 'Salvar' : 'Adicionar' }}
+    </button>
+
+    @if (editingRule()) {
+    <button type="button" (click)="resetForm()"
+      class="h-10 px-4 rounded-md border border-border bg-card text-foreground font-bold">
+      Cancelar
+    </button>
+    }
+  </form>
+
+  <div class="min-h-0 bg-[var(--card)] rounded-xl border border-border shadow-sm overflow-hidden grid grid-rows-[auto_1fr]">
+    <div class="p-4 border-b border-border grid grid-cols-1 md:grid-cols-[1fr_18rem] gap-4 items-center">
+      <div>
+        <h1 class="text-lg font-black text-foreground">Regras de Categorias</h1>
+        <p class="text-xs text-muted-foreground">As regras sao usadas na importacao de extratos para sugerir categorias.</p>
+      </div>
+
+      <app-input [formControl]="search" placeholder="Buscar regra..." />
+    </div>
+
+    <div class="overflow-auto">
+      <div class="min-w-[48rem] grid grid-cols-[1.2fr_1.2fr_0.45fr_0.65fr_auto] gap-4 px-4 py-2 text-xs font-black uppercase tracking-wider text-muted-foreground border-b border-border">
+        <span>Palavra-chave</span>
+        <span>Categoria</span>
+        <span>Tipo</span>
+        <span>Prioridade</span>
+        <span></span>
+      </div>
+
+      @for (rule of filteredRules(); track rule.id) {
+      <div class="min-w-[48rem] grid grid-cols-[1.2fr_1.2fr_0.45fr_0.65fr_auto] gap-4 items-center px-4 py-3 border-b border-border text-sm">
+        <span class="font-semibold text-foreground truncate">{{ rule.keyword }}</span>
+        <span class="text-foreground truncate">{{ rule.categoryName || 'Categoria removida' }}</span>
+        <span class="text-muted-foreground">{{ categoryTypeLabel(rule) }}</span>
+        <span class="text-muted-foreground">{{ rule.priority }}</span>
+        <span class="flex justify-end gap-1">
+          <button type="button" (click)="edit(rule)"
+            class="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+            <span class="material-symbols-outlined text-lg block">edit</span>
+          </button>
+          <button type="button" (click)="delete(rule)"
+            class="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-red-700">
+            <span class="material-symbols-outlined text-lg block">delete</span>
+          </button>
+        </span>
+      </div>
+      } @empty {
+      <div class="p-8 text-center text-sm text-muted-foreground">
+        Nenhuma regra cadastrada.
+      </div>
+      }
+    </div>
+  </div>
+</section>

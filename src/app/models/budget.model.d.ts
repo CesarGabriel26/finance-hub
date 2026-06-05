@@ -3,6 +3,9 @@ export interface Budget {
   id: string;
   categoryId: string;
   amountLimit: number;
+  targetKind: 'maximum' | 'minimum';
+  alertPercent: number;
+  notes: string | null;
   /** Mês de referência (1 a 12) */
   periodMonth: number;
   /** Ano de referência */
@@ -14,6 +17,9 @@ export interface NewBudget {
   id?: string;
   categoryId: string;
   amountLimit: number;
+  targetKind?: 'maximum' | 'minimum';
+  alertPercent?: number;
+  notes?: string | null;
   /** Mês de referência (1 a 12) */
   periodMonth: number;
   /** Ano de referência */

@@ -8,7 +8,7 @@ import { app } from 'electron';
 
 // Caminho do banco dentro do diretório do app (AppData em prod, raiz do projeto em dev)
 const dbBasePath = app.isPackaged ? app.getPath('userData') : app.getAppPath();
-const dbPath = path.join(dbBasePath, 'financehub.db');
+export const dbPath = path.join(dbBasePath, 'financehub.db');
 
 console.log(`[DB] Arquivo SQLite: ${dbPath}`);
 
@@ -20,6 +20,18 @@ sqlite.pragma('foreign_keys = ON');
 sqlite.pragma('journal_mode = WAL');
 
 export const db = drizzle(sqlite, { schema });
+
+export function closeDatabase(): void {
+  if (sqlite.open) {
+    sqlite.close();
+  }
+}
+
+export function checkpointDatabase(): void {
+  if (sqlite.open) {
+    sqlite.pragma('wal_checkpoint(TRUNCATE)');
+  }
+}
 
 /**
  * Insere categorias padrão se a tabela de categorias estiver vazia.
@@ -37,13 +49,13 @@ function seedDefaultCategories(): void {
       // ── Despesas do dia a dia (expense) ──────────────────────────────────
       { name: 'Alimentação', type: 'expense' as const, icon: 'restaurant', color: '#f97316' },
       { name: 'Transporte', type: 'expense' as const, icon: 'directions_car', color: '#3b82f6' },
-      { name: 'Moradia', type: 'expense' as const, icon: 'home', color: '#6366f1' },
+      { name: 'Moradia', type: 'expense' as const, icon: 'home', color: '#6366f1', isFixed: true },
       { name: 'Lazer & Entretenimento', type: 'expense' as const, icon: 'sports_esports', color: '#ec4899' },
-      { name: 'Saúde', type: 'expense' as const, icon: 'medical_services', color: '#ef4444' },
-      { name: 'Educação', type: 'expense' as const, icon: 'school', color: '#a855f7' },
+      { name: 'Saúde', type: 'expense' as const, icon: 'medical_services', color: '#ef4444', isFixed: true },
+      { name: 'Educação', type: 'expense' as const, icon: 'school', color: '#a855f7', isFixed: true },
       { name: 'Compras & Vestuário', type: 'expense' as const, icon: 'shopping_bag', color: '#14b8a6' },
-      { name: 'Impostos & Taxas', type: 'expense' as const, icon: 'receipt_long', color: '#64748b' },
-      { name: 'Seguros', type: 'expense' as const, icon: 'shield', color: '#0ea5e9' },
+      { name: 'Impostos & Taxas', type: 'expense' as const, icon: 'receipt_long', color: '#64748b', isFixed: true },
+      { name: 'Seguros', type: 'expense' as const, icon: 'shield', color: '#0ea5e9', isFixed: true },
       { name: 'Outras Despesas', type: 'expense' as const, icon: 'payments', color: '#94a3b8' },
 
       // ── Despesas de Investimentos (expense) ───────────────────────────────
@@ -51,7 +63,7 @@ function seedDefaultCategories(): void {
       { name: 'Investimentos - Taxas/Corretagem', type: 'expense' as const, icon: 'account_balance_wallet', color: '#06b6d4' },
 
       // ── Receitas do dia a dia (income) ───────────────────────────────────
-      { name: 'Salário & Pró-labore', type: 'income' as const, icon: 'work', color: '#10b981' },
+      { name: 'Salário & Pró-labore', type: 'income' as const, icon: 'work', color: '#10b981', isFixed: true },
       { name: 'Prestação de Serviços', type: 'income' as const, icon: 'handshake', color: '#06b6d4' },
       { name: 'Reembolsos', type: 'income' as const, icon: 'price_check', color: '#0ea5e9' },
       { name: 'Outras Receitas', type: 'income' as const, icon: 'add_card', color: '#f59e0b' },

@@ -1,5 +1,6 @@
 export * from './accounts.schema';
 export * from './categories.schema';
+export * from './category-rules.schema';
 export * from './transactions.schema';
 export * from './budgets.schema';
 export * from './assets.schema';
@@ -8,3 +9,5 @@ export * from './saving-goals.schema';
 export * from './accounts-receivable-payable.schema';
 export * from './investment-portfolios.schema';
 export * from './account-statement-balances.schema';
+export * from './monthly-closings.schema';
+export * from './account-reconciliations.schema';

@@ -40,6 +40,7 @@ export class CategoryFormComponent implements OnInit {
       nonNullable: true,
       validators: [Validators.required],
     }),
+    isFixed: new FormControl<boolean>(false, { nonNullable: true }),
   });
 
   constructor(
@@ -55,6 +56,7 @@ export class CategoryFormComponent implements OnInit {
       type: this.category.type,
       color: this.category.color ?? '#3B82F6',
       icon: this.category.icon ?? 'payments',
+      isFixed: this.category.isFixed,
     });
   }
 
@@ -70,6 +72,7 @@ export class CategoryFormComponent implements OnInit {
       type: raw.type,
       color: raw.color,
       icon: raw.icon,
+      isFixed: raw.isFixed,
       parentId: this.category?.parentId ?? null,
     };
 

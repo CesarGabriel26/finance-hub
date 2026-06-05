@@ -14,6 +14,7 @@ exports.transactions = (0, sqlite_core_1.sqliteTable)('transactions', {
     type: (0, sqlite_core_1.text)('type', { enum: ['credit', 'debit', 'transfer'] }).notNull(),
     date: (0, sqlite_core_1.text)('date').notNull(), // Datas no SQLite guardadas como strings ISO ou YYYY-MM-DD
     ignored: (0, sqlite_core_1.integer)('ignored', { mode: 'boolean' }).default(false),
+    tags: (0, sqlite_core_1.text)('tags').notNull().default(''),
     // Para transferências entre as contas do próprio usuário
     transferAccountId: (0, sqlite_core_1.text)('transfer_account_id').references(() => accounts_schema_1.accounts.id, { onDelete: 'set null' }),
     fitId: (0, sqlite_core_1.text)('fit_id'), // Identificador único do OFX para evitar duplicados

@@ -39,6 +39,9 @@
               <span class="text-xs text-muted-foreground truncate">
                 {{ getCategoryName(row) }} - {{ getAccountName(row) }}
               </span>
+              @if (row.tags) {
+              <span class="text-xs text-[var(--primary)] truncate">{{ row.tags }}</span>
+              }
             </div>
           </div>
 

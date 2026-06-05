@@ -20,7 +20,9 @@ import type {
 
 import type {
   Category,
+  CategoryRule,
   NewCategory,
+  NewCategoryRule,
 } from './app/models/category.model';
 
 import type {
@@ -50,14 +52,26 @@ import type {
 
 import type {
   InvestmentPortfolio,
+  InvestmentAssetSnapshot,
   InvestmentPortfolioAsset,
   NewInvestmentPortfolio,
+  NewInvestmentAssetSnapshot,
   NewInvestmentPortfolioAsset,
 } from './app/models/investment-portfolio.model';
 
 import type {
   MarketRatesCache,
 } from './app/models/market-rate.model';
+
+import type {
+  MonthlyClosing,
+  NewMonthlyClosing,
+} from './app/models/monthly-closing.model';
+
+import type {
+  AccountReconciliation,
+  NewAccountReconciliation,
+} from './app/models/account-reconciliation.model';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App / Electron utilities
@@ -111,6 +125,13 @@ interface CategoriesApi {
   delete: (id: string) => Promise<Category | null>;
 }
 
+interface CategoryRulesApi {
+  getAll: () => Promise<CategoryRule[]>;
+  insert: (data: NewCategoryRule) => Promise<CategoryRule>;
+  update: (id: string, data: Partial<NewCategoryRule>) => Promise<CategoryRule | null>;
+  delete: (id: string) => Promise<CategoryRule | null>;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Transactions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -157,6 +178,8 @@ interface InvestmentPortfoliosApi {
     data: Partial<NewInvestmentPortfolioAsset>,
   ) => Promise<InvestmentPortfolioAsset | null>;
   deleteAsset: (id: string) => Promise<InvestmentPortfolioAsset | null>;
+  getAssetSnapshots: (portfolioId: string) => Promise<InvestmentAssetSnapshot[]>;
+  insertAssetSnapshot: (data: NewInvestmentAssetSnapshot) => Promise<InvestmentAssetSnapshot>;
 }
 
 interface MarketRatesApi {
@@ -203,6 +226,28 @@ interface SavingGoalsApi {
   delete: (id: string) => Promise<SavingGoal | null>;
 }
 
+interface MonthlyClosingsApi {
+  getAll: () => Promise<MonthlyClosing[]>;
+  upsert: (data: NewMonthlyClosing) => Promise<MonthlyClosing>;
+}
+
+interface AccountReconciliationsApi {
+  getAll: (period?: string) => Promise<AccountReconciliation[]>;
+  upsert: (data: NewAccountReconciliation) => Promise<AccountReconciliation>;
+}
+
+interface MaintenanceResult {
+  ok: boolean;
+  path?: string;
+  restartScheduled?: boolean;
+  message: string;
+}
+
+interface MaintenanceApi {
+  backup: () => Promise<MaintenanceResult>;
+  restore: () => Promise<MaintenanceResult>;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Window augmentation
 // ─────────────────────────────────────────────────────────────────────────────
@@ -215,6 +260,7 @@ declare global {
     AccountsPayableApi?: AccountsPayableApi;
     AccountStatementBalancesApi?: AccountStatementBalancesApi;
     CategoriesApi?: CategoriesApi;
+    CategoryRulesApi?: CategoryRulesApi;
     TransactionsApi?: TransactionsApi;
     BudgetsApi?: BudgetsApi;
     AssetsApi?: AssetsApi;
@@ -223,5 +269,8 @@ declare global {
     NotificationsApi?: NotificationsApi;
     AssetTransactionsApi?: AssetTransactionsApi;
     SavingGoalsApi?: SavingGoalsApi;
+    MonthlyClosingsApi?: MonthlyClosingsApi;
+    AccountReconciliationsApi?: AccountReconciliationsApi;
+    MaintenanceApi?: MaintenanceApi;
   }
 }

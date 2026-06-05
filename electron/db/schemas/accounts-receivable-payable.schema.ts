@@ -1,4 +1,4 @@
-import { index, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { accounts } from './accounts.schema';
 import { categories } from './categories.schema';
 
@@ -14,8 +14,15 @@ export const accountsReceivable = sqliteTable(
     status: text('status', { enum: ['pending', 'received', 'overdue', 'canceled'] })
       .notNull()
       .default('pending'),
+    isRecurring: integer('is_recurring', { mode: 'boolean' }).notNull().default(false),
+    recurrenceClassification: text('recurrence_classification', {
+      enum: ['fixed', 'variable'],
+    }),
+    totalInstallments: integer('total_installments').notNull().default(1),
+    currentInstallment: integer('current_installment').notNull().default(1),
     accountId: text('account_id').references(() => accounts.id, { onDelete: 'set null' }),
     categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    settlementTransactionId: text('settlement_transaction_id'),
     notes: text('notes'),
     createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
     updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
@@ -38,8 +45,15 @@ export const accountsPayable = sqliteTable(
     status: text('status', { enum: ['pending', 'paid', 'overdue', 'canceled'] })
       .notNull()
       .default('pending'),
+    isRecurring: integer('is_recurring', { mode: 'boolean' }).notNull().default(false),
+    recurrenceClassification: text('recurrence_classification', {
+      enum: ['fixed', 'variable'],
+    }),
+    totalInstallments: integer('total_installments').notNull().default(1),
+    currentInstallment: integer('current_installment').notNull().default(1),
     accountId: text('account_id').references(() => accounts.id, { onDelete: 'set null' }),
     categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    settlementTransactionId: text('settlement_transaction_id'),
     notes: text('notes'),
     createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
     updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),

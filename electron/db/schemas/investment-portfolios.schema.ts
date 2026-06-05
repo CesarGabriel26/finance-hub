@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, real, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 
 export const investmentPortfolios = sqliteTable('investment_portfolios', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -78,8 +78,39 @@ export const investmentPortfolioAssets = sqliteTable(
   }),
 );
 
+export const investmentAssetSnapshots = sqliteTable(
+  'investment_asset_snapshots',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    assetId: text('asset_id')
+      .notNull()
+      .references(() => investmentPortfolioAssets.id, { onDelete: 'cascade' }),
+    portfolioId: text('portfolio_id')
+      .notNull()
+      .references(() => investmentPortfolios.id, { onDelete: 'cascade' }),
+    snapshotDate: text('snapshot_date').notNull(),
+    investedAmount: real('invested_amount').notNull().default(0),
+    grossAmount: real('gross_amount').notNull().default(0),
+    netAmount: real('net_amount').notNull().default(0),
+    resultAmount: real('result_amount').notNull().default(0),
+    quantity: real('quantity').notNull().default(0),
+    currentPrice: real('current_price').notNull().default(0),
+    notes: text('notes'),
+    createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => ({
+    assetDateUnique: unique('unique_investment_asset_snapshot_date').on(table.assetId, table.snapshotDate),
+    assetIdx: index('idx_investment_asset_snapshots_asset').on(table.assetId),
+    portfolioIdx: index('idx_investment_asset_snapshots_portfolio').on(table.portfolioId),
+    dateIdx: index('idx_investment_asset_snapshots_date').on(table.snapshotDate),
+  }),
+);
+
 export type InvestmentPortfolio = typeof investmentPortfolios.$inferSelect;
 export type NewInvestmentPortfolio = typeof investmentPortfolios.$inferInsert;
 
 export type InvestmentPortfolioAsset = typeof investmentPortfolioAssets.$inferSelect;
 export type NewInvestmentPortfolioAsset = typeof investmentPortfolioAssets.$inferInsert;
+
+export type InvestmentAssetSnapshot = typeof investmentAssetSnapshots.$inferSelect;
+export type NewInvestmentAssetSnapshot = typeof investmentAssetSnapshots.$inferInsert;

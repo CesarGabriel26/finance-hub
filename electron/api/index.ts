@@ -33,6 +33,12 @@ import {
   registerUpdateCategory,
   registerDeleteCategory,
 } from './categories';
+import {
+  registerGetCategoryRules,
+  registerInsertCategoryRule,
+  registerUpdateCategoryRule,
+  registerDeleteCategoryRule,
+} from './category-rules';
 
 // ── Transactions ──────────────────────────────────────────────────────────────
 import {
@@ -70,6 +76,8 @@ import {
   registerInsertInvestmentPortfolioAsset,
   registerUpdateInvestmentPortfolioAsset,
   registerDeleteInvestmentPortfolioAsset,
+  registerGetInvestmentAssetSnapshots,
+  registerInsertInvestmentAssetSnapshot,
 } from './investment-portfolios';
 import { registerMarketRatesHandlers } from './market-rates';
 
@@ -91,6 +99,9 @@ import {
   registerDeleteSavingGoal,
 } from './saving-goals';
 import { registerNotificationHandlers } from './notifications';
+import { registerMonthlyClosingHandlers } from './monthly-closings';
+import { registerAccountReconciliationHandlers } from './account-reconciliations';
+import { registerMaintenanceHandlers } from './maintenance';
 
 /**
  * Registra todos os handlers IPC da API financeira.
@@ -128,6 +139,10 @@ export function initFinancialApi() {
   registerInsertCategory();
   registerUpdateCategory();
   registerDeleteCategory();
+  registerGetCategoryRules();
+  registerInsertCategoryRule();
+  registerUpdateCategoryRule();
+  registerDeleteCategoryRule();
 
   // Transactions
   registerGetTransactions();
@@ -160,6 +175,8 @@ export function initFinancialApi() {
   registerInsertInvestmentPortfolioAsset();
   registerUpdateInvestmentPortfolioAsset();
   registerDeleteInvestmentPortfolioAsset();
+  registerGetInvestmentAssetSnapshots();
+  registerInsertInvestmentAssetSnapshot();
   registerMarketRatesHandlers();
 
   // Asset Transactions
@@ -178,4 +195,9 @@ export function initFinancialApi() {
 
   // Notifications
   registerNotificationHandlers();
+
+  // Planning / Maintenance
+  registerMonthlyClosingHandlers();
+  registerAccountReconciliationHandlers();
+  registerMaintenanceHandlers();
 }

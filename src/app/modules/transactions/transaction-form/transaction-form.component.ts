@@ -44,6 +44,7 @@ export class TransactionFormComponent implements OnInit {
       validators: [Validators.required],
     }),
     categoryId: new FormControl<string>('', { nonNullable: true }),
+    tags: new FormControl<string>('', { nonNullable: true }),
   });
 
   constructor(
@@ -64,6 +65,7 @@ export class TransactionFormComponent implements OnInit {
         amount: Math.abs(this.transaction.amount),
         date: this.transaction.date,
         categoryId: this.transaction.categoryId ?? '',
+        tags: this.transaction.tags ?? '',
       });
     }
   }
@@ -82,6 +84,7 @@ export class TransactionFormComponent implements OnInit {
       type: raw.type,
       date: raw.date,
       categoryId: raw.categoryId || null,
+      tags: this.normalizeTags(raw.tags),
       ignored: false,
     };
 
@@ -122,5 +125,14 @@ export class TransactionFormComponent implements OnInit {
         this.form.patchValue({ accountId: accounts[0].id });
       }
     });
+  }
+
+  private normalizeTags(value: string): string {
+    return value
+      .split(',')
+      .map(tag => tag.trim().replace(/^#/, ''))
+      .filter(Boolean)
+      .map(tag => `#${tag}`)
+      .join(', ');
   }
 }

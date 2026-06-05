@@ -11,6 +11,7 @@ import { AccountsPayableService } from '../../../../services/accounts-payable.se
 import { AccountsService } from '../../../../services/accounts.service';
 import { CategoriesService } from '../../../../services/categories.service';
 import { ModalService } from '../../../../services/modal.service';
+import { TransactionsService } from '../../../../services/transactions.service';
 import { AccountPayableFormComponent } from '../account-payable-form/account-payable-form.component';
 
 @Component({
@@ -77,6 +78,7 @@ export class AccountsPayableComponent implements OnInit {
     private accountService: AccountsService,
     private categoryService: CategoriesService,
     private modalService: ModalService,
+    private transactionsService: TransactionsService,
   ) { }
 
   ngOnInit(): void {
@@ -127,13 +129,41 @@ export class AccountsPayableComponent implements OnInit {
     });
   }
 
-  markAsPaid(payable: AccountPayable): void {
-    this.payableService
-      .update(payable.id, {
-        status: 'paid',
-        paidAt: payable.paidAt ?? this.today(),
-      })
-      .then(() => this.payableService.updated.emit());
+  async markAsPaid(payable: AccountPayable): Promise<void> {
+    const paidAt = payable.paidAt ?? this.today();
+    let settlementTransactionId = payable.settlementTransactionId ?? null;
+
+    if (payable.accountId && !settlementTransactionId) {
+      const inserted = await this.transactionsService.insert({
+        accountId: payable.accountId,
+        categoryId: payable.categoryId,
+        description: payable.description,
+        originalDescription: 'Baixa de conta a pagar',
+        amount: Math.abs(payable.amount),
+        type: 'debit',
+        date: paidAt,
+        ignored: false,
+      });
+      settlementTransactionId = inserted[0]?.id ?? null;
+
+      const account = await this.accountService.getById(payable.accountId);
+      if (account) {
+        await this.accountService.update(account.id, {
+          balance: (account.balance ?? 0) - Math.abs(payable.amount),
+        });
+        this.accountService.updated.emit();
+      }
+    }
+
+    await this.payableService.update(payable.id, {
+      status: 'paid',
+      paidAt,
+      settlementTransactionId,
+    });
+    await this.createNextPayableIfNeeded(payable);
+
+    this.transactionsService.updated.emit();
+    this.payableService.updated.emit();
   }
 
   delete(payable: AccountPayable): void {
@@ -187,6 +217,36 @@ export class AccountsPayableComponent implements OnInit {
     }
 
     return payable.status;
+  }
+
+  private async createNextPayableIfNeeded(payable: AccountPayable): Promise<void> {
+    if (!payable.isRecurring) return;
+
+    const hasNextInstallment = payable.currentInstallment < payable.totalInstallments;
+    const isOpenRecurring = payable.totalInstallments <= 1;
+    if (!hasNextInstallment && !isOpenRecurring) return;
+
+    await this.payableService.insert({
+      description: payable.description,
+      payee: payable.payee,
+      amount: payable.amount,
+      dueDate: this.addOneMonth(payable.dueDate),
+      status: 'pending',
+      isRecurring: payable.isRecurring,
+      recurrenceClassification: payable.recurrenceClassification,
+      totalInstallments: isOpenRecurring ? 1 : payable.totalInstallments,
+      currentInstallment: isOpenRecurring ? 1 : payable.currentInstallment + 1,
+      accountId: payable.accountId,
+      categoryId: payable.categoryId,
+      notes: payable.notes,
+    });
+  }
+
+  private addOneMonth(value: string): string {
+    const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+    const date = new Date(year, month - 1, day || 1, 12);
+    date.setMonth(date.getMonth() + 1);
+    return date.toISOString().slice(0, 10);
   }
 
   private loadReferences(): void {

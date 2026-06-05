@@ -12,6 +12,7 @@ import { CategoriesService } from '../../../../services/categories.service';
 import { ModalService } from '../../../../services/modal.service';
 import { AccountReceivableFormComponent } from '../account-receivable-form/account-receivable-form.component';
 import { AccountsReceivableService } from '../../../../services/accounts-receivable.service';
+import { TransactionsService } from '../../../../services/transactions.service';
 
 @Component({
   selector: 'app-accounts-receivable',
@@ -77,6 +78,7 @@ export class AccountsReceivableComponent implements OnInit {
     private accountService: AccountsService,
     private categoryService: CategoriesService,
     private modalService: ModalService,
+    private transactionsService: TransactionsService,
   ) { }
 
   ngOnInit(): void {
@@ -127,13 +129,41 @@ export class AccountsReceivableComponent implements OnInit {
     });
   }
 
-  markAsReceived(receivable: AccountReceivable): void {
-    this.receivableService
-      .update(receivable.id, {
-        status: 'received',
-        receivedAt: receivable.receivedAt ?? this.today(),
-      })
-      .then(() => this.receivableService.updated.emit());
+  async markAsReceived(receivable: AccountReceivable): Promise<void> {
+    const receivedAt = receivable.receivedAt ?? this.today();
+    let settlementTransactionId = receivable.settlementTransactionId ?? null;
+
+    if (receivable.accountId && !settlementTransactionId) {
+      const inserted = await this.transactionsService.insert({
+        accountId: receivable.accountId,
+        categoryId: receivable.categoryId,
+        description: receivable.description,
+        originalDescription: 'Baixa de conta a receber',
+        amount: Math.abs(receivable.amount),
+        type: 'credit',
+        date: receivedAt,
+        ignored: false,
+      });
+      settlementTransactionId = inserted[0]?.id ?? null;
+
+      const account = await this.accountService.getById(receivable.accountId);
+      if (account) {
+        await this.accountService.update(account.id, {
+          balance: (account.balance ?? 0) + Math.abs(receivable.amount),
+        });
+        this.accountService.updated.emit();
+      }
+    }
+
+    await this.receivableService.update(receivable.id, {
+      status: 'received',
+      receivedAt,
+      settlementTransactionId,
+    });
+    await this.createNextReceivableIfNeeded(receivable);
+
+    this.transactionsService.updated.emit();
+    this.receivableService.updated.emit();
   }
 
   delete(receivable: AccountReceivable): void {
@@ -187,6 +217,36 @@ export class AccountsReceivableComponent implements OnInit {
     }
 
     return receivable.status;
+  }
+
+  private async createNextReceivableIfNeeded(receivable: AccountReceivable): Promise<void> {
+    if (!receivable.isRecurring) return;
+
+    const hasNextInstallment = receivable.currentInstallment < receivable.totalInstallments;
+    const isOpenRecurring = receivable.totalInstallments <= 1;
+    if (!hasNextInstallment && !isOpenRecurring) return;
+
+    await this.receivableService.insert({
+      description: receivable.description,
+      payer: receivable.payer,
+      amount: receivable.amount,
+      dueDate: this.addOneMonth(receivable.dueDate),
+      status: 'pending',
+      isRecurring: receivable.isRecurring,
+      recurrenceClassification: receivable.recurrenceClassification,
+      totalInstallments: isOpenRecurring ? 1 : receivable.totalInstallments,
+      currentInstallment: isOpenRecurring ? 1 : receivable.currentInstallment + 1,
+      accountId: receivable.accountId,
+      categoryId: receivable.categoryId,
+      notes: receivable.notes,
+    });
+  }
+
+  private addOneMonth(value: string): string {
+    const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+    const date = new Date(year, month - 1, day || 1, 12);
+    date.setMonth(date.getMonth() + 1);
+    return date.toISOString().slice(0, 10);
   }
 
   private loadReferences(): void {

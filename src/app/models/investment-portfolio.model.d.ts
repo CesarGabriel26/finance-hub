@@ -110,3 +110,33 @@ export interface NewInvestmentPortfolioAsset {
   createdAt?: string | null;
   updatedAt?: string | null;
 }
+
+export interface InvestmentAssetSnapshot {
+  id: string;
+  assetId: string;
+  portfolioId: string;
+  snapshotDate: string;
+  investedAmount: number;
+  grossAmount: number;
+  netAmount: number;
+  resultAmount: number;
+  quantity: number;
+  currentPrice: number;
+  notes: string | null;
+  createdAt: string | null;
+}
+
+export interface NewInvestmentAssetSnapshot {
+  id?: string;
+  assetId: string;
+  portfolioId: string;
+  snapshotDate: string;
+  investedAmount: number;
+  grossAmount: number;
+  netAmount: number;
+  resultAmount: number;
+  quantity?: number;
+  currentPrice?: number;
+  notes?: string | null;
+  createdAt?: string | null;
+}

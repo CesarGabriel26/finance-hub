@@ -53,6 +53,38 @@
       <app-select id="payable-status" formControlName="status" [options]="statusOptions" />
     </div>
 
+    <label class="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground">
+      <input type="checkbox" formControlName="isRecurring"
+        class="h-4 w-4 rounded border-border bg-card text-[var(--primary)]">
+      Recorrente ou parcelada
+    </label>
+
+    @if (form.controls.isRecurring.value) {
+    <div class="flex flex-col gap-1.5">
+      <label for="payable-recurrence" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Classificacao
+      </label>
+      <app-select id="payable-recurrence" formControlName="recurrenceClassification" [options]="[
+        { value: 'fixed', label: 'Fixa' },
+        { value: 'variable', label: 'Variavel' }
+      ]" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="payable-installment-current" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Parcela Atual
+      </label>
+      <app-input id="payable-installment-current" type="number" formControlName="currentInstallment" placeholder="1" />
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="payable-installment-total" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
+        Total de Parcelas
+      </label>
+      <app-input id="payable-installment-total" type="number" formControlName="totalInstallments" placeholder="1" />
+    </div>
+    }
+
     <div class="flex flex-col gap-1.5">
       <label for="payable-account" class="text-foreground text-xs font-extrabold uppercase tracking-wider">
         Conta

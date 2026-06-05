@@ -42,7 +42,7 @@
             <div class="min-w-0">
               <span class="block font-semibold text-foreground truncate">{{ getCategory(row)?.name || 'Categoria' }}</span>
               <span class="block text-xs text-muted-foreground truncate">
-                {{ progress(row).toFixed(0) }}% usado
+                {{ progress(row).toFixed(0) }}% {{ row.targetKind === 'minimum' ? 'cumprido' : 'usado' }}
               </span>
             </div>
           </div>
@@ -55,10 +55,13 @@
           </div>
 
           <div class="text-sm font-semibold">
-            <span class="block text-foreground">Limite {{ row.amountLimit | currency: 'BRL' }}</span>
+            <span class="block text-foreground">{{ targetLabel(row) }} {{ row.amountLimit | currency: 'BRL' }}</span>
             <span class="text-xs" [class.text-red-700]="remaining(row) < 0" [class.text-muted-foreground]="remaining(row) >= 0">
-              Saldo {{ remaining(row) | currency: 'BRL' }}
+              {{ balanceLabel(row) }} {{ remaining(row) | currency: 'BRL' }}
             </span>
+            @if (row.notes) {
+            <span class="block text-xs text-muted-foreground truncate">{{ row.notes }}</span>
+            }
           </div>
 
           <button [appContextMenuTriggerFor]="budgetContextMenu" [appContextMenuData]="row"

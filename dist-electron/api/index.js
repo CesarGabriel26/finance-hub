@@ -8,6 +8,7 @@ const accounts_payable_1 = require("./accounts-payable");
 const account_statement_balances_1 = require("./account-statement-balances");
 // ── Categories ────────────────────────────────────────────────────────────────
 const categories_1 = require("./categories");
+const category_rules_1 = require("./category-rules");
 // ── Transactions ──────────────────────────────────────────────────────────────
 const transactions_1 = require("./transactions");
 // ── Budgets ───────────────────────────────────────────────────────────────────
@@ -21,6 +22,9 @@ const asset_transactions_1 = require("./asset-transactions");
 // ── Saving Goals ──────────────────────────────────────────────────────────────
 const saving_goals_1 = require("./saving-goals");
 const notifications_1 = require("./notifications");
+const monthly_closings_1 = require("./monthly-closings");
+const account_reconciliations_1 = require("./account-reconciliations");
+const maintenance_1 = require("./maintenance");
 /**
  * Registra todos os handlers IPC da API financeira.
  * Deve ser chamado uma única vez dentro do `app.whenReady()` no main process.
@@ -53,6 +57,10 @@ function initFinancialApi() {
     (0, categories_1.registerInsertCategory)();
     (0, categories_1.registerUpdateCategory)();
     (0, categories_1.registerDeleteCategory)();
+    (0, category_rules_1.registerGetCategoryRules)();
+    (0, category_rules_1.registerInsertCategoryRule)();
+    (0, category_rules_1.registerUpdateCategoryRule)();
+    (0, category_rules_1.registerDeleteCategoryRule)();
     // Transactions
     (0, transactions_1.registerGetTransactions)();
     (0, transactions_1.registerGetTransactionById)();
@@ -81,6 +89,8 @@ function initFinancialApi() {
     (0, investment_portfolios_1.registerInsertInvestmentPortfolioAsset)();
     (0, investment_portfolios_1.registerUpdateInvestmentPortfolioAsset)();
     (0, investment_portfolios_1.registerDeleteInvestmentPortfolioAsset)();
+    (0, investment_portfolios_1.registerGetInvestmentAssetSnapshots)();
+    (0, investment_portfolios_1.registerInsertInvestmentAssetSnapshot)();
     (0, market_rates_1.registerMarketRatesHandlers)();
     // Asset Transactions
     (0, asset_transactions_1.registerGetAssetTransactions)();
@@ -96,4 +106,8 @@ function initFinancialApi() {
     (0, saving_goals_1.registerDeleteSavingGoal)();
     // Notifications
     (0, notifications_1.registerNotificationHandlers)();
+    // Planning / Maintenance
+    (0, monthly_closings_1.registerMonthlyClosingHandlers)();
+    (0, account_reconciliations_1.registerAccountReconciliationHandlers)();
+    (0, maintenance_1.registerMaintenanceHandlers)();
 }

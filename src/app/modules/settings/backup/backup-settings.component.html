@@ -1,0 +1,43 @@
+<section class="h-full w-full overflow-y-auto">
+  <div class="max-w-4xl mx-auto grid gap-4">
+    <div class="bg-[var(--card)] rounded-xl border border-border p-5 shadow-sm">
+      <span class="text-xs font-bold uppercase text-muted-foreground">Seguranca dos dados</span>
+      <h1 class="mt-2 text-2xl font-black text-foreground">Backup e restauracao</h1>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Os dados ficam em um banco SQLite local. Salve uma copia antes de grandes importacoes ou manutencoes.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-[var(--card)] rounded-xl border border-border p-5 shadow-sm">
+        <div class="w-11 h-11 rounded-lg bg-[var(--muted)] flex items-center justify-center text-muted-foreground">
+          <span class="material-symbols-outlined">download</span>
+        </div>
+        <strong class="block mt-4 text-base text-foreground">Fazer backup agora</strong>
+        <span class="block mt-1 text-sm text-muted-foreground">Cria uma copia do banco atual em um arquivo .db.</span>
+        <button type="button" (click)="backup()" [disabled]="loading()"
+          class="mt-4 px-4 py-2 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] disabled:opacity-50">
+          Salvar backup
+        </button>
+      </div>
+
+      <div class="bg-[var(--card)] rounded-xl border border-border p-5 shadow-sm">
+        <div class="w-11 h-11 rounded-lg bg-[var(--muted)] flex items-center justify-center text-muted-foreground">
+          <span class="material-symbols-outlined">restore</span>
+        </div>
+        <strong class="block mt-4 text-base text-foreground">Restaurar backup</strong>
+        <span class="block mt-1 text-sm text-muted-foreground">Substitui o banco local e reinicia o aplicativo.</span>
+        <button type="button" (click)="restore()" [disabled]="loading()"
+          class="mt-4 px-4 py-2 rounded-md border border-border text-foreground disabled:opacity-50">
+          Restaurar arquivo
+        </button>
+      </div>
+    </div>
+
+    @if (message()) {
+    <div class="bg-[var(--card)] rounded-xl border border-border p-4 text-sm text-muted-foreground">
+      {{ message() }}
+    </div>
+    }
+  </div>
+</section>

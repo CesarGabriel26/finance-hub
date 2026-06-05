@@ -1,8 +1,10 @@
 import { EventEmitter, Injectable } from '@angular/core';
 import type {
   InvestmentPortfolio,
+  InvestmentAssetSnapshot,
   InvestmentPortfolioAsset,
   NewInvestmentPortfolio,
+  NewInvestmentAssetSnapshot,
   NewInvestmentPortfolioAsset,
 } from '../models/investment-portfolio.model';
 
@@ -51,5 +53,13 @@ export class InvestmentPortfoliosService {
 
   deleteAsset(id: string): Promise<InvestmentPortfolioAsset | null> {
     return this.api.deleteAsset(id);
+  }
+
+  getAssetSnapshots(portfolioId: string): Promise<InvestmentAssetSnapshot[]> {
+    return this.api.getAssetSnapshots(portfolioId);
+  }
+
+  insertAssetSnapshot(data: NewInvestmentAssetSnapshot): Promise<InvestmentAssetSnapshot> {
+    return this.api.insertAssetSnapshot(data);
   }
 }
