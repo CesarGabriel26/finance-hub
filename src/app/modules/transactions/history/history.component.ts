@@ -1,9 +1,9 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { ContextMenuComponent, ContextMenuItem, ContextMenuTriggerDirective } from '../../../components/context-menu/context-menu.component';
-import { DataTableColumn, DataTableComponent } from '../../../components/data-table/data-table.component';
 import { DateRange, DateRangeInputComponent } from '../../../components/date-range-input/date-range-input.component';
 import { InputComponent } from '../../../components/input/input.component';
 import { SelectComponent, SelectOption } from '../../../components/select/select.component';
@@ -13,6 +13,18 @@ import { CategoriesService } from '../../../services/categories.service';
 import { ModalService } from '../../../services/modal.service';
 import { TransactionsService } from '../../../services/transactions.service';
 import { TransactionFormComponent } from '../transaction-form/transaction-form.component';
+import {
+  TransactionDayGroup,
+  buildTransactionHistoryQuery,
+  isIncome,
+  signedAmount,
+  totalExpense,
+  totalIncome,
+  transactionColor,
+  transactionGroups,
+  transactionIcon,
+  transactionTypeLabel,
+} from './history.utils';
 
 @Component({
   selector: 'app-history.component',
@@ -20,13 +32,13 @@ import { TransactionFormComponent } from '../transaction-form/transaction-form.c
     CommonModule,
     CurrencyPipe,
     DatePipe,
-    DataTableComponent,
     SelectComponent,
     DateRangeInputComponent,
     ContextMenuComponent,
     ContextMenuTriggerDirective,
     ReactiveFormsModule,
     InputComponent,
+    RouterLink,
   ],
   templateUrl: './history.component.html',
   styleUrl: './history.component.css',
@@ -57,13 +69,6 @@ export class TransactionsHistoryComponent implements OnInit {
     type: new FormControl<string>('', { nonNullable: true }),
   });
 
-  readonly transactionColumns: DataTableColumn<Transaction>[] = [
-    { key: 'description', label: 'Descricao' },
-    { key: 'categoryId', label: 'Categoria' },
-    { key: 'date', label: 'Data' },
-    { key: 'amount', label: 'Valor', align: 'right' },
-  ];
-
   constructor(
     private transactionsService: TransactionsService,
     private accountsService: AccountsService,
@@ -85,39 +90,12 @@ export class TransactionsHistoryComponent implements OnInit {
       .subscribe(() => this.search());
   }
 
-  identifyTransaction(row: Transaction): string {
-    return row.id;
-  }
-
   openModal(transaction?: Transaction): void {
     this.modalService.open(TransactionFormComponent, { transaction });
   }
 
   search(): void {
-    const payload: Record<string, unknown> = {};
-
-    if (this.filters.value.filter) {
-      payload['description'] = { like: this.filters.value.filter };
-    }
-
-    if (this.filters.value.account) {
-      payload['accountId'] = { eq: this.filters.value.account };
-    }
-
-    if (this.filters.value.type) {
-      payload['type'] = { eq: this.filters.value.type };
-    }
-
-    const range = this.filters.value.dateRange;
-    if (range?.start && range?.end) {
-      payload['date'] = { between: [range.start, range.end] };
-    } else if (range?.start) {
-      payload['date'] = { gte: range.start };
-    } else if (range?.end) {
-      payload['date'] = { lte: range.end };
-    }
-
-    const filters = Object.keys(payload).length > 0 ? payload : undefined;
+    const filters = buildTransactionHistoryQuery(this.filters.value);
     this.transactionsService.getAll(filters).then(response => {
       this.transactions.set(response);
     });
@@ -142,22 +120,39 @@ export class TransactionsHistoryComponent implements OnInit {
   }
 
   signedAmount(transaction: Transaction): number {
-    if (transaction.type === 'debit') return -Math.abs(transaction.amount);
-    return Math.abs(transaction.amount);
+    return signedAmount(transaction);
   }
 
   isIncome(transaction: Transaction): boolean {
-    return this.signedAmount(transaction) > 0;
+    return isIncome(transaction);
   }
 
   typeLabel(transaction: Transaction): string {
-    const labels: Record<Transaction['type'], string> = {
-      credit: 'Receita',
-      debit: 'Despesa',
-      transfer: 'Transferencia',
-    };
+    return transactionTypeLabel(transaction);
+  }
 
-    return labels[transaction.type];
+  transactionGroups(): TransactionDayGroup[] {
+    return transactionGroups(this.transactions());
+  }
+
+  totalIncome(): number {
+    return totalIncome(this.transactions());
+  }
+
+  totalExpense(): number {
+    return totalExpense(this.transactions());
+  }
+
+  balance(): number {
+    return this.totalIncome() - this.totalExpense();
+  }
+
+  transactionIcon(transaction: Transaction): string {
+    return transactionIcon(transaction, this.getCategory(transaction));
+  }
+
+  transactionColor(transaction: Transaction): string {
+    return transactionColor(transaction, this.getCategory(transaction));
   }
 
   private loadReferences(): void {

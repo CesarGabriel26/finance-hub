@@ -6,12 +6,13 @@ import {
   FixedIncomeRateType,
   InvestmentPortfolioAsset,
   InvestmentPortfolioAssetType,
-  NewInvestmentPortfolioAsset,
 } from '../../../models';
 import { InputComponent } from '../../../components/input/input.component';
 import { SelectComponent } from '../../../components/select/select.component';
 import { InvestmentPortfoliosService } from '../../../services/investment-portfolios.service';
 import { ModalService } from '../../../services/modal.service';
+import { isFixedIncomeType } from '../investment-calculations.util';
+import { buildInvestmentAssetPayload } from './investment-portfolio-asset-form.utils';
 
 @Component({
   selector: 'app-investment-portfolio-asset-form',
@@ -22,8 +23,6 @@ import { ModalService } from '../../../services/modal.service';
 export class InvestmentPortfolioAssetFormComponent implements OnInit {
   @Input({ required: true }) portfolioId!: string;
   @Input() asset?: InvestmentPortfolioAsset;
-
-  private readonly fixedIncomeTypes = new Set<InvestmentPortfolioAssetType>(['cdb', 'lci_lca', 'treasury']);
 
   form = new FormGroup({
     ticker: new FormControl<string>('', {
@@ -115,50 +114,7 @@ export class InvestmentPortfolioAssetFormComponent implements OnInit {
     if (this.form.invalid) return;
 
     const raw = this.form.getRawValue();
-    const isFixedIncome = this.isFixedIncomeType(raw.type);
-    const fixedIncomeInvestedAmount = Number(raw.fixedIncomeInvestedAmount) || 0;
-    const fixedIncomeGrossAmount = Number(raw.fixedIncomeGrossAmount) || 0;
-    const informedFixedIncomeNetAmount = Number(raw.fixedIncomeNetAmount) || 0;
-    const fixedIncomeGrossCurrentAmount = fixedIncomeGrossAmount || informedFixedIncomeNetAmount || fixedIncomeInvestedAmount;
-    const estimatedFixedIncomeNetAmount = this.estimateFixedIncomeNetAmount({
-      investedAmount: fixedIncomeInvestedAmount,
-      grossAmount: fixedIncomeGrossCurrentAmount,
-      purchaseDate: raw.purchaseDate,
-      taxExempt: raw.fixedIncomeTaxExempt,
-    });
-    const fixedIncomeNetCurrentAmount = informedFixedIncomeNetAmount || estimatedFixedIncomeNetAmount;
-    const investedAmount = isFixedIncome ? fixedIncomeInvestedAmount : Number(raw.quantity) * Number(raw.averagePrice);
-    const currentAmount = isFixedIncome ? fixedIncomeNetCurrentAmount : Number(raw.quantity) * Number(raw.currentPrice);
-    const grossResultAmount = isFixedIncome
-      ? fixedIncomeGrossCurrentAmount - investedAmount
-      : currentAmount - investedAmount;
-
-    const payload: NewInvestmentPortfolioAsset = {
-      portfolioId: this.portfolioId,
-      ticker: raw.ticker.trim().toUpperCase(),
-      name: raw.name.trim(),
-      type: raw.type,
-      broker: raw.broker.trim() || null,
-      sector: raw.sector.trim() || null,
-      currency: raw.currency,
-      quantity: isFixedIncome ? 1 : Number(raw.quantity),
-      averagePrice: isFixedIncome ? fixedIncomeInvestedAmount : Number(raw.averagePrice),
-      currentPrice: isFixedIncome ? fixedIncomeNetCurrentAmount : Number(raw.currentPrice),
-      purchaseDate: raw.purchaseDate || null,
-      targetAllocation: Number(raw.targetAllocation) || 0,
-      dividendYield: Number(raw.dividendYield) || 0,
-      annualIncome: isFixedIncome ? Math.max(0, grossResultAmount) : Number(raw.annualIncome) || 0,
-      fixedIncomeIndexer: isFixedIncome ? raw.fixedIncomeIndexer : null,
-      fixedIncomeRateType: isFixedIncome ? raw.fixedIncomeRateType : null,
-      fixedIncomeRate: isFixedIncome ? Number(raw.fixedIncomeRate) || 0 : null,
-      fixedIncomeMaturityDate: isFixedIncome ? raw.fixedIncomeMaturityDate || null : null,
-      fixedIncomeLiquidity: isFixedIncome ? raw.fixedIncomeLiquidity : null,
-      fixedIncomeInvestedAmount: isFixedIncome ? fixedIncomeInvestedAmount : null,
-      fixedIncomeGrossAmount: isFixedIncome ? fixedIncomeGrossCurrentAmount : null,
-      fixedIncomeNetAmount: isFixedIncome ? fixedIncomeNetCurrentAmount || null : null,
-      fixedIncomeTaxExempt: isFixedIncome ? raw.fixedIncomeTaxExempt : null,
-      notes: raw.notes.trim() || null,
-    };
+    const payload = buildInvestmentAssetPayload(this.portfolioId, raw);
 
     const save = this.asset?.id
       ? this.portfolioService.updateAsset(this.asset.id, payload)
@@ -171,61 +127,11 @@ export class InvestmentPortfolioAssetFormComponent implements OnInit {
   }
 
   isFixedIncome(): boolean {
-    return this.isFixedIncomeType(this.form.controls.type.value);
-  }
-
-  private isFixedIncomeType(type: InvestmentPortfolioAssetType): boolean {
-    return this.fixedIncomeTypes.has(type);
-  }
-
-  private estimateFixedIncomeNetAmount(options: {
-    investedAmount: number;
-    grossAmount: number;
-    purchaseDate: string;
-    taxExempt: boolean;
-  }): number {
-    const profit = Math.max(0, options.grossAmount - options.investedAmount);
-    if (profit <= 0 || options.taxExempt) return options.grossAmount;
-
-    const days = this.holdingDays(options.purchaseDate);
-    const iof = profit * this.iofRate(days);
-    const taxableProfit = Math.max(0, profit - iof);
-    const ir = taxableProfit * this.incomeTaxRate(days);
-
-    return options.grossAmount - iof - ir;
-  }
-
-  private holdingDays(purchaseDate: string): number {
-    if (!purchaseDate) return 721;
-
-    const start = new Date(`${purchaseDate}T00:00:00`);
-    if (Number.isNaN(start.getTime())) return 721;
-
-    const today = new Date();
-    const diff = today.getTime() - start.getTime();
-
-    return Math.max(0, Math.floor(diff / 86400000));
-  }
-
-  private incomeTaxRate(days: number): number {
-    if (days <= 180) return 0.225;
-    if (days <= 360) return 0.2;
-    if (days <= 720) return 0.175;
-    return 0.15;
-  }
-
-  private iofRate(days: number): number {
-    const rates = [
-      0, 0.96, 0.93, 0.9, 0.86, 0.83, 0.8, 0.76, 0.73, 0.7,
-      0.66, 0.63, 0.6, 0.56, 0.53, 0.5, 0.46, 0.43, 0.4, 0.36,
-      0.33, 0.3, 0.26, 0.23, 0.2, 0.16, 0.13, 0.1, 0.06, 0.03, 0,
-    ];
-
-    return days >= 30 ? 0 : rates[Math.max(0, days)] ?? 0;
+    return isFixedIncomeType(this.form.controls.type.value);
   }
 
   private configureValidators(type: InvestmentPortfolioAssetType): void {
-    const isFixedIncome = this.isFixedIncomeType(type);
+    const isFixedIncome = isFixedIncomeType(type);
 
     if (isFixedIncome) {
       this.form.controls.quantity.clearValidators();

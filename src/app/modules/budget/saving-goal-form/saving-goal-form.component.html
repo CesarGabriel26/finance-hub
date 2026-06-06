@@ -1,70 +1,100 @@
-<form (submit)="submit($event)" [formGroup]="form" class="space-y-5">
-  <div class="mb-2">
-    <h3 class="text-foreground text-lg font-black tracking-tight">
-      {{ goal ? 'Editar Meta de Poupanca' : 'Nova Meta de Poupanca' }}
-    </h3>
-    <p class="text-muted-foreground text-xs">
-      Defina objetivo, valor alvo, progresso, prazo e identidade visual.
-    </p>
-  </div>
+<form (submit)="submit($event)" [formGroup]="form" class="friendly-form">
+  <header class="form-hero">
+    <span class="material-symbols-outlined">track_changes</span>
+    <div>
+      <h3>{{ goal ? 'Editar objetivo' : 'Novo objetivo' }}</h3>
+      <p>Crie uma meta para guardar dinheiro, como reserva, viagem, carro ou entrada de casa.</p>
+    </div>
+  </header>
 
-  <hr class="border-border my-2">
-
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="flex flex-col gap-1.5 md:col-span-2">
-      <label for="goal-name" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Nome</label>
-      <app-input id="goal-name" formControlName="name" placeholder="Reserva de emergencia, viagem, carro..." />
+  <section class="form-section">
+    <div class="section-title">
+      <span>1</span>
+      <div>
+        <h4>O que voce quer conquistar?</h4>
+        <p>Escolha um nome curto e uma descricao opcional.</p>
+      </div>
     </div>
 
-    <div class="flex flex-col gap-1.5 md:col-span-2">
-      <label for="goal-description" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Descricao</label>
-      <app-input id="goal-description" formControlName="description" placeholder="Detalhe o objetivo" />
+    <div class="field-grid">
+      <label class="field field-wide" for="goal-name">
+        <span>Nome</span>
+        <app-input id="goal-name" formControlName="name" placeholder="Reserva de emergencia, viagem, carro..." />
+      </label>
+
+      <label class="field field-wide" for="goal-description">
+        <span>Descricao opcional</span>
+        <app-input id="goal-description" formControlName="description" placeholder="Ex: descansar em julho com a familia" />
+      </label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="section-title">
+      <span>2</span>
+      <div>
+        <h4>Valores e prazo</h4>
+        <p>O app calcula o progresso e ajuda a acompanhar quanto falta.</p>
+      </div>
     </div>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="target-amount" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Valor Alvo</label>
-      <app-input id="target-amount" type="currency" prefix="R$ " formControlName="targetAmount" />
+    <div class="field-grid">
+      <label class="field" for="target-amount">
+        <span>Valor desejado</span>
+        <app-input id="target-amount" type="currency" prefix="R$ " formControlName="targetAmount" />
+      </label>
+
+      <label class="field" for="current-amount">
+        <span>Quanto ja tenho</span>
+        <app-input id="current-amount" type="currency" prefix="R$ " formControlName="currentAmount" />
+      </label>
+
+      <label class="field" for="target-date">
+        <span>Prazo</span>
+        <app-input id="target-date" type="date" formControlName="targetDate" />
+      </label>
+
+      <label class="field" for="goal-status">
+        <span>Status</span>
+        <app-select id="goal-status" formControlName="status" [options]="[
+          { value: 'active', label: 'Em andamento' },
+          { value: 'completed', label: 'Concluido' },
+          { value: 'paused', label: 'Pausado' }
+        ]" />
+      </label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="section-title">
+      <span>3</span>
+      <div>
+        <h4>Onde acompanhar?</h4>
+        <p>Vincular uma conta e opcional, mas ajuda a comparar meta e saldo real.</p>
+      </div>
     </div>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="current-amount" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Valor Atual</label>
-      <app-input id="current-amount" type="currency" prefix="R$ " formControlName="currentAmount" />
-    </div>
+    <div class="field-grid">
+      <label class="field field-wide" for="goal-account">
+        <span>Conta vinculada</span>
+        <app-select id="goal-account" formControlName="accountId" [options]="accountOptions()" />
+      </label>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="target-date" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Prazo</label>
-      <app-input id="target-date" type="date" formControlName="targetDate" />
-    </div>
+      <label class="field" for="goal-color">
+        <span>Cor</span>
+        <app-color-picker id="goal-color" formControlName="color" />
+      </label>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="goal-status" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Status</label>
-      <app-select id="goal-status" formControlName="status" [options]="[
-        { value: 'active', label: 'Ativa' },
-        { value: 'completed', label: 'Concluida' },
-        { value: 'paused', label: 'Pausada' }
-      ]" />
+      <label class="field" for="goal-icon">
+        <span>Icone</span>
+        <app-icon-picker id="goal-icon" formControlName="icon" />
+      </label>
     </div>
+  </section>
 
-    <div class="flex flex-col gap-1.5 md:col-span-2">
-      <label for="goal-account" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Conta Vinculada</label>
-      <app-select id="goal-account" formControlName="accountId" [options]="accountOptions()" />
-    </div>
-
-    <div class="flex flex-col gap-1.5">
-      <label for="goal-color" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Cor</label>
-      <app-color-picker id="goal-color" formControlName="color" />
-    </div>
-
-    <div class="flex flex-col gap-1.5">
-      <label for="goal-icon" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Icone</label>
-      <app-icon-picker id="goal-icon" formControlName="icon" />
-    </div>
-  </div>
-
-  <div class="pt-4 flex justify-end">
-    <button type="submit" [disabled]="form.invalid"
-      class="primary-button w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:filter-none">
-      {{ goal ? 'Salvar Meta' : 'Criar Meta' }}
+  <footer class="form-actions">
+    <button type="submit" [disabled]="form.invalid" class="primary-button disabled:opacity-50 disabled:cursor-not-allowed">
+      {{ goal ? 'Salvar objetivo' : 'Criar objetivo' }}
     </button>
-  </div>
+  </footer>
 </form>

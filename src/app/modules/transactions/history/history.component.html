@@ -1,72 +1,115 @@
-<section class="h-full w-full grid grid-rows-[auto_1fr] gap-4">
-  <form [formGroup]="filters"
-    class="bg-[var(--card)] p-4 rounded-xl shadow-lg grid grid-cols-1 xl:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4">
-    <app-input formControlName="filter" placeholder="Filtrar por texto..." />
-    <app-select formControlName="account" [options]="accountOptions()" placeholder="Selecionar conta" />
-    <app-date-range-input formControlName="dateRange" />
-    <app-select formControlName="type" [options]="[
-      { value: '', label: 'Todos' },
-      { value: 'debit', label: 'Despesa' },
-      { value: 'credit', label: 'Receita' },
-      { value: 'transfer', label: 'Transferencia' }
-    ]" placeholder="Selecionar tipo" />
-    <button type="button" (click)="openModal()"
-      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none bg-[var(--primary)] text-[var(--primary-foreground)]">
-      <span class="material-symbols-outlined">add</span>
-      <span>Nova transacao</span>
-    </button>
+<section class="movements-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Movimentos</span>
+      <h1>Entradas e saidas</h1>
+      <p>Veja tudo que entrou, saiu ou foi transferido entre suas contas.</p>
+    </div>
+
+    <div class="header-actions">
+      <a routerLink="/main/transactions/statement-import" class="secondary-action">
+        <span class="material-symbols-outlined">upload_file</span>
+        Importar extrato
+      </a>
+      <button type="button" (click)="openModal()" class="primary-action">
+        <span class="material-symbols-outlined">add</span>
+        Novo movimento
+      </button>
+    </div>
+  </header>
+
+  <div class="summary-grid">
+    <article class="income">
+      <span>Receitas filtradas</span>
+      <strong>{{ totalIncome() | currency: 'BRL' }}</strong>
+    </article>
+    <article class="expense">
+      <span>Despesas filtradas</span>
+      <strong>{{ totalExpense() | currency: 'BRL' }}</strong>
+    </article>
+    <article>
+      <span>Resultado</span>
+      <strong [class.negative]="balance() < 0">{{ balance() | currency: 'BRL' }}</strong>
+    </article>
+  </div>
+
+  <form [formGroup]="filters" class="filter-panel">
+    <label class="filter-wide">
+      <span>Buscar</span>
+      <app-input formControlName="filter" placeholder="Mercado, salario, aluguel..." />
+    </label>
+    <label>
+      <span>Conta</span>
+      <app-select formControlName="account" [options]="accountOptions()" placeholder="Todas as contas" />
+    </label>
+    <label>
+      <span>Periodo</span>
+      <app-date-range-input formControlName="dateRange" />
+    </label>
+    <label>
+      <span>Tipo</span>
+      <app-select formControlName="type" [options]="[
+        { value: '', label: 'Todos' },
+        { value: 'debit', label: 'Despesa' },
+        { value: 'credit', label: 'Receita' },
+        { value: 'transfer', label: 'Transferencia' }
+      ]" placeholder="Todos" />
+    </label>
   </form>
 
-  <div class="w-full flex-1 min-h-0">
-    <app-data-table title="Transacoes recentes" description="Sua atividade financeira mais nova."
-      [rows]="transactions()" [columns]="transactionColumns" [getRowId]="identifyTransaction">
+  <div class="timeline-panel">
+    @for (group of transactionGroups(); track group.date) {
+    <section class="day-group">
+      <header>
+        <div>
+          <h2>{{ group.date | date: 'dd/MM/yyyy' }}</h2>
+          <span>{{ group.rows.length }} movimento(s)</span>
+        </div>
+        <strong [class.negative]="group.total < 0">{{ group.total | currency: 'BRL' }}</strong>
+      </header>
 
-      <ng-template #dataTableRow let-row>
-        <div class="grid grid-cols-[minmax(16rem,1fr)_minmax(8rem,0.55fr)_minmax(8rem,0.55fr)_minmax(8rem,0.55fr)_auto] min-w-[58rem] w-full gap-4 items-center cursor-context-menu"
-          [appContextMenuTriggerFor]="transactionContextMenu" [appContextMenuData]="row">
-          <div class="flex items-center gap-4 min-w-0">
-            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-muted text-muted-foreground flex-shrink-0"
-              [style.background-color]="(getCategory(row)?.color || '#64748b') + '1a'">
-              <span class="material-symbols-outlined text-xl" [style.color]="getCategory(row)?.color || '#64748b'">
-                {{ getCategory(row)?.icon || 'payments' }}
-              </span>
-            </div>
+      <div class="movement-list">
+        @for (row of group.rows; track row.id) {
+        <article class="movement-row" [appContextMenuTriggerFor]="transactionContextMenu" [appContextMenuData]="row">
+          <span class="movement-icon" [style.background-color]="transactionColor(row) + '18'">
+            <span class="material-symbols-outlined" [style.color]="transactionColor(row)">
+              {{ transactionIcon(row) }}
+            </span>
+          </span>
 
-            <div class="flex flex-col min-w-0">
-              <span class="font-semibold text-foreground truncate text-sm sm:text-base">
-                {{ row.description }}
-              </span>
-              <span class="text-xs text-muted-foreground truncate">
-                {{ getCategoryName(row) }} - {{ getAccountName(row) }}
-              </span>
-              @if (row.tags) {
-              <span class="text-xs text-[var(--primary)] truncate">{{ row.tags }}</span>
-              }
-            </div>
+          <div class="movement-copy">
+            <strong>{{ row.description }}</strong>
+            <span>{{ getCategoryName(row) }} - {{ getAccountName(row) }}</span>
+            @if (row.tags) {
+            <small>{{ row.tags }}</small>
+            }
           </div>
 
-          <span class="text-xs sm:text-sm text-muted-foreground font-medium truncate">
-            {{ typeLabel(row) }}
-          </span>
+          <span class="type-badge">{{ typeLabel(row) }}</span>
 
-          <time class="text-xs sm:text-sm text-muted-foreground font-medium" [dateTime]="row.date">
-            {{ row.date | date: 'dd/MM/yyyy' }}
-          </time>
-
-          <span class="text-sm sm:text-base font-bold text-right min-w-[5rem]"
-            [class.text-success]="isIncome(row)" [class.text-danger]="!isIncome(row)">
+          <b [class.income-text]="isIncome(row)" [class.expense-text]="!isIncome(row)">
             {{ isIncome(row) ? '+' : '' }}{{ signedAmount(row) | currency: 'BRL' : 'symbol' : '1.2-2' }}
-          </span>
+          </b>
 
           <button [appContextMenuTriggerFor]="transactionContextMenu" [appContextMenuData]="row"
-            appContextMenuTriggerType="click"
-            class="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-            type="button" aria-label="Mais opcoes">
-            <span class="material-symbols-outlined text-xl block">more_vert</span>
+            appContextMenuTriggerType="click" class="icon-action" type="button" aria-label="Mais opcoes">
+            <span class="material-symbols-outlined">more_vert</span>
           </button>
-        </div>
-      </ng-template>
-    </app-data-table>
+        </article>
+        }
+      </div>
+    </section>
+    } @empty {
+    <div class="empty-state">
+      <span class="material-symbols-outlined">receipt_long</span>
+      <h2>Nenhum movimento encontrado</h2>
+      <p>Registre um movimento manualmente ou importe um extrato para preencher automaticamente.</p>
+      <button type="button" (click)="openModal()" class="primary-action">
+        <span class="material-symbols-outlined">add</span>
+        Registrar movimento
+      </button>
+    </div>
+    }
   </div>
 </section>
 

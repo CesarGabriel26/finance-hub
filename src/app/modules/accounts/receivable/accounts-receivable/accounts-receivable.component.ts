@@ -6,13 +6,21 @@ import { ContextMenuComponent, ContextMenuItem, ContextMenuTriggerDirective } fr
 import { DataTableColumn, DataTableComponent } from '../../../../components/data-table/data-table.component';
 import { InputComponent } from '../../../../components/input/input.component';
 import { SelectComponent, SelectOption } from '../../../../components/select/select.component';
-import { Account, AccountReceivable, AccountReceivableStatus, Category } from '../../../../models';
+import { Account, AccountReceivable, Category } from '../../../../models';
 import { AccountsService } from '../../../../services/accounts.service';
 import { CategoriesService } from '../../../../services/categories.service';
 import { ModalService } from '../../../../services/modal.service';
 import { AccountReceivableFormComponent } from '../account-receivable-form/account-receivable-form.component';
 import { AccountsReceivableService } from '../../../../services/accounts-receivable.service';
 import { TransactionsService } from '../../../../services/transactions.service';
+import {
+  buildScheduleQuery,
+  formatScheduleDate,
+  nextReceivablePayload,
+  receivableStatusClass,
+  receivableStatusLabel,
+  todayKey,
+} from '../../accounts-schedule.utils';
 
 @Component({
   selector: 'app-accounts-receivable',
@@ -104,25 +112,7 @@ export class AccountsReceivableComponent implements OnInit {
   }
 
   search(): void {
-    const payload: Record<string, unknown> = {};
-
-    if (this.filters.value.description) {
-      payload['description'] = { like: this.filters.value.description };
-    }
-
-    if (this.filters.value.status === 'overdue') {
-      payload['or'] = [
-        { status: { eq: 'overdue' } },
-        {
-          and: [
-            { status: { eq: 'pending' } },
-            { dueDate: { lt: this.today() } },
-          ],
-        },
-      ];
-    } else if (this.filters.value.status) {
-      payload['status'] = { eq: this.filters.value.status };
-    }
+    const payload = buildScheduleQuery(this.filters.value);
 
     this.receivableService.getAll(payload).then(response => {
       this.receivables.set(response);
@@ -130,7 +120,7 @@ export class AccountsReceivableComponent implements OnInit {
   }
 
   async markAsReceived(receivable: AccountReceivable): Promise<void> {
-    const receivedAt = receivable.receivedAt ?? this.today();
+    const receivedAt = receivable.receivedAt ?? todayKey();
     let settlementTransactionId = receivable.settlementTransactionId ?? null;
 
     if (receivable.accountId && !settlementTransactionId) {
@@ -181,72 +171,22 @@ export class AccountsReceivableComponent implements OnInit {
   }
 
   getStatusLabel(receivable: AccountReceivable): string {
-    const labels: Record<AccountReceivableStatus, string> = {
-      pending: 'Pendente',
-      received: 'Recebida',
-      overdue: 'Vencida',
-      canceled: 'Cancelada',
-    };
-
-    return labels[this.resolveStatus(receivable)];
+    return receivableStatusLabel(receivable);
   }
 
   getStatusClass(receivable: AccountReceivable): string {
-    const status = this.resolveStatus(receivable);
-
-    const classes: Record<AccountReceivableStatus, string> = {
-      pending: 'bg-amber-500/10 text-amber-700',
-      received: 'bg-emerald-500/10 text-emerald-700',
-      overdue: 'bg-red-500/10 text-red-700',
-      canceled: 'bg-slate-500/10 text-slate-600',
-    };
-
-    return classes[status];
+    return receivableStatusClass(receivable);
   }
 
   formatDate(value: string | null): string {
-    if (!value) return '-';
-
-    const [year, month, day] = value.slice(0, 10).split('-');
-    return year && month && day ? `${day}/${month}/${year}` : value;
-  }
-
-  private resolveStatus(receivable: AccountReceivable): AccountReceivableStatus {
-    if (receivable.status === 'pending' && receivable.dueDate.slice(0, 10) < this.today()) {
-      return 'overdue';
-    }
-
-    return receivable.status;
+    return formatScheduleDate(value);
   }
 
   private async createNextReceivableIfNeeded(receivable: AccountReceivable): Promise<void> {
-    if (!receivable.isRecurring) return;
+    const next = nextReceivablePayload(receivable);
+    if (!next) return;
 
-    const hasNextInstallment = receivable.currentInstallment < receivable.totalInstallments;
-    const isOpenRecurring = receivable.totalInstallments <= 1;
-    if (!hasNextInstallment && !isOpenRecurring) return;
-
-    await this.receivableService.insert({
-      description: receivable.description,
-      payer: receivable.payer,
-      amount: receivable.amount,
-      dueDate: this.addOneMonth(receivable.dueDate),
-      status: 'pending',
-      isRecurring: receivable.isRecurring,
-      recurrenceClassification: receivable.recurrenceClassification,
-      totalInstallments: isOpenRecurring ? 1 : receivable.totalInstallments,
-      currentInstallment: isOpenRecurring ? 1 : receivable.currentInstallment + 1,
-      accountId: receivable.accountId,
-      categoryId: receivable.categoryId,
-      notes: receivable.notes,
-    });
-  }
-
-  private addOneMonth(value: string): string {
-    const [year, month, day] = value.slice(0, 10).split('-').map(Number);
-    const date = new Date(year, month - 1, day || 1, 12);
-    date.setMonth(date.getMonth() + 1);
-    return date.toISOString().slice(0, 10);
+    await this.receivableService.insert(next);
   }
 
   private loadReferences(): void {
@@ -259,7 +199,4 @@ export class AccountsReceivableComponent implements OnInit {
     });
   }
 
-  private today(): string {
-    return new Date().toISOString().slice(0, 10);
-  }
 }

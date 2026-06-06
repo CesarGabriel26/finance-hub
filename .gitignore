@@ -45,3 +45,6 @@ __screenshots__/
 *.db
 *.db-shm
 *.db-wal
+/.venv
+/release
+/dist-electron

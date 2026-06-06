@@ -73,6 +73,16 @@ import type {
   NewAccountReconciliation,
 } from './app/models/account-reconciliation.model';
 
+import type {
+  AppSettings,
+  UpdateCheckResult,
+} from './app/models/app-settings.model';
+
+import type {
+  AiCategorizationRequest,
+  AiCategorizationResult,
+} from './app/models/ai-categorization.model';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // App / Electron utilities
 // ─────────────────────────────────────────────────────────────────────────────
@@ -204,6 +214,27 @@ interface NotificationsApi {
   checkDue: (options?: DueNotificationOptions) => Promise<DueNotificationResult>;
 }
 
+interface AutoBackupRunResult {
+  ok: boolean;
+  path?: string;
+  settings: AppSettings;
+}
+
+interface AppSettingsApi {
+  get: () => Promise<AppSettings>;
+  update: (data: Partial<AppSettings>) => Promise<AppSettings>;
+  selectAutoBackupDirectory: () => Promise<AppSettings>;
+  runAutoBackupNow: () => Promise<AutoBackupRunResult>;
+}
+
+interface AppUpdatesApi {
+  check: () => Promise<UpdateCheckResult>;
+}
+
+interface AiCategorizationApi {
+  categorize: (data: AiCategorizationRequest) => Promise<AiCategorizationResult>;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Asset Transactions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -267,6 +298,9 @@ declare global {
     InvestmentPortfoliosApi?: InvestmentPortfoliosApi;
     MarketRatesApi?: MarketRatesApi;
     NotificationsApi?: NotificationsApi;
+    AppSettingsApi?: AppSettingsApi;
+    AppUpdatesApi?: AppUpdatesApi;
+    AiCategorizationApi?: AiCategorizationApi;
     AssetTransactionsApi?: AssetTransactionsApi;
     SavingGoalsApi?: SavingGoalsApi;
     MonthlyClosingsApi?: MonthlyClosingsApi;

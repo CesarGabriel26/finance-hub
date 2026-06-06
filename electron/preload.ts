@@ -103,6 +103,21 @@ contextBridge.exposeInMainWorld('NotificationsApi', {
   checkDue: (options?: unknown) => ipcRenderer.invoke('notifications:check-due', options),
 });
 
+contextBridge.exposeInMainWorld('AppSettingsApi', {
+  get: () => ipcRenderer.invoke('app-settings:get'),
+  update: (data: unknown) => ipcRenderer.invoke('app-settings:update', data),
+  selectAutoBackupDirectory: () => ipcRenderer.invoke('app-settings:select-auto-backup-directory'),
+  runAutoBackupNow: () => ipcRenderer.invoke('app-settings:run-auto-backup-now'),
+});
+
+contextBridge.exposeInMainWorld('AppUpdatesApi', {
+  check: () => ipcRenderer.invoke('updates:check'),
+});
+
+contextBridge.exposeInMainWorld('AiCategorizationApi', {
+  categorize: (data: unknown) => ipcRenderer.invoke('ai-categorization:categorize', data),
+});
+
 // ── Asset Transactions ────────────────────────────────────────────────────────
 contextBridge.exposeInMainWorld('AssetTransactionsApi', {
   getAll: (assetId: string) => ipcRenderer.invoke('asset-transactions:get-all', assetId),

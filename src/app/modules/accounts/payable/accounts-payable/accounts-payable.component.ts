@@ -6,12 +6,20 @@ import { ContextMenuComponent, ContextMenuItem, ContextMenuTriggerDirective } fr
 import { DataTableColumn, DataTableComponent } from '../../../../components/data-table/data-table.component';
 import { InputComponent } from '../../../../components/input/input.component';
 import { SelectComponent, SelectOption } from '../../../../components/select/select.component';
-import { Account, AccountPayable, AccountPayableStatus, Category } from '../../../../models';
+import { Account, AccountPayable, Category } from '../../../../models';
 import { AccountsPayableService } from '../../../../services/accounts-payable.service';
 import { AccountsService } from '../../../../services/accounts.service';
 import { CategoriesService } from '../../../../services/categories.service';
 import { ModalService } from '../../../../services/modal.service';
 import { TransactionsService } from '../../../../services/transactions.service';
+import {
+  buildScheduleQuery,
+  formatScheduleDate,
+  nextPayablePayload,
+  payableStatusClass,
+  payableStatusLabel,
+  todayKey,
+} from '../../accounts-schedule.utils';
 import { AccountPayableFormComponent } from '../account-payable-form/account-payable-form.component';
 
 @Component({
@@ -104,25 +112,7 @@ export class AccountsPayableComponent implements OnInit {
   }
 
   search(): void {
-    const payload: Record<string, unknown> = {};
-
-    if (this.filters.value.description) {
-      payload['description'] = { like: this.filters.value.description };
-    }
-
-    if (this.filters.value.status === 'overdue') {
-      payload['or'] = [
-        { status: { eq: 'overdue' } },
-        {
-          and: [
-            { status: { eq: 'pending' } },
-            { dueDate: { lt: this.today() } },
-          ],
-        },
-      ];
-    } else if (this.filters.value.status) {
-      payload['status'] = { eq: this.filters.value.status };
-    }
+    const payload = buildScheduleQuery(this.filters.value);
 
     this.payableService.getAll(payload).then(response => {
       this.payables.set(response);
@@ -130,7 +120,7 @@ export class AccountsPayableComponent implements OnInit {
   }
 
   async markAsPaid(payable: AccountPayable): Promise<void> {
-    const paidAt = payable.paidAt ?? this.today();
+    const paidAt = payable.paidAt ?? todayKey();
     let settlementTransactionId = payable.settlementTransactionId ?? null;
 
     if (payable.accountId && !settlementTransactionId) {
@@ -181,72 +171,22 @@ export class AccountsPayableComponent implements OnInit {
   }
 
   getStatusLabel(payable: AccountPayable): string {
-    const labels: Record<AccountPayableStatus, string> = {
-      pending: 'Pendente',
-      paid: 'Paga',
-      overdue: 'Vencida',
-      canceled: 'Cancelada',
-    };
-
-    return labels[this.resolveStatus(payable)];
+    return payableStatusLabel(payable);
   }
 
   getStatusClass(payable: AccountPayable): string {
-    const status = this.resolveStatus(payable);
-
-    const classes: Record<AccountPayableStatus, string> = {
-      pending: 'bg-amber-500/10 text-amber-700',
-      paid: 'bg-emerald-500/10 text-emerald-700',
-      overdue: 'bg-red-500/10 text-red-700',
-      canceled: 'bg-slate-500/10 text-slate-600',
-    };
-
-    return classes[status];
+    return payableStatusClass(payable);
   }
 
   formatDate(value: string | null): string {
-    if (!value) return '-';
-
-    const [year, month, day] = value.slice(0, 10).split('-');
-    return year && month && day ? `${day}/${month}/${year}` : value;
-  }
-
-  private resolveStatus(payable: AccountPayable): AccountPayableStatus {
-    if (payable.status === 'pending' && payable.dueDate.slice(0, 10) < this.today()) {
-      return 'overdue';
-    }
-
-    return payable.status;
+    return formatScheduleDate(value);
   }
 
   private async createNextPayableIfNeeded(payable: AccountPayable): Promise<void> {
-    if (!payable.isRecurring) return;
+    const next = nextPayablePayload(payable);
+    if (!next) return;
 
-    const hasNextInstallment = payable.currentInstallment < payable.totalInstallments;
-    const isOpenRecurring = payable.totalInstallments <= 1;
-    if (!hasNextInstallment && !isOpenRecurring) return;
-
-    await this.payableService.insert({
-      description: payable.description,
-      payee: payable.payee,
-      amount: payable.amount,
-      dueDate: this.addOneMonth(payable.dueDate),
-      status: 'pending',
-      isRecurring: payable.isRecurring,
-      recurrenceClassification: payable.recurrenceClassification,
-      totalInstallments: isOpenRecurring ? 1 : payable.totalInstallments,
-      currentInstallment: isOpenRecurring ? 1 : payable.currentInstallment + 1,
-      accountId: payable.accountId,
-      categoryId: payable.categoryId,
-      notes: payable.notes,
-    });
-  }
-
-  private addOneMonth(value: string): string {
-    const [year, month, day] = value.slice(0, 10).split('-').map(Number);
-    const date = new Date(year, month - 1, day || 1, 12);
-    date.setMonth(date.getMonth() + 1);
-    return date.toISOString().slice(0, 10);
+    await this.payableService.insert(next);
   }
 
   private loadReferences(): void {
@@ -259,7 +199,4 @@ export class AccountsPayableComponent implements OnInit {
     });
   }
 
-  private today(): string {
-    return new Date().toISOString().slice(0, 10);
-  }
 }

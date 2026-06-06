@@ -7,6 +7,7 @@ import { AccountsService } from '../../../services/accounts.service';
 import { CategoriesService } from '../../../services/categories.service';
 import { ModalService } from '../../../services/modal.service';
 import { TransactionsService } from '../../../services/transactions.service';
+import { buildTransactionPayload } from './transaction-form.utils';
 
 @Component({
   selector: 'app-transaction-form',
@@ -77,16 +78,7 @@ export class TransactionFormComponent implements OnInit {
     if (this.form.invalid) return;
 
     const raw = this.form.getRawValue();
-    const payload: NewTransaction = {
-      accountId: raw.accountId,
-      description: raw.description.trim(),
-      amount: Number(raw.amount),
-      type: raw.type,
-      date: raw.date,
-      categoryId: raw.categoryId || null,
-      tags: this.normalizeTags(raw.tags),
-      ignored: false,
-    };
+    const payload: NewTransaction = buildTransactionPayload(raw);
 
     const save = this.transaction?.id
       ? this.transactionsService.update(this.transaction.id, payload)
@@ -127,12 +119,4 @@ export class TransactionFormComponent implements OnInit {
     });
   }
 
-  private normalizeTags(value: string): string {
-    return value
-      .split(',')
-      .map(tag => tag.trim().replace(/^#/, ''))
-      .filter(Boolean)
-      .map(tag => `#${tag}`)
-      .join(', ');
-  }
 }

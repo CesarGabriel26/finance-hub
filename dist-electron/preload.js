@@ -91,6 +91,18 @@ electron_1.contextBridge.exposeInMainWorld('MarketRatesApi', {
 electron_1.contextBridge.exposeInMainWorld('NotificationsApi', {
     checkDue: (options) => electron_1.ipcRenderer.invoke('notifications:check-due', options),
 });
+electron_1.contextBridge.exposeInMainWorld('AppSettingsApi', {
+    get: () => electron_1.ipcRenderer.invoke('app-settings:get'),
+    update: (data) => electron_1.ipcRenderer.invoke('app-settings:update', data),
+    selectAutoBackupDirectory: () => electron_1.ipcRenderer.invoke('app-settings:select-auto-backup-directory'),
+    runAutoBackupNow: () => electron_1.ipcRenderer.invoke('app-settings:run-auto-backup-now'),
+});
+electron_1.contextBridge.exposeInMainWorld('AppUpdatesApi', {
+    check: () => electron_1.ipcRenderer.invoke('updates:check'),
+});
+electron_1.contextBridge.exposeInMainWorld('AiCategorizationApi', {
+    categorize: (data) => electron_1.ipcRenderer.invoke('ai-categorization:categorize', data),
+});
 // ── Asset Transactions ────────────────────────────────────────────────────────
 electron_1.contextBridge.exposeInMainWorld('AssetTransactionsApi', {
     getAll: (assetId) => electron_1.ipcRenderer.invoke('asset-transactions:get-all', assetId),

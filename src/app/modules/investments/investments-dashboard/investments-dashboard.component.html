@@ -1,208 +1,242 @@
-<section class="h-full w-full grid grid-rows-[auto_auto_auto_auto_1fr] gap-4 overflow-hidden">
-  <div class="bg-[var(--card)] p-4 rounded-xl shadow-lg grid grid-cols-1 xl:grid-cols-[1.2fr_auto_auto_auto] gap-4 items-center">
+<section class="grid grid-rows-[auto_1fr] gap-4 w-full h-full min-h-0 overflow-hidden">
+  <!-- Header / Toolbar -->
+  <div
+    class="bg-[var(--card)] p-4 rounded-xl shadow-lg grid grid-cols-1 xl:grid-cols-[1.2fr_auto_auto_auto] gap-4 items-center">
     <app-select [formControl]="selectedPortfolioId" [options]="portfolioOptions()" placeholder="Selecionar carteira" />
 
     <button type="button" (click)="openPortfolioModal()"
-      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none bg-[var(--secondary)] text-[var(--secondary-foreground)]">
+      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none bg-[var(--secondary)] text-[var(--secondary-foreground)] transition-colors hover:opacity-90">
       <span class="material-symbols-outlined">add</span>
       <span>Nova Carteira</span>
     </button>
 
     @if (selectedPortfolio(); as portfolio) {
     <button type="button" (click)="toggleBeginnerMode()"
-      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none border border-border text-foreground bg-transparent hover:bg-muted">
+      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none border border-border text-foreground bg-transparent hover:bg-muted transition-colors">
       <span class="material-symbols-outlined">{{ portfolio.beginnerMode ? 'school' : 'query_stats' }}</span>
       <span>{{ portfolio.beginnerMode ? 'Modo Iniciante' : 'Modo Profissional' }}</span>
     </button>
 
     <button type="button" (click)="openAssetModal()"
-      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none bg-[var(--primary)] text-[var(--primary-foreground)]">
+      class="px-4 py-2 rounded-md flex justify-center items-center gap-2 cursor-pointer select-none bg-[var(--primary)] text-[var(--primary-foreground)] transition-colors hover:opacity-90">
       <span class="material-symbols-outlined">add_chart</span>
       <span>Novo Ativo</span>
     </button>
     }
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4">
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      @for (rate of marketRates().rates; track rate.nome) {
-      <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
-        <span class="text-xs font-bold uppercase text-muted-foreground">{{ rate.nome }}</span>
-        <strong class="block mt-2 text-xl text-foreground">{{ formatRate(rate) }}</strong>
-        <span class="text-xs text-muted-foreground">Taxa anual de referencia</span>
-      </div>
-      } @empty {
-      <div class="sm:col-span-3 bg-[var(--card)] rounded-xl border border-dashed border-border p-4 shadow-sm">
-        <div class="flex items-center gap-3 text-sm text-muted-foreground">
-          <span class="material-symbols-outlined text-lg">sync</span>
-          <span>Carregando taxas da BrasilAPI...</span>
-        </div>
-      </div>
-      }
-    </div>
+  <!-- Main Scrollable Content -->
+  <div class="gap-4 min-h-0 pr-1">
+    @if (selectedPortfolio(); as portfolio) {
 
-    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm min-w-[14rem]">
-      <span class="text-xs font-bold uppercase text-muted-foreground">Taxas</span>
-      <strong class="block mt-2 text-sm text-foreground">{{ marketRatesUpdatedAt() }}</strong>
-      @if (marketRates().status === 'error') {
-      <span class="block mt-1 text-xs text-red-700">{{ marketRates().error }}</span>
-      } @else {
-      <span class="block mt-1 text-xs text-muted-foreground">Cache em memoria</span>
-      }
-    </div>
-  </div>
+    <div class="grid gap-4 h-full " [ngClass]="{
+        'grid-rows-[auto_auto_1fr]': snapshotEvolution().length > 0,
+        'grid-rows-[auto_1fr]': snapshotEvolution().length <= 0
+      }">
+      <!-- Overview Section: Grid de Métricas + Alocação -->
+      <section class="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-4 items-stretch">
 
-  @if (selectedPortfolio(); as portfolio) {
-  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
-      <span class="text-xs font-bold uppercase text-muted-foreground">Patrimonio</span>
-      <strong class="block mt-2 text-xl text-foreground">{{ totalCurrent() | currency: portfolio.currency }}</strong>
-      <span class="text-xs text-muted-foreground">Investido: {{ totalInvested() | currency: portfolio.currency }}</span>
-    </div>
-
-    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
-      <span class="text-xs font-bold uppercase text-muted-foreground">Resultado Bruto</span>
-      <strong class="block mt-2 text-xl" [ngClass]="resultClass(totalResult())">
-        {{ totalResult() | currency: portfolio.currency }}
-      </strong>
-      <span class="text-xs text-muted-foreground">{{ formatPercent(totalResultPercent()) }} sobre o custo</span>
-      @if (totalTaxWithheld() > 0) {
-      <span class="block text-xs text-muted-foreground">
-        Liquido: {{ totalNetResult() | currency: portfolio.currency }} | IR: {{ totalTaxWithheld() | currency: portfolio.currency }}
-      </span>
-      }
-    </div>
-
-    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
-      <span class="text-xs font-bold uppercase text-muted-foreground">Rendimento</span>
-      <strong class="block mt-2 text-xl text-foreground">{{ annualIncome() | currency: portfolio.currency }}</strong>
-      <span class="text-xs text-muted-foreground">Yield: {{ formatPercent(portfolioYield()) }}</span>
-    </div>
-
-    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
-      <span class="text-xs font-bold uppercase text-muted-foreground">Ativos</span>
-      <strong class="block mt-2 text-xl text-foreground">{{ assets().length }}</strong>
-      <span class="text-xs text-muted-foreground">{{ portfolio.benchmark || 'Sem benchmark' }}</span>
-    </div>
-
-    <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
-      <span class="text-xs font-bold uppercase text-muted-foreground">Perfil</span>
-      <strong class="block mt-2 text-xl text-foreground">{{ portfolio.riskProfile }}</strong>
-      <button type="button" [appContextMenuTriggerFor]="portfolioContextMenu" [appContextMenuData]="portfolio"
-        appContextMenuTriggerType="click" class="mt-1 text-xs font-bold text-[var(--primary)]">
-        Ajustar carteira
-      </button>
-    </div>
-  </div>
-
-  @if (snapshotEvolution().length > 0) {
-  <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
-    <div class="flex items-center justify-between gap-4 mb-3">
-      <div>
-        <span class="text-xs font-bold uppercase text-muted-foreground">Historico da Carteira</span>
-        <strong class="block mt-1 text-sm text-foreground">Ultima captura: {{ lastSnapshotDate() }}</strong>
-      </div>
-      <span class="text-xs text-muted-foreground">{{ assetSnapshots().length }} snapshots</span>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-      @for (item of snapshotEvolution(); track item.date) {
-      <div class="rounded-md border border-border p-3 bg-[var(--muted)]">
-        <span class="block text-xs font-bold text-muted-foreground">{{ item.date | date: 'dd/MM/yyyy' }}</span>
-        <strong class="block mt-1 text-sm text-foreground">{{ item.net | currency: portfolio.currency }}</strong>
-        <span class="block text-xs" [ngClass]="resultClass(item.result)">
-          Resultado {{ item.result | currency: portfolio.currency }}
-        </span>
-      </div>
-      }
-    </div>
-  </div>
-  }
-
-  @if (isBeginnerMode()) {
-  <div class="w-full flex-1 min-h-0">
-    <app-data-table title="Sua Carteira" description="Resumo simplificado para acompanhar o essencial."
-      [rows]="assets()" [columns]="assetColumns" [getRowId]="identifyAsset">
-      <ng-template #dataTableRow let-row>
-        <div class="grid grid-cols-[1fr_auto_auto] min-w-[42rem] w-full gap-4 items-center"
-          [appContextMenuTriggerFor]="assetContextMenu" [appContextMenuData]="row">
-          <div class="flex items-center gap-4 min-w-0">
-            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-700 flex-shrink-0">
-              <span class="material-symbols-outlined text-xl">finance</span>
-            </div>
-            <div class="flex flex-col min-w-0">
-              <span class="font-semibold text-foreground truncate">{{ row.ticker }} - {{ row.name }}</span>
-              <span class="text-xs text-muted-foreground truncate">
-                {{ typeLabel(row) }} - {{ fixedIncomeSummary(row) }}
-              </span>
-            </div>
+        <!-- Mini Grid de Métricas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 auto-rows-[minmax(8.25rem,1fr)]">
+          <!-- Card Genérico (Reutilizável via classe ou componente se preferir) -->
+          <div
+            class="flex flex-col gap-1.5 p-4 border border-border rounded-[var(--radius)] bg-[var(--card)] shadow-sm">
+            <span class="text-[0.72rem] font-black uppercase text-muted-foreground">Patrimonio</span>
+            <strong class="text-[1.18rem] leading-tight font-black text-foreground break-all">{{ totalCurrent() |
+              currency: portfolio.currency }}</strong>
+            <span class="text-xs text-muted-foreground">Investido: {{ totalInvested() | currency: portfolio.currency
+              }}</span>
           </div>
 
-          <div class="text-right">
-            <strong class="block text-sm text-foreground">{{ currentValue(row) | currency: row.currency }}</strong>
-            <span class="text-xs text-muted-foreground">{{ isFixedIncomeAsset(row) ? 'liquido hoje' : 'hoje' }}</span>
-          </div>
-
-          <div class="text-right min-w-[8rem]">
-            <strong class="block text-sm" [ngClass]="resultClass(resultValue(row))">
-              {{ formatPercent(resultPercent(row)) }}
+          <div
+            class="flex flex-col gap-1.5 p-4 border border-border rounded-[var(--radius)] bg-[var(--card)] shadow-sm">
+            <span class="text-[0.72rem] font-black uppercase text-muted-foreground">Resultado Bruto</span>
+            <strong class="text-[1.18rem] leading-tight font-black" [ngClass]="resultClass(totalResult())">
+              {{ totalResult() | currency: portfolio.currency }}
             </strong>
-            <span class="text-xs text-muted-foreground">resultado</span>
-            @if (isFixedIncomeAsset(row) && taxWithheldValue(row) > 0) {
-            <span class="block text-xs text-muted-foreground">IR/IOF {{ taxWithheldValue(row) | currency: row.currency }}</span>
+            <span class="text-xs text-muted-foreground">{{ formatPercent(totalResultPercent()) }} sobre o custo</span>
+          </div>
+
+          <div
+            class="flex flex-col gap-1.5 p-4 border border-border rounded-[var(--radius)] bg-[var(--card)] shadow-sm">
+            <span class="text-[0.72rem] font-black uppercase text-muted-foreground">Rendimento</span>
+            <strong class="text-[1.18rem] leading-tight font-black text-foreground">{{ annualIncome() | currency:
+              portfolio.currency }}</strong>
+            <span class="text-xs text-muted-foreground">Yield: {{ formatPercent(portfolioYield()) }}</span>
+          </div>
+
+          <div
+            class="flex flex-col gap-1.5 p-4 border border-border rounded-[var(--radius)] bg-[var(--card)] shadow-sm">
+            <span class="text-[0.72rem] font-black uppercase text-muted-foreground">Ativos</span>
+            <strong class="text-[1.18rem] leading-tight font-black text-foreground">{{ assets().length }}</strong>
+            <span class="text-xs text-muted-foreground">{{ portfolio.benchmark || 'Sem benchmark' }}</span>
+          </div>
+
+          <div
+            class="flex flex-col gap-1.5 p-4 border border-border rounded-[var(--radius)] bg-[var(--card)] shadow-sm">
+            <span class="text-[0.72rem] font-black uppercase text-muted-foreground">Perfil</span>
+            <strong class="text-[1.18rem] leading-tight font-black text-foreground">
+              {{ RISK_PROFILES_LABELS[portfolio.riskProfile] }} / {{ STRATEGIES_LABELS[portfolio.strategy] }}
+            </strong>
+            <button type="button" [appContextMenuTriggerFor]="portfolioContextMenu" [appContextMenuData]="portfolio"
+              appContextMenuTriggerType="click" class="w-fit text-primary text-xs font-black hover:underline">
+              Ajustar carteira
+            </button>
+          </div>
+
+          <!-- Taxas -->
+          <div
+            class="flex flex-col gap-2.5 p-4 border border-border rounded-[var(--radius)] bg-[var(--card)] shadow-sm">
+            <span class="text-[0.72rem] font-black uppercase text-muted-foreground">Taxas</span>
+            @if (marketRates().status === 'error') {
+            <span class="text-red-700 text-xs">{{ marketRates().error }}</span>
+            } @else if (marketRates().rates.length > 0) {
+            <div class="grid gap-2">
+              @for (rate of marketRates().rates; track rate.nome) {
+              <div class="flex justify-between items-baseline gap-2">
+                <span class="text-[0.72rem] font-black uppercase text-muted-foreground">{{ rate.nome }}</span>
+                <strong class="text-sm text-foreground whitespace-nowrap">{{ formatRate(rate) }}</strong>
+              </div>
+              }
+            </div>
+            } @else {
+            <div class="flex items-center gap-2 text-xs text-muted-foreground">
+              <span class="material-symbols-outlined text-base animate-spin">sync</span>
+              <span>Carregando taxas</span>
+            </div>
             }
           </div>
         </div>
-      </ng-template>
-    </app-data-table>
-  </div>
-  } @else {
-  <div class="w-full flex-1 min-h-0">
-    <app-data-table title="Carteira de Investimentos" description="Acompanhe alocacao, preco medio, cotacao, renda e alvo."
-      [rows]="assets()" [columns]="assetColumns" [getRowId]="identifyAsset">
-      <ng-template #dataTableRow let-row>
-        <div class="grid grid-cols-[minmax(13rem,1.4fr)_minmax(5rem,0.45fr)_minmax(6rem,0.55fr)_minmax(6rem,0.55fr)_minmax(8rem,0.7fr)_minmax(8rem,0.7fr)_minmax(7rem,0.55fr)_minmax(7rem,0.55fr)_auto] min-w-[76rem] w-full gap-4 items-center cursor-context-menu"
-          [appContextMenuTriggerFor]="assetContextMenu" [appContextMenuData]="row">
-          <div class="flex flex-col min-w-0">
-            <span class="font-semibold text-foreground truncate">{{ row.ticker }} - {{ row.name }}</span>
-            <span class="text-xs text-muted-foreground truncate">
-              {{ typeLabel(row) }} - {{ isFixedIncomeAsset(row) ? fixedIncomeSummary(row) : (row.broker || 'Sem corretora') }}
-            </span>
+
+        <!-- Card de Alocação -->
+        <section
+          class="flex flex-col gap-4 p-4 border border-border rounded-[var(--radius)] bg-[var(--card)] shadow-sm">
+          <div class="flex flex-row items-start justify-between gap-4">
+            <div>
+              <div class="flex gap-3 items-center">
+                <span class="text-xs font-bold uppercase text-muted-foreground">Perfil de alocacao:</span>
+                <h2 class="text-[1.1rem] font-black text-foreground">{{ recommendedAllocationProfile().label }}</h2>
+              </div>
+              <p class="text-[0.84rem] text-muted-foreground">{{ recommendedAllocationProfile().description }}</p>
+              <!-- <p class="text-[0.84rem] text-muted-foreground">{{ allocationProfileMessage() }}</p> -->
+            </div>
+            <div
+              class="inline-flex items-center gap-[0.45rem] min-h-[2.5rem] px-[0.85rem] rounded-full whitespace-nowrap"
+              [ngClass]="{
+              'text-success bg-green-500/10': allocationProfileScore() >= 85,
+              'text-amber-700 bg-amber-500/10': allocationProfileScore() < 65,
+              'text-primary bg-primary/10': allocationProfileScore() >= 65 && allocationProfileScore() < 85
+            }">
+              <span class="material-symbols-outlined text-lg">track_changes</span>
+              <strong class="font-bold">{{ allocationProfileScore() }}%</strong>
+            </div>
           </div>
 
-          <span class="text-sm font-semibold text-foreground truncate">{{ row.quantity }}</span>
-          <span class="text-sm font-semibold text-foreground truncate">{{ row.averagePrice | currency: row.currency }}</span>
-          <span class="text-sm font-semibold text-foreground truncate">{{ grossCurrentValue(row) | currency: row.currency }}</span>
-          <span class="text-sm font-semibold text-foreground truncate">{{ currentValue(row) | currency: row.currency }}</span>
-          <span class="text-sm font-semibold" [ngClass]="resultClass(resultValue(row))">
-            {{ resultValue(row) | currency: row.currency }}
-          </span>
-          <span class="text-sm font-semibold text-foreground truncate">{{ formatPercent(allocation(row)) }}</span>
-          <span class="text-sm font-semibold" [ngClass]="targetGap(row) > 0 ? 'text-amber-700' : 'text-muted-foreground'">
-            {{ formatPercent(targetGap(row)) }}
-          </span>
 
-          <button [appContextMenuTriggerFor]="assetContextMenu" [appContextMenuData]="row"
-            appContextMenuTriggerType="click"
-            class="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-            type="button" aria-label="Mais opcoes">
-            <span class="material-symbols-outlined text-xl block">more_vert</span>
-          </button>
+          <div class="grid gap-2 grid-cols-2">
+            @for (bucket of allocationBuckets(); track bucket.key) {
+            <div class="grid gap-2 items-center pt-3">
+              <div class="inline-flex items-center gap-2 min-w-0">
+                <span class="w-3 h-3 rounded-full flex-none" [style.background-color]="bucket.color"></span>
+                <strong class="text-[0.9rem] font-bold text-foreground truncate">{{ bucket.label }}</strong>
+              </div>
+
+              <div class="grid gap-1.5">
+                <span class="block h-[0.48rem] rounded-full overflow-hidden bg-muted opacity-40">
+                  <i class="block h-full rounded-full" [style.width.%]="bucket.target"
+                    [style.background-color]="bucket.color"></i>
+                </span>
+                <span class="block h-[0.48rem] rounded-full overflow-hidden bg-muted">
+                  <i class="block h-full rounded-full" [style.width.%]="bucket.current"
+                    [style.background-color]="bucket.color"></i>
+                </span>
+              </div>
+
+              <div
+                class="flex justify-between md:grid md:justify-items-end lg:flex lg:justify-between gap-1 whitespace-nowrap">
+                <span class="text-muted-foreground text-[0.75rem]">Meta {{ formatPercent(bucket.target) }}</span>
+                <b class="text-[0.82rem]" [ngClass]="allocationGap(bucket) >= 0 ? 'text-success' : 'text-danger'">
+                  Atual {{ formatPercent(bucket.current) }}
+                </b>
+              </div>
+            </div>
+            }
+          </div>
+        </section>
+      </section>
+
+      <!-- Histórico de Snapshots -->
+      @if (snapshotEvolution().length > 0) {
+      <div class="bg-[var(--card)] rounded-xl border border-border p-4 shadow-sm">
+        <div class="flex items-center justify-between gap-4 mb-3">
+          <div>
+            <span class="text-xs font-bold uppercase text-muted-foreground">Historico da Carteira</span>
+            <strong class="block mt-1 text-sm text-foreground">Ultima captura: {{ lastSnapshotDate() }}</strong>
+          </div>
+          <span class="text-xs text-muted-foreground">{{ assetSnapshots().length }} snapshots</span>
         </div>
-      </ng-template>
-    </app-data-table>
-  </div>
-  }
-  } @else {
-  <div class="bg-[var(--card)] rounded-xl border border-border shadow-sm p-8 text-center">
-    <span class="material-symbols-outlined text-4xl text-muted-foreground">workspaces</span>
-    <h2 class="mt-3 text-lg font-black text-foreground">Nenhuma carteira cadastrada</h2>
-    <p class="mt-1 text-sm text-muted-foreground">Crie uma carteira para adicionar ativos e acompanhar sua evolucao.</p>
-    <button type="button" (click)="openPortfolioModal()" class="primary-button mt-5 mx-auto w-fit">
-      Criar Carteira
-    </button>
-  </div>
-  }
-</section>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+          @for (item of snapshotEvolution(); track item.date) {
+          <div class="rounded-md border border-border p-3 bg-[var(--muted)]">
+            <span class="block text-xs font-bold text-muted-foreground">{{ item.date | date: 'dd/MM/yyyy' }}</span>
+            <strong class="block mt-1 text-sm text-foreground">{{ item.net | currency: portfolio.currency }}</strong>
+            <span class="block text-xs" [ngClass]="resultClass(item.result)">
+              Resultado {{ item.result | currency: portfolio.currency }}
+            </span>
+          </div>
+          }
+        </div>
+      </div>
+      }
 
+      <!-- Tabela de Ativos -->
+      <div class="w-full h-full min-h-0 overflow-auto ">
+        <app-data-table title="Sua Carteira" description="Resumo simplificado para acompanhar o essencial."
+          [rows]="assets()" [columns]="assetColumns" [getRowId]="identifyAsset">
+          <ng-template #dataTableRow let-row>
+            <div class="grid grid-cols-[1fr_auto_auto] min-w-[42rem] w-full gap-4 items-center px-2"
+              [appContextMenuTriggerFor]="assetContextMenu" [appContextMenuData]="row">
+              <div class="flex items-center gap-4 min-w-0">
+                <div
+                  class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-700 flex-shrink-0">
+                  <span class="material-symbols-outlined text-xl">finance</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="font-semibold text-foreground truncate">{{ row.ticker }} - {{ row.name }}</span>
+                  <span class="text-xs text-muted-foreground truncate">{{ typeLabel(row) }} - {{ fixedIncomeSummary(row)
+                    }}</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <strong class="block text-sm text-foreground">{{ currentValue(row) | currency: row.currency }}</strong>
+                <span class="text-xs text-muted-foreground">{{ isFixedIncomeAsset(row) ? 'liquido hoje' : 'hoje'
+                  }}</span>
+              </div>
+              <div class="text-right min-w-[8rem]">
+                <strong class="block text-sm" [ngClass]="resultClass(resultValue(row))">{{
+                  formatPercent(resultPercent(row)) }}</strong>
+                <span class="text-xs text-muted-foreground">resultado</span>
+              </div>
+            </div>
+          </ng-template>
+        </app-data-table>
+      </div>
+    </div>
+
+    } @else {
+    <!-- Empty State -->
+    <div class="bg-[var(--card)] rounded-xl border border-border shadow-sm p-8 text-center flex flex-col items-center">
+      <span class="material-symbols-outlined text-4xl text-muted-foreground">workspaces</span>
+      <h2 class="mt-3 text-lg font-black text-foreground">Nenhuma carteira cadastrada</h2>
+      <p class="mt-1 text-sm text-muted-foreground">Crie uma carteira para adicionar ativos e acompanhar sua evolucao.
+      </p>
+      <button type="button" (click)="openPortfolioModal()"
+        class="mt-5 px-6 py-2 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-md font-bold hover:opacity-90">
+        Criar Carteira
+      </button>
+    </div>
+    }
+  </div>
+</section>
 <app-context-menu #assetContextMenu [items]="assetMenuItems" />
 <app-context-menu #portfolioContextMenu [items]="portfolioMenuItems" />

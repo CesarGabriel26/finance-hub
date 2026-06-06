@@ -1,322 +1,439 @@
-<section class="dashboard-shell h-full min-h-0 w-full overflow-x-hidden pr-1">
-    <div class="grid gap-2 min-h-full">
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-2">
-            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase text-muted-foreground">Patrimonio</span>
-                    <span class="material-symbols-outlined text-emerald-700">account_balance_wallet</span>
-                </div>
-                <strong class="block mt-3 text-xl text-foreground">{{ netWorth() | currency: 'BRL' }}</strong>
-                <span class="text-xs text-muted-foreground">Contas + investimentos</span>
-            </article>
-
-            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase text-muted-foreground">Saldo em contas</span>
-                    <span class="material-symbols-outlined text-blue-700">account_balance</span>
-                </div>
-                <strong class="block mt-3 text-xl text-foreground">{{ totalBalance() | currency: 'BRL' }}</strong>
-                <span class="text-xs text-muted-foreground">{{ statementBalances().length }} saldos importados</span>
-            </article>
-
-            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase text-muted-foreground">Receitas do mes</span>
-                    <span class="material-symbols-outlined text-emerald-700">trending_up</span>
-                </div>
-                <strong class="block mt-3 text-xl text-emerald-700">{{ monthIncome() | currency: 'BRL' }}</strong>
-                <span class="text-xs text-muted-foreground">Entradas confirmadas</span>
-            </article>
-
-            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase text-muted-foreground">Despesas do mes</span>
-                    <span class="material-symbols-outlined text-red-700">trending_down</span>
-                </div>
-                <strong class="block mt-3 text-xl text-red-700">{{ monthExpense() | currency: 'BRL' }}</strong>
-                <span class="text-xs text-muted-foreground">Saidas confirmadas</span>
-            </article>
-
-            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase text-muted-foreground">Investimentos</span>
-                    <span class="material-symbols-outlined text-violet-700">query_stats</span>
-                </div>
-                <strong class="block mt-3 text-xl text-foreground">{{ investmentsValue() | currency: 'BRL' }}</strong>
-                <span class="text-xs" [ngClass]="resultClass(investmentReturn())">
-                    {{ investmentReturn() | currency: 'BRL' }} ({{ formatPercent(investmentReturnPercent()) }})
-                </span>
-            </article>
-
-            <article class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase text-muted-foreground">Fluxo liquido</span>
-                    <span class="material-symbols-outlined" [ngClass]="resultClass(monthNet())">swap_vert</span>
-                </div>
-                <strong class="block mt-3 text-xl" [ngClass]="resultClass(monthNet())">{{ monthNet() | currency: 'BRL'
-                    }}</strong>
-                <span class="text-xs text-muted-foreground">Receitas - despesas</span>
-            </article>
+<section class="dashboard-page">
+  <section class="quick-overview">
+    <h2>Visao geral de {{ currentMonthLabel() }}</h2>
+    <div class="overview-grid">
+      <a routerLink="/main/account/bank-accounts" class="overview-card blue">
+        <span class="material-symbols-outlined">account_balance</span>
+        <div>
+          <strong>{{ totalBalance() | currency: 'BRL' }}</strong>
+          <small>Contas</small>
         </div>
-
-        <div class="grid grid-cols-1 xl:grid-cols-[1.6fr_0.9fr] gap-2">
-            <section class="bg-card border border-border rounded-lg p-4 shadow-sm min-h-[18rem]">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-black text-foreground">Fluxo dos ultimos 6 meses</h2>
-                        <p class="text-xs text-muted-foreground">Comparativo de entradas, saidas e saldo mensal.</p>
-                    </div>
-                    <div class="flex items-center gap-3 text-xs font-bold text-muted-foreground">
-                        <span class="inline-flex items-center gap-1"><span
-                                class="h-2 w-2 rounded-full bg-emerald-600"></span>Receita</span>
-                        <span class="inline-flex items-center gap-1"><span
-                                class="h-2 w-2 rounded-full bg-red-500"></span>Despesa</span>
-                    </div>
-                </div>
-
-                <div class="mt-6 grid grid-cols-6 gap-3 h-52 items-end">
-                    @for (month of monthFlow(); track month.key) {
-                    <div class="h-full grid grid-rows-[1fr_auto] gap-2">
-                        <div class="h-full flex items-end justify-center gap-1 border-b border-border">
-                            <div class="w-4 rounded-t bg-emerald-600/80" [style.height.%]="barHeight(month.income)">
-                            </div>
-                            <div class="w-4 rounded-t bg-red-500/80" [style.height.%]="barHeight(month.expense)"></div>
-                        </div>
-                        <div class="text-center">
-                            <span class="block text-xs font-bold text-foreground uppercase">{{ month.label }}</span>
-                            <span class="text-[0.68rem]" [ngClass]="resultClass(month.balance ?? month.net)">
-                                {{ (month.balance ?? month.net) | currency: 'BRL' : 'symbol' : '1.0-0' }}
-                            </span>
-                            <span class="block text-[0.62rem] text-muted-foreground">
-                                {{ month.balance !== null ? 'Saldo' : 'Fluxo' }}
-                            </span>
-                        </div>
-                    </div>
-                    }
-                </div>
-            </section>
-
-            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-black text-foreground">Saude financeira</h2>
-                        <p class="text-xs text-muted-foreground">Sinal rapido baseado em fluxo, orçamento e vencimentos.
-                        </p>
-                    </div>
-                    <span class="rounded-full px-3 py-1 text-xs font-black bg-emerald-500/10 text-emerald-700">
-                        {{ healthLabel() }}
-                    </span>
-                </div>
-
-                <div class="mt-5 flex items-center gap-5">
-                    <div class="relative grid h-28 w-28 place-items-center rounded-full"
-                        [style.background]="'conic-gradient(var(--success) ' + financialHealthScore() + '%, var(--muted) 0)'">
-                        <div class="grid h-20 w-20 place-items-center rounded-full bg-card">
-                            <strong class="text-2xl text-foreground">{{ financialHealthScore() }}</strong>
-                        </div>
-                    </div>
-                    <div class="grid gap-3 text-sm">
-                        <div class="flex items-center justify-between gap-8">
-                            <span class="text-muted-foreground">Orcamento usado</span>
-                            <strong class="text-foreground">{{ formatPercent(budgetUsage()) }}</strong>
-                        </div>
-                        <div class="flex items-center justify-between gap-8">
-                            <span class="text-muted-foreground">Atrasados</span>
-                            <strong [class.text-red-700]="overduePayablesAmount() > 0">{{ overduePayablesAmount() |
-                                currency: 'BRL' }}</strong>
-                        </div>
-                        <div class="flex items-center justify-between gap-8">
-                            <span class="text-muted-foreground">Metas ativas</span>
-                            <strong class="text-foreground">{{ savingGoals().length }}</strong>
-                        </div>
-                    </div>
-                </div>
-            </section>
+      </a>
+      <a routerLink="/main/transactions/history" class="overview-card green">
+        <span class="material-symbols-outlined">trending_up</span>
+        <div>
+          <strong>{{ monthIncome() | currency: 'BRL' }}</strong>
+          <small>Receitas</small>
         </div>
-
-        <div class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr_0.85fr] gap-2">
-            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-black text-foreground">Orcamentos do mes</h2>
-                        <p class="text-xs text-muted-foreground">Categorias mais pressionadas no periodo.</p>
-                    </div>
-                    <strong class="text-sm text-foreground">{{ totalBudgetSpent() | currency: 'BRL' }}</strong>
-                </div>
-
-                <div class="mt-4 grid gap-3 dashboard-list-scroll">
-                    @for (item of budgetInsights(); track item.budget.id) {
-                    <div>
-                        <div class="flex items-center justify-between gap-3 text-sm">
-                            <span class="font-semibold text-foreground truncate">{{ item.category?.name || 'Categoria'
-                                }}</span>
-                            <span class="text-xs text-muted-foreground">{{ item.spent | currency: 'BRL' }} / {{
-                                item.budget.amountLimit | currency: 'BRL' }}</span>
-                        </div>
-                        <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden">
-                            <div class="h-full rounded-full" [ngClass]="progressClass(item.progress)"
-                                [style.width.%]="item.progress"></div>
-                        </div>
-                    </div>
-                    } @empty {
-                    <p class="text-sm text-muted-foreground">Nenhum orçamento configurado para o mês.</p>
-                    }
-                </div>
-            </section>
-
-            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-black text-foreground">Agenda financeira</h2>
-                        <p class="text-xs text-muted-foreground">Proximas contas a pagar e receber.</p>
-                    </div>
-                    <span class="material-symbols-outlined text-muted-foreground">calendar_month</span>
-                </div>
-
-                <div class="mt-4 grid gap-3 dashboard-list-scroll">
-                    @for (entry of upcomingEntries(); track entry.kind + entry.id) {
-                    <div class="grid grid-cols-[auto_1fr_auto] gap-3 items-center">
-                        <span class="grid h-9 w-9 place-items-center rounded-full"
-                            [ngClass]="entry.kind === 'receivable' ? 'bg-emerald-500/10 text-emerald-700' : 'bg-red-500/10 text-red-700'">
-                            <span class="material-symbols-outlined text-lg">
-                                {{ entry.kind === 'receivable' ? 'request_quote' : 'receipt_long' }}
-                            </span>
-                        </span>
-                        <div class="min-w-0">
-                            <span class="block text-sm font-semibold text-foreground truncate">{{ entry.description
-                                }}</span>
-                            <span class="text-xs text-muted-foreground">{{ entry.dueDate | date: 'dd/MM/yyyy' }}</span>
-                        </div>
-                        <strong class="text-sm"
-                            [ngClass]="entry.kind === 'receivable' ? 'text-emerald-700' : 'text-red-700'">
-                            {{ entry.amount | currency: 'BRL' }}
-                        </strong>
-                    </div>
-                    } @empty {
-                    <p class="text-sm text-muted-foreground">Nenhum vencimento pendente.</p>
-                    }
-                </div>
-            </section>
-
-            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-black text-foreground">Metas</h2>
-                        <p class="text-xs text-muted-foreground">Progresso dos principais objetivos.</p>
-                    </div>
-                    <strong class="text-sm text-foreground">{{ formatPercent(averageGoalProgress()) }}</strong>
-                </div>
-
-                <div class="mt-4 grid gap-3 dashboard-list-scroll">
-                    @for (goal of savingGoals(); track goal.id) {
-                    <div>
-                        <div class="flex items-center justify-between gap-3 text-sm">
-                            <span class="font-semibold text-foreground truncate">{{ goal.name }}</span>
-                            <span class="text-xs text-muted-foreground">{{ goalProgress(goal).toFixed(0) }}%</span>
-                        </div>
-                        <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden">
-                            <div class="h-full rounded-full bg-emerald-600" [style.width.%]="goalProgress(goal)"></div>
-                        </div>
-                    </div>
-                    } @empty {
-                    <p class="text-sm text-muted-foreground">Nenhuma meta cadastrada.</p>
-                    }
-                </div>
-            </section>
+      </a>
+      <a routerLink="/main/transactions/history" class="overview-card red">
+        <span class="material-symbols-outlined">trending_down</span>
+        <div>
+          <strong>{{ monthExpense() | currency: 'BRL' }}</strong>
+          <small>Despesas</small>
         </div>
-
-        <div class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr_0.85fr] gap-2">
-            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-black text-foreground">Transacoes recentes</h2>
-                        <p class="text-xs text-muted-foreground">Ultimas movimentacoes registradas.</p>
-                    </div>
-                    <span class="material-symbols-outlined text-muted-foreground">history</span>
-                </div>
-
-                <div class="mt-4 grid gap-3 dashboard-list-scroll dashboard-list-scroll--large">
-                    @for (transaction of recentTransactions(); track transaction.id) {
-                    <div class="grid grid-cols-[auto_1fr_auto] gap-3 items-center">
-                        <span class="grid h-9 w-9 place-items-center rounded-full bg-muted">
-                            <span class="material-symbols-outlined text-lg text-muted-foreground">
-                                {{ getTransactionCategory(transaction)?.icon || 'payments' }}
-                            </span>
-                        </span>
-                        <div class="min-w-0">
-                            <span class="block text-sm font-semibold text-foreground truncate">{{
-                                transaction.description }}</span>
-                            <span class="text-xs text-muted-foreground">{{ getAccountName(transaction) }} - {{
-                                transaction.date | date: 'dd/MM/yyyy' }}</span>
-                        </div>
-                        <strong class="text-sm" [ngClass]="resultClass(signedTransactionAmount(transaction))">
-                            {{ signedTransactionAmount(transaction) | currency: 'BRL' }}
-                        </strong>
-                    </div>
-                    } @empty {
-                    <p class="text-sm text-muted-foreground">Nenhuma transacao registrada.</p>
-                    }
-                </div>
-            </section>
-
-            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-black text-foreground">Gastos por categoria</h2>
-                        <p class="text-xs text-muted-foreground">Top categorias de despesa no mes.</p>
-                    </div>
-                    <strong class="text-sm text-red-700">{{ monthExpense() | currency: 'BRL' }}</strong>
-                </div>
-
-                <div class="mt-4 grid gap-3 dashboard-list-scroll">
-                    @for (row of categorySpending(); track row.category?.id || 'empty') {
-                    <div>
-                        <div class="flex items-center justify-between gap-3 text-sm">
-                            <span class="font-semibold text-foreground truncate">{{ row.category?.name || 'Sem despesas'
-                                }}</span>
-                            <span class="text-xs text-muted-foreground">{{ row.amount | currency: 'BRL' }}</span>
-                        </div>
-                        <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden">
-                            <div class="h-full rounded-full bg-red-500" [style.width.%]="row.percent"></div>
-                        </div>
-                    </div>
-                    }
-                </div>
-            </section>
-
-            <section class="bg-card border border-border rounded-lg p-4 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-black text-foreground">Investimentos</h2>
-                        <p class="text-xs text-muted-foreground">Resumo de carteira e retorno.</p>
-                    </div>
-                    <span class="material-symbols-outlined text-violet-700">monitoring</span>
-                </div>
-
-                <div class="mt-4 grid gap-4">
-                    <div>
-                        <span class="text-xs text-muted-foreground">Valor atual</span>
-                        <strong class="block text-xl text-foreground">{{ investmentsValue() | currency: 'BRL'
-                            }}</strong>
-                    </div>
-                    <div>
-                        <span class="text-xs text-muted-foreground">Resultado</span>
-                        <strong class="block text-lg" [ngClass]="resultClass(investmentReturn())">
-                            {{ investmentReturn() | currency: 'BRL' }} ({{ formatPercent(investmentReturnPercent()) }})
-                        </strong>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                            <span class="text-xs text-muted-foreground">Carteiras</span>
-                            <strong class="block text-foreground">{{ portfolios().length }}</strong>
-                        </div>
-                        <div>
-                            <span class="text-xs text-muted-foreground">Ativos</span>
-                            <strong class="block text-foreground">{{ portfolioAssets().length }}</strong>
-                        </div>
-                    </div>
-                </div>
-            </section>
+      </a>
+      <a routerLink="/main/investments/dashboard" class="overview-card violet">
+        <span class="material-symbols-outlined">monitoring</span>
+        <div>
+          <strong>{{ investmentsValue() | currency: 'BRL' }}</strong>
+          <small>Investimentos</small>
         </div>
+      </a>
     </div>
+  </section>
+
+  <div class="hero-grid">
+    <article class="balance-card">
+      <span class="eyebrow">Saldo atual</span>
+      <strong>{{ totalBalance() | currency: 'BRL' }}</strong>
+      <div class="balance-steps">
+        <div>
+          <span>Inicio</span>
+          <b>{{ initialBalance() | currency: 'BRL' }}</b>
+        </div>
+        <div>
+          <span>Hoje</span>
+          <b>{{ totalBalance() | currency: 'BRL' }}</b>
+        </div>
+        <div>
+          <span>Previsto</span>
+          <b>{{ projectedBalance() | currency: 'BRL' }}</b>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel-card expense-chart">
+      <div class="panel-heading">
+        <div>
+          <h2>Receitas e despesas</h2>
+          <p>{{ trendRangeLabel() }}.</p>
+        </div>
+        <div class="chart-range">
+          <button type="button" (click)="setTrendRange('7d')" [class.active]="trendRange() === '7d'">7d</button>
+          <button type="button" (click)="setTrendRange('30d')" [class.active]="trendRange() === '30d'">30d</button>
+          <button type="button" (click)="setTrendRange('6m')" [class.active]="trendRange() === '6m'">6m</button>
+          <button type="button" (click)="setTrendRange('12m')" [class.active]="trendRange() === '12m'">12m</button>
+          <button type="button" (click)="setTrendRange('3y')" [class.active]="trendRange() === '3y'">3a</button>
+        </div>
+      </div>
+
+      <div class="chart-canvas trend-canvas">
+        <canvas #trendChartCanvas></canvas>
+      </div>
+    </article>
+
+    <article class="panel-card pending-card">
+      <div class="tabs">
+        <button type="button" (click)="setPendingTab('payable')" [class.active]="pendingTab() === 'payable'">A pagar</button>
+        <button type="button" (click)="setPendingTab('receivable')" [class.active]="pendingTab() === 'receivable'">A receber</button>
+      </div>
+      <div class="pending-state">
+        <span class="material-symbols-outlined">notifications_active</span>
+        <p>
+          Voce tem <strong>{{ pendingTabCount() }}</strong> {{ pendingTabLabel() }} em aberto.
+        </p>
+        <b [class.success-text]="pendingTab() === 'receivable'" [class.danger-text]="pendingTab() === 'payable'">
+          {{ pendingTabAmount() | currency: 'BRL' }}
+        </b>
+        <div class="pending-preview">
+          @for (entry of pendingTabEntries(); track entry.kind + entry.id) {
+          <small>{{ entry.description }} - {{ entry.amount | currency: 'BRL' }}</small>
+          } @empty {
+          <small>Nenhum item pendente nessa aba.</small>
+          }
+        </div>
+        <a routerLink="/main/account/calendar" class="outline-action">Ver agenda</a>
+      </div>
+    </article>
+  </div>
+
+  <section class="support-grid">
+    <article class="support-card">
+      <span class="material-symbols-outlined">speed</span>
+      <div>
+        <small>Limite seguro para hoje</small>
+        <strong>{{ safeDailyLimit() | currency: 'BRL' }}</strong>
+        <p>Considera saldo, contas pendentes e margem de seguranca.</p>
+      </div>
+    </article>
+
+    <article class="support-card">
+      <span class="material-symbols-outlined">calendar_view_week</span>
+      <div>
+        <small>Saldo em 7 dias</small>
+        <strong [ngClass]="resultClass(projectedBalanceIn(7))">{{ projectedBalanceIn(7) | currency: 'BRL' }}</strong>
+        <p>Inclui contas a pagar e receber proximas.</p>
+      </div>
+    </article>
+
+    <article class="support-card">
+      <span class="material-symbols-outlined">calendar_month</span>
+      <div>
+        <small>Saldo em 30 dias</small>
+        <strong [ngClass]="resultClass(projectedBalanceIn(30))">{{ projectedBalanceIn(30) | currency: 'BRL' }}</strong>
+        <p>Previsao simples para evitar sustos no mes.</p>
+      </div>
+    </article>
+
+    <article class="support-card pots-card">
+      <span class="material-symbols-outlined">savings</span>
+      <div>
+        <small>Potes do mes</small>
+        <div class="pots-list">
+          <b>Essencial {{ survivalPot() | currency: 'BRL' }}</b>
+          <b>Livre {{ pleasurePot() | currency: 'BRL' }}</b>
+          <b>Futuro {{ futurePot() | currency: 'BRL' }}</b>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  @if (coachSummary(); as coach) {
+  <section class="coach-panel">
+    <div class="coach-header">
+      <div>
+        <span class="eyebrow">Ritmo financeiro</span>
+        <h2>Sequencias e missoes do mes</h2>
+        <p>
+          Saude {{ coach.healthScore }}% - consumo do mes
+          {{ coach.monthConsumerExpense | currency: 'BRL' }}.
+          @if (coach.monthWealthBuilding > 0) {
+          Aportes: {{ coach.monthWealthBuilding | currency: 'BRL' }}.
+          }
+        </p>
+      </div>
+      <div class="health-pill" [class.good]="coach.healthScore >= 80" [class.warning]="coach.healthScore < 75">
+        <span class="material-symbols-outlined">favorite</span>
+        <strong>{{ coach.healthLabel }}</strong>
+      </div>
+    </div>
+
+    <div class="coach-grid">
+      <div class="streak-grid">
+        @for (streak of coach.streaks; track streak.key) {
+        <article class="streak-card" [class.good]="streak.tone === 'good'" [class.warning]="streak.tone === 'warning'">
+          <span class="material-symbols-outlined">{{ streak.icon }}</span>
+          <div>
+            <strong>{{ streak.days }}</strong>
+            <small>dias</small>
+          </div>
+          <h3>{{ streak.label }}</h3>
+          <p>{{ streak.description }}</p>
+          <b>{{ streak.targetLabel }}</b>
+        </article>
+        }
+      </div>
+
+      <div class="mission-list">
+        <div class="mini-heading">
+          <h3>Missoes</h3>
+          <span>Pequenos passos para subir a saude</span>
+        </div>
+        @for (mission of coach.missions.slice(0, 3); track mission.id) {
+        <a [routerLink]="mission.route || '/main/dashboard'" class="mission-row">
+          <span class="mission-icon material-symbols-outlined">{{ mission.icon }}</span>
+          <div>
+            <strong>{{ mission.title }}</strong>
+            <small>{{ mission.description }}</small>
+            <span class="mission-progress"><i [style.width.%]="mission.progress"></i></span>
+          </div>
+          <b>{{ mission.reward }}</b>
+        </a>
+        }
+      </div>
+
+      <div class="insight-list">
+        <div class="mini-heading">
+          <h3>Insights</h3>
+          <span>Leitura inteligente, sem punir investimento</span>
+        </div>
+        @for (insight of coach.insights.slice(0, 3); track insight.id) {
+        <a [routerLink]="insight.route || '/main/dashboard'" class="insight-row" [class.good]="insight.tone === 'good'"
+          [class.danger]="insight.tone === 'danger'" [class.warning]="insight.tone === 'warning'">
+          <span class="material-symbols-outlined">{{ insight.icon }}</span>
+          <div>
+            <strong>{{ insight.title }}</strong>
+            <small>{{ insight.body }}</small>
+          </div>
+        </a>
+        }
+      </div>
+    </div>
+  </section>
+  }
+
+
+
+  <div class="content-grid">
+    <section class="panel-card accounts-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Minhas contas</h2>
+          <p>Saldo separado por banco, carteira ou investimento.</p>
+        </div>
+        <a routerLink="/main/account/bank-accounts" class="text-link">Gerenciar</a>
+      </div>
+
+      <div class="simple-list">
+        @for (row of accountRows(); track row.account.id) {
+        <div class="list-row">
+          <span class="row-icon" [style.background-color]="(row.account.color || '#1f7ae0') + '18'">
+            <span class="material-symbols-outlined" [style.color]="row.account.color || '#1f7ae0'">
+              {{ row.account.icon || 'account_balance' }}
+            </span>
+          </span>
+          <div>
+            <strong>{{ row.account.name }}</strong>
+            <small>{{ accountTypeLabel(row.account.type) }}</small>
+          </div>
+          <b [ngClass]="resultClass(row.balance)">{{ row.balance | currency: 'BRL' }}</b>
+        </div>
+        } @empty {
+        <div class="empty-state">
+          <span class="material-symbols-outlined">account_balance</span>
+          <p>Cadastre sua primeira conta para acompanhar o saldo real.</p>
+          <a routerLink="/main/account/bank-accounts" class="outline-action">Criar conta</a>
+        </div>
+        }
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="panel-heading">
+        <div>
+          <h2>Gastos por categoria</h2>
+          <p>As areas que mais pesaram neste mes.</p>
+        </div>
+        <strong class="danger-text">{{ monthExpense() | currency: 'BRL' }}</strong>
+      </div>
+
+      <div class="simple-list compact">
+        <div class="chart-canvas doughnut-canvas">
+          <canvas #expenseCategoryChartCanvas></canvas>
+        </div>
+        @for (row of topCategorySpending(); track row.category?.id || 'empty') {
+        <div class="category-row">
+          <div>
+            <strong>{{ row.category?.name || 'Sem despesas' }}</strong>
+            <small>{{ formatPercent(row.percent) }}</small>
+          </div>
+          <div class="progress-track">
+            <span [style.width.%]="row.percent"></span>
+          </div>
+          <b>{{ row.amount | currency: 'BRL' }}</b>
+        </div>
+        }
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="panel-heading">
+        <div>
+          <h2>Receitas por categoria</h2>
+          <p>De onde veio o dinheiro neste mes.</p>
+        </div>
+        <strong class="success-text">{{ monthIncome() | currency: 'BRL' }}</strong>
+      </div>
+
+      <div class="simple-list compact">
+        <div class="chart-canvas doughnut-canvas">
+          <canvas #incomeCategoryChartCanvas></canvas>
+        </div>
+        @for (row of topIncomeCategories(); track row.category?.id || 'empty') {
+        <div class="category-row">
+          <div>
+            <strong>{{ row.category?.name || 'Sem receitas' }}</strong>
+            <small>{{ formatPercent(row.percent) }}</small>
+          </div>
+          <div class="progress-track income">
+            <span [style.width.%]="row.percent"></span>
+          </div>
+          <b>{{ row.amount | currency: 'BRL' }}</b>
+        </div>
+        }
+      </div>
+    </section>
+
+  </div>
+
+  <div class="content-grid lower-grid">
+    <section class="panel-card">
+      <div class="panel-heading">
+        <div>
+          <h2>Proximos compromissos</h2>
+          <p>Contas que ainda precisam de atencao.</p>
+        </div>
+        <a routerLink="/main/account/calendar" class="text-link">Agenda</a>
+      </div>
+
+      <div class="simple-list compact">
+        @for (entry of upcomingEntries().slice(0, 5); track entry.kind + entry.id) {
+        <div class="list-row">
+          <span class="row-icon" [class.income-icon]="entry.kind === 'receivable'"
+            [class.expense-icon]="entry.kind === 'payable'">
+            <span class="material-symbols-outlined">
+              {{ entry.kind === 'receivable' ? 'request_quote' : 'receipt_long' }}
+            </span>
+          </span>
+          <div>
+            <strong>{{ entry.description }}</strong>
+            <small>Vence em {{ entry.dueDate | date: 'dd/MM/yyyy' }}</small>
+          </div>
+          <b [class.success-text]="entry.kind === 'receivable'" [class.danger-text]="entry.kind === 'payable'">
+            {{ entry.amount | currency: 'BRL' }}
+          </b>
+        </div>
+        } @empty {
+        <div class="empty-state small">
+          <p>Nenhuma conta pendente por enquanto.</p>
+        </div>
+        }
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="panel-heading">
+        <div>
+          <h2>Orcamentos</h2>
+          <p>Quanto do limite mensal ja foi usado.</p>
+        </div>
+        <a routerLink="/main/budget/expense-budgets" class="text-link">Abrir</a>
+      </div>
+
+      <div class="simple-list compact">
+        @for (item of featuredBudgetInsights(); track item.budget.id) {
+        <div class="category-row">
+          <div>
+            <strong>{{ item.category?.name || 'Categoria' }}</strong>
+            <small>{{ item.spent | currency: 'BRL' }} de {{ item.budget.amountLimit | currency: 'BRL' }}</small>
+          </div>
+          <div class="progress-track">
+            <span [class.warning]="item.progress >= 85 && item.progress < 100" [class.danger]="item.progress >= 100"
+              [style.width.%]="item.progress"></span>
+          </div>
+          <b>{{ formatPercent(item.progress) }}</b>
+        </div>
+        } @empty {
+        <div class="empty-state small">
+          <p>Crie um orcamento para receber alertas antes de estourar uma categoria.</p>
+          <a routerLink="/main/budget/expense-budgets" class="outline-action">Criar orcamento</a>
+        </div>
+        }
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="panel-heading">
+        <div>
+          <h2>Objetivos</h2>
+          <p>Metas simples para guardar dinheiro.</p>
+        </div>
+        <a routerLink="/main/budget/savings-targets" class="text-link">Abrir</a>
+      </div>
+
+      <div class="simple-list compact">
+        @for (goal of activeGoals(); track goal.id) {
+        <div class="category-row">
+          <div>
+            <strong>{{ goal.name }}</strong>
+            <small>{{ goal.currentAmount | currency: 'BRL' }} de {{ goal.targetAmount | currency: 'BRL' }}</small>
+          </div>
+          <div class="progress-track">
+            <span [style.width.%]="goalProgress(goal)"></span>
+          </div>
+          <b>{{ goalProgress(goal).toFixed(0) }}%</b>
+        </div>
+        } @empty {
+        <div class="empty-state small">
+          <p>Adicione uma meta como reserva, viagem ou carro.</p>
+          <a routerLink="/main/budget/savings-targets" class="outline-action">Criar objetivo</a>
+        </div>
+        }
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="panel-heading">
+        <div>
+          <h2>Ultimos movimentos</h2>
+          <p>O que entrou e saiu recentemente.</p>
+        </div>
+        <a routerLink="/main/transactions/history" class="text-link">Ver todos</a>
+      </div>
+
+      <div class="simple-list compact">
+        @for (transaction of recentActivity(); track transaction.id) {
+        <div class="list-row">
+          <span class="row-icon" [style.background-color]="transactionColor(transaction) + '18'">
+            <span class="material-symbols-outlined" [style.color]="transactionColor(transaction)">
+              {{ transactionIcon(transaction) }}
+            </span>
+          </span>
+          <div>
+            <strong>{{ transaction.description }}</strong>
+            <small>{{ getAccountName(transaction) }} - {{ transaction.date | date: 'dd/MM/yyyy' }}</small>
+          </div>
+          <b [ngClass]="resultClass(signedTransactionAmount(transaction))">
+            {{ signedTransactionAmount(transaction) | currency: 'BRL' }}
+          </b>
+        </div>
+        } @empty {
+        <div class="empty-state small">
+          <p>Nenhum movimento registrado ainda.</p>
+        </div>
+        }
+      </div>
+    </section>
+  </div>
 </section>

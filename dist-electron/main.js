@@ -37,6 +37,8 @@ const electron_1 = require("electron");
 const path = __importStar(require("path"));
 const url = __importStar(require("url"));
 const api_1 = require("./api");
+const app_updates_1 = require("./api/app-updates");
+const app_settings_1 = require("./api/app-settings");
 const market_rates_1 = require("./api/market-rates");
 const notifications_1 = require("./api/notifications");
 const db_1 = require("./db");
@@ -57,7 +59,7 @@ function createWindow() {
             contextIsolation: true, // Melhor prática de segurança
             sandbox: false,
         },
-        icon: path.join(__dirname, '..', 'public', 'favicon.ico'),
+        icon: path.join(__dirname, '..', 'public', 'icon.png'),
     });
     // Em desenvolvimento: carrega via Angular dev server
     // Em produção: carrega o build estático
@@ -93,6 +95,8 @@ electron_1.app.whenReady().then(() => {
     createWindow();
     (0, api_1.initFinancialApi)();
     (0, notifications_1.startDueNotificationsScheduler)();
+    (0, app_settings_1.startAutomaticBackupScheduler)();
+    (0, app_updates_1.configureAutoUpdates)();
     // macOS: recriar janela ao clicar no ícone do dock
     electron_1.app.on('activate', () => {
         if (electron_1.BrowserWindow.getAllWindows().length === 0) {

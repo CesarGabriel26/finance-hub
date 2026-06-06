@@ -1,11 +1,21 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { InputComponent } from '../../../components/input/input.component';
 import { Account, AccountReconciliation, AccountStatementBalance } from '../../../models';
 import { AccountReconciliationsService } from '../../../services/account-reconciliations.service';
 import { AccountStatementBalancesService } from '../../../services/account-statement-balances.service';
 import { AccountsService } from '../../../services/accounts.service';
+import {
+  buildReconciliationPayload,
+  createReconciliationFiltersForm,
+  differenceForAccount,
+  draftStateFromReconciliations,
+  realBalanceForAccount,
+  reconciliationDifferenceCount,
+  reconciliationForAccount,
+  statementBalanceForAccount,
+} from './account-reconciliation.utils';
 
 @Component({
   selector: 'app-account-reconciliation',
@@ -21,9 +31,7 @@ export class AccountReconciliationComponent implements OnInit {
   notes = signal<Record<string, string>>({});
   message = signal('');
 
-  filters = new FormGroup({
-    period: new FormControl<string>(new Date().toISOString().slice(0, 7), { nonNullable: true }),
-  });
+  filters = createReconciliationFiltersForm();
 
   constructor(
     private accountsService: AccountsService,
@@ -37,23 +45,23 @@ export class AccountReconciliationComponent implements OnInit {
   }
 
   statementBalance(account: Account): number | null {
-    return this.statementBalances().find(item => item.accountId === account.id)?.finalBalance ?? null;
+    return statementBalanceForAccount(account, this.statementBalances());
   }
 
   reconciliation(account: Account): AccountReconciliation | undefined {
-    return this.reconciliations().find(item => item.accountId === account.id);
+    return reconciliationForAccount(account, this.reconciliations());
   }
 
   realBalance(account: Account): number {
-    return this.realBalances()[account.id] ?? this.reconciliation(account)?.realBalance ?? Number(account.balance ?? 0);
+    return realBalanceForAccount(account, this.realBalances(), this.reconciliation(account));
   }
 
   difference(account: Account): number {
-    return this.realBalance(account) - Number(account.balance ?? 0);
+    return differenceForAccount(account, this.realBalance(account));
   }
 
   differenceCount(): number {
-    return this.reconciliations().filter(item => item.status === 'difference').length;
+    return reconciliationDifferenceCount(this.reconciliations());
   }
 
   setRealBalance(accountId: string, event: Event): void {
@@ -69,17 +77,14 @@ export class AccountReconciliationComponent implements OnInit {
   save(account: Account): void {
     const difference = this.difference(account);
 
-    this.reconciliationsService.upsert({
-      accountId: account.id,
+    this.reconciliationsService.upsert(buildReconciliationPayload({
+      account,
       period: this.filters.controls.period.value,
-      systemBalance: Number(account.balance ?? 0),
       statementBalance: this.statementBalance(account),
       realBalance: this.realBalance(account),
       difference,
-      status: Math.abs(difference) < 0.01 ? 'matched' : 'difference',
       notes: this.notes()[account.id] || null,
-      reconciledAt: new Date().toISOString(),
-    }).then(() => {
+    })).then(() => {
       this.message.set(`Conferido: ${account.name}`);
       this.reconciliationsService.updated.emit();
       this.loadPeriodData();
@@ -101,12 +106,7 @@ export class AccountReconciliationComponent implements OnInit {
       this.statementBalances.set(balances);
       this.reconciliations.set(reconciliations);
 
-      const realBalances: Record<string, number> = {};
-      const notes: Record<string, string> = {};
-      for (const reconciliation of reconciliations) {
-        realBalances[reconciliation.accountId] = reconciliation.realBalance;
-        notes[reconciliation.accountId] = reconciliation.notes ?? '';
-      }
+      const { realBalances, notes } = draftStateFromReconciliations(reconciliations);
       this.realBalances.set(realBalances);
       this.notes.set(notes);
     });

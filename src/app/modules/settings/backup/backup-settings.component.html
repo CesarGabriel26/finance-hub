@@ -1,43 +1,191 @@
 <section class="h-full w-full overflow-y-auto">
-  <div class="max-w-4xl mx-auto grid gap-4">
+  <form [formGroup]="form" class="max-w-5xl mx-auto grid gap-4">
     <div class="bg-[var(--card)] rounded-xl border border-border p-5 shadow-sm">
-      <span class="text-xs font-bold uppercase text-muted-foreground">Seguranca dos dados</span>
-      <h1 class="mt-2 text-2xl font-black text-foreground">Backup e restauracao</h1>
+      <span class="text-xs font-bold uppercase text-muted-foreground">Configuracoes</span>
+      <h1 class="mt-2 text-2xl font-black text-foreground">Preferencias do aplicativo</h1>
       <p class="mt-1 text-sm text-muted-foreground">
-        Os dados ficam em um banco SQLite local. Salve uma copia antes de grandes importacoes ou manutencoes.
+        Controle comportamento do sistema, notificacoes, tema e seguranca dos dados.
       </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <div class="bg-[var(--card)] rounded-xl border border-border p-5 shadow-sm">
-        <div class="w-11 h-11 rounded-lg bg-[var(--muted)] flex items-center justify-center text-muted-foreground">
-          <span class="material-symbols-outlined">download</span>
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[var(--primary)]">backup</span>
+          <strong class="text-base text-foreground">Backup automatico</strong>
         </div>
-        <strong class="block mt-4 text-base text-foreground">Fazer backup agora</strong>
-        <span class="block mt-1 text-sm text-muted-foreground">Cria uma copia do banco atual em um arquivo .db.</span>
-        <button type="button" (click)="backup()" [disabled]="loading()"
-          class="mt-4 px-4 py-2 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] disabled:opacity-50">
-          Salvar backup
+
+        <label class="mt-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <input type="checkbox" formControlName="autoBackupEnabled" class="h-4 w-4">
+          Ativar backup automatico
+        </label>
+
+        <div class="mt-4 grid gap-3">
+          <label class="text-xs font-bold uppercase text-muted-foreground">Pasta</label>
+          <div class="grid grid-cols-[1fr_auto] gap-2">
+            <input class="px-3 py-2 rounded-md border border-border bg-[var(--card)] text-sm"
+              formControlName="autoBackupDirectory" readonly placeholder="Selecione uma pasta">
+            <button type="button" (click)="chooseAutoBackupDirectory()"
+              class="px-3 py-2 rounded-md border border-border text-foreground font-semibold">
+              Escolher
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid gap-2">
+          <label class="text-xs font-bold uppercase text-muted-foreground">Frequencia</label>
+          <select formControlName="autoBackupFrequency"
+            class="px-3 py-2 rounded-md border border-border bg-[var(--card)] text-sm">
+            <option value="daily">Diario</option>
+            <option value="weekly">Semanal</option>
+          </select>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button type="button" (click)="runAutoBackupNow()"
+            class="px-4 py-2 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-bold">
+            Fazer backup automatico agora
+          </button>
+          <button type="button" (click)="backup()"
+            class="px-4 py-2 rounded-md border border-border text-foreground font-semibold">
+            Backup manual
+          </button>
+          <button type="button" (click)="restore()"
+            class="px-4 py-2 rounded-md border border-border text-foreground font-semibold">
+            Restaurar
+          </button>
+        </div>
+
+        @if (settings()?.lastAutoBackupAt) {
+        <span class="block mt-3 text-xs text-muted-foreground">
+          Ultimo backup automatico: {{ settings()?.lastAutoBackupAt }}
+        </span>
+        }
+      </div>
+
+      <div class="bg-[var(--card)] rounded-xl border border-border p-5 shadow-sm">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[var(--primary)]">notifications</span>
+          <strong class="text-base text-foreground">Notificacoes de vencimento</strong>
+        </div>
+
+        <label class="mt-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <input type="checkbox" formControlName="dueNotificationsEnabled" class="h-4 w-4">
+          Avisar sobre contas proximas
+        </label>
+
+        <div class="mt-4 grid gap-2">
+          <label class="text-xs font-bold uppercase text-muted-foreground">Dias de antecedencia</label>
+          <input type="number" formControlName="dueNotificationDaysAhead"
+            class="px-3 py-2 rounded-md border border-border bg-[var(--card)] text-sm">
+        </div>
+
+        <button type="button" (click)="testNotifications()"
+          class="mt-4 px-4 py-2 rounded-md border border-border text-foreground font-semibold">
+          Testar notificacao
         </button>
       </div>
 
       <div class="bg-[var(--card)] rounded-xl border border-border p-5 shadow-sm">
-        <div class="w-11 h-11 rounded-lg bg-[var(--muted)] flex items-center justify-center text-muted-foreground">
-          <span class="material-symbols-outlined">restore</span>
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[var(--primary)]">palette</span>
+          <strong class="text-base text-foreground">Aparencia e experiencia</strong>
         </div>
-        <strong class="block mt-4 text-base text-foreground">Restaurar backup</strong>
-        <span class="block mt-1 text-sm text-muted-foreground">Substitui o banco local e reinicia o aplicativo.</span>
-        <button type="button" (click)="restore()" [disabled]="loading()"
-          class="mt-4 px-4 py-2 rounded-md border border-border text-foreground disabled:opacity-50">
-          Restaurar arquivo
+
+        <div class="mt-4 grid gap-2">
+          <label class="text-xs font-bold uppercase text-muted-foreground">Tema</label>
+          <select formControlName="theme" (change)="appSettingsService.applyTheme(form.controls.theme.value)"
+            class="px-3 py-2 rounded-md border border-border bg-[var(--card)] text-sm">
+            <option value="light">Claro</option>
+            <option value="dark">Escuro</option>
+          </select>
+        </div>
+
+        <div class="mt-4 grid gap-2">
+          <label class="text-xs font-bold uppercase text-muted-foreground">Modo do sistema</label>
+          <select formControlName="experienceMode"
+            class="px-3 py-2 rounded-md border border-border bg-[var(--card)] text-sm">
+            <option value="beginner">Beginner</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="bg-[var(--card)] rounded-xl border border-border p-5 shadow-sm">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[var(--primary)]">auto_awesome</span>
+          <strong class="text-base text-foreground">Categorizacao por IA</strong>
+        </div>
+
+        <label class="mt-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <input type="checkbox" formControlName="aiCategorizationEnabled" class="h-4 w-4">
+          Ativar categorizacao por IA
+        </label>
+
+        <div class="mt-4 grid gap-2">
+          <label class="text-xs font-bold uppercase text-muted-foreground">Provedor</label>
+          <select formControlName="aiCategorizationProvider"
+            class="px-3 py-2 rounded-md border border-border bg-[var(--card)] text-sm">
+            <option value="openai">OpenAI</option>
+            <option value="gemini">Gemini AI Studio</option>
+          </select>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label class="grid gap-2">
+            <span class="text-xs font-bold uppercase text-muted-foreground">OpenAI API Key</span>
+            <input type="password" formControlName="openAiApiKey" autocomplete="off"
+              class="px-3 py-2 rounded-md border border-border bg-[var(--card)] text-sm">
+          </label>
+
+          <label class="grid gap-2">
+            <span class="text-xs font-bold uppercase text-muted-foreground">Modelo OpenAI</span>
+            <input type="text" formControlName="openAiModel"
+              class="px-3 py-2 rounded-md border border-border bg-[var(--card)] text-sm">
+          </label>
+
+          <label class="grid gap-2">
+            <span class="text-xs font-bold uppercase text-muted-foreground">Gemini API Key</span>
+            <input type="password" formControlName="geminiApiKey" autocomplete="off"
+              class="px-3 py-2 rounded-md border border-border bg-[var(--card)] text-sm">
+          </label>
+
+          <label class="grid gap-2">
+            <span class="text-xs font-bold uppercase text-muted-foreground">Modelo Gemini</span>
+            <input type="text" formControlName="geminiModel"
+              class="px-3 py-2 rounded-md border border-border bg-[var(--card)] text-sm">
+          </label>
+        </div>
+      </div>
+
+      <div class="bg-[var(--card)] rounded-xl border border-border p-5 shadow-sm">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[var(--primary)]">settings_applications</span>
+          <strong class="text-base text-foreground">Sistema e atualizacoes</strong>
+        </div>
+
+        <label class="mt-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <input type="checkbox" formControlName="startWithWindows" class="h-4 w-4">
+          Abrir com o Windows
+        </label>
+
+        <button type="button" (click)="checkUpdates()"
+          class="mt-4 px-4 py-2 rounded-md border border-border text-foreground font-semibold">
+          Verificar atualizacoes
         </button>
       </div>
     </div>
 
-    @if (message()) {
-    <div class="bg-[var(--card)] rounded-xl border border-border p-4 text-sm text-muted-foreground">
-      {{ message() }}
+    <div class="bg-[var(--card)] rounded-xl border border-border p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <span class="text-sm text-muted-foreground">
+        @if (!settingsLoaded()) { Carregando configuracoes salvas... }
+        @else if (message()) { {{ message() }} }
+        @else { As alteracoes sao aplicadas ao salvar. }
+      </span>
+      <button type="button" (click)="save()" [disabled]="loading() || !settingsLoaded() || form.invalid"
+        class="px-5 py-2 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-bold disabled:opacity-50">
+        Salvar configuracoes
+      </button>
     </div>
-    }
-  </div>
+  </form>
 </section>

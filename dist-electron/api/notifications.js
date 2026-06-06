@@ -7,6 +7,7 @@ const electron_1 = require("electron");
 const drizzle_orm_1 = require("drizzle-orm");
 const db_1 = require("../db");
 const schemas_1 = require("../db/schemas");
+const app_settings_1 = require("./app-settings");
 const DEFAULT_DAYS_AHEAD = 3;
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const notifiedKeys = new Set();
@@ -30,7 +31,8 @@ function plural(count, singular, pluralText) {
     return count === 1 ? `1 ${singular}` : `${count} ${pluralText}`;
 }
 async function checkDueNotifications(options = {}) {
-    const daysAhead = Math.max(0, options.daysAhead ?? DEFAULT_DAYS_AHEAD);
+    const settings = (0, app_settings_1.getAppSettings)();
+    const daysAhead = Math.max(0, options.daysAhead ?? settings.dueNotificationDaysAhead ?? DEFAULT_DAYS_AHEAD);
     const today = todayIso();
     const dueUntil = addDaysIso(daysAhead);
     const [payables, receivables] = await Promise.all([
@@ -62,6 +64,9 @@ async function checkDueNotifications(options = {}) {
         overdueCount,
         dueUntil,
     };
+    if (!settings.dueNotificationsEnabled && !options.force) {
+        return result;
+    }
     if (duePayables.length === 0 && dueReceivables.length === 0) {
         return result;
     }

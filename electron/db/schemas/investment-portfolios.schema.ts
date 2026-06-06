@@ -4,7 +4,7 @@ export const investmentPortfolios = sqliteTable('investment_portfolios', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
   strategy: text('strategy', {
-    enum: ['income', 'growth', 'balanced', 'capital_preservation', 'custom'],
+    enum: ['income', 'growth', 'balanced', 'capital_preservation', 'global_diversification', 'custom'],
   }).notNull().default('balanced'),
   riskProfile: text('risk_profile', {
     enum: ['conservative', 'moderate', 'aggressive'],

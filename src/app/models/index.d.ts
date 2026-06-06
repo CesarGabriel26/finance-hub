@@ -12,3 +12,5 @@ export * from './market-rate.model';
 export * from './account-statement-balance.model';
 export * from './monthly-closing.model';
 export * from './account-reconciliation.model';
+export * from './app-settings.model';
+export * from './ai-categorization.model';

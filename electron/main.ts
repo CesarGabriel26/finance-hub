@@ -2,6 +2,8 @@ import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
 import { initFinancialApi } from './api';
+import { configureAutoUpdates } from './api/app-updates';
+import { startAutomaticBackupScheduler } from './api/app-settings';
 import { loadMarketRatesCache } from './api/market-rates';
 import { startDueNotificationsScheduler } from './api/notifications';
 import { runMigrations } from './db';
@@ -25,7 +27,7 @@ function createWindow(): void {
       contextIsolation: true,   // Melhor prática de segurança
       sandbox: false,
     },
-    icon: path.join(__dirname, '..', 'public', 'favicon.ico'),
+    icon: path.join(__dirname, '..', 'public', 'icon.png'),
   });
 
   // Em desenvolvimento: carrega via Angular dev server
@@ -67,6 +69,8 @@ app.whenReady().then(() => {
   createWindow();
   initFinancialApi();
   startDueNotificationsScheduler();
+  startAutomaticBackupScheduler();
+  configureAutoUpdates();
 
   // macOS: recriar janela ao clicar no ícone do dock
   app.on('activate', () => {

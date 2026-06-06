@@ -102,6 +102,9 @@ import { registerNotificationHandlers } from './notifications';
 import { registerMonthlyClosingHandlers } from './monthly-closings';
 import { registerAccountReconciliationHandlers } from './account-reconciliations';
 import { registerMaintenanceHandlers } from './maintenance';
+import { registerAppSettingsHandlers } from './app-settings';
+import { registerAppUpdateHandlers } from './app-updates';
+import { registerAiCategorizationHandlers } from './ai-categorization';
 
 /**
  * Registra todos os handlers IPC da API financeira.
@@ -200,4 +203,7 @@ export function initFinancialApi() {
   registerMonthlyClosingHandlers();
   registerAccountReconciliationHandlers();
   registerMaintenanceHandlers();
+  registerAppSettingsHandlers();
+  registerAppUpdateHandlers();
+  registerAiCategorizationHandlers();
 }

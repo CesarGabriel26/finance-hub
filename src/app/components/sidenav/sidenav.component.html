@@ -1,83 +1,31 @@
-<aside class="h-full flex flex-col gap-4 border-r border-sidebar-border w-64 p-4 text-sidebar-foreground select-none">
-    <!-- Header/Logo -->
-    <div class="flex items-center gap-6 text-lg font-semibold px-2 py-3 text-[var(--sidebar-foreground)]">
-        <span class="material-symbols-outlined text-2xl">
-            account_balance
-        </span>
-        <span>Finance Hub</span>
+<aside class="app-sidebar">
+  <div class="brand">
+    <img src="icon.png" alt="Finance Hub" class="brand-icon">
+    <div class="min-w-0">
+      <strong>Finance Hub</strong>
+      <span>seu dinheiro simples</span>
     </div>
+  </div>
 
-    <!-- Links de Navegação Dinâmicos com Scroll Customizado -->
-    <ul class="flex-1 flex flex-col gap-2 overflow-y-auto pr-1 scrollbar-thin">
-        @for (item of navLinks; track $index) {
+  <nav class="nav-groups">
+    @for (section of sections; track section.label || 'main') {
+    <section class="nav-section">
+      @if (section.label) {
+      <span class="nav-section-title">{{ section.label }}</span>
+      }
 
-        <!-- CASO 1: Item é um Dropdown -->
-        @if ('items' in item) {
-        <li class="grid transition-all duration-300  w-full" [ngClass]="{
-                'grid-rows-[auto_1fr]': dropdowns().find(d => d.label === item.label)?.active,
-                'grid-rows-[auto_0fr]': !dropdowns().find(d => d.label === item.label)?.active
-            }">
-            <!-- Gatilho do Dropdown (Título Pai) -->
-            <div (click)="dropdowns().find(d => d.label === item.label)!.active = !dropdowns().find(d => d.label === item.label)?.active"
-                class="nav-link flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors group">
-                <div class="flex items-center gap-6">
-                    <span class="material-symbols-outlined transition-colors">
-                        {{ item.icon }}
-                    </span>
-                    <span class="font-medium transition-colors">
-                        {{ item.label }}
-                    </span>
-                </div>
-                <span class="material-symbols-outlined text-lg transition-transform duration-200">
-                    expand_more
-                </span>
-            </div>
-
-            <!-- Sub-itens do Dropdown -->
-            <div class="overflow-hidden">
-                <ul class="pl-6 flex flex-col gap-1 border-l-2 border-sidebar-border ml-5 mt-1">
-                    @for (subLink of item.items; track subLink.path) {
-                    <li class="block w-full">
-                        <a [routerLink]="subLink.path" routerLinkActive="font-semibold nav-link-active"
-                            [routerLinkActiveOptions]="{ exact: true }"
-                            class="nav-link flex items-center gap-4 text-sm p-2 rounded-md transition-colors block w-full rounded-l-none">
-                            @if (subLink.icon) {
-                            <span class="material-symbols-outlined text-lg">{{ subLink.icon }}</span>
-                            }
-                            <span>{{ subLink.label }}</span>
-                        </a>
-                    </li>
-                    }
-                </ul>
-            </div>
+      <ul>
+        @for (link of section.links; track link.path) {
+        <li>
+          <a [routerLink]="link.path" routerLinkActive="nav-link-active" [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link" [class.advanced-nav-link]="link.advanced">
+            <span class="material-symbols-outlined">{{ link.icon }}</span>
+            <span>{{ link.label }}</span>
+          </a>
         </li>
         }
-
-        <!-- CASO 2: Item é um Link Simples -->
-        @else {
-        <li class="block w-full">
-            <a [routerLink]="item.path" routerLinkActive="font-semibold nav-link-active"
-                [routerLinkActiveOptions]="{ exact: true }"
-                class="nav-link flex items-center gap-6 p-2.5 rounded-lg transition-colors block w-full group">
-                <span class="material-symbols-outlined  transition-colors">
-                    {{ item.icon }}
-                </span>
-                <span class="font-medium  transition-colors">
-                    {{ item.label }}
-                </span>
-            </a>
-        </li>
-        }
-
-        }
-    </ul>
-
-    <!-- Footer / Botão de recolher -->
-    <div class="flex flex-col border-t border-sidebar-border pt-2">
-        <div class="flex items-center justify-end px-2">
-            <span class="material-symbols-outlined cursor-pointer transition-colors" style="font-size: 1.75rem;">
-                arrow_menu_close
-            </span>
-        </div>
-    </div>
+      </ul>
+    </section>
+    }
+  </nav>
 </aside>

@@ -25,6 +25,9 @@ const notifications_1 = require("./notifications");
 const monthly_closings_1 = require("./monthly-closings");
 const account_reconciliations_1 = require("./account-reconciliations");
 const maintenance_1 = require("./maintenance");
+const app_settings_1 = require("./app-settings");
+const app_updates_1 = require("./app-updates");
+const ai_categorization_1 = require("./ai-categorization");
 /**
  * Registra todos os handlers IPC da API financeira.
  * Deve ser chamado uma única vez dentro do `app.whenReady()` no main process.
@@ -110,4 +113,7 @@ function initFinancialApi() {
     (0, monthly_closings_1.registerMonthlyClosingHandlers)();
     (0, account_reconciliations_1.registerAccountReconciliationHandlers)();
     (0, maintenance_1.registerMaintenanceHandlers)();
+    (0, app_settings_1.registerAppSettingsHandlers)();
+    (0, app_updates_1.registerAppUpdateHandlers)();
+    (0, ai_categorization_1.registerAiCategorizationHandlers)();
 }

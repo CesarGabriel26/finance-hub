@@ -17,155 +17,155 @@ import { MonthlyClosingComponent } from './modules/budget/monthly-closing/monthl
 import { BackupSettingsComponent } from './modules/settings/backup/backup-settings.component';
 
 export const routes: Routes = [
-    {
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: 'main',
+  },
+  {
+    path: 'main',
+    data: { showInMenu: true, childrenOnly: true },
+    children: [
+      {
         path: '',
         pathMatch: 'full',
-        redirectTo: 'main'
-    },
-    {
-        path: 'main',
-        data: { showInMenu: true, childrenOnly: true },
+        redirectTo: 'dashboard',
+      },
+      {
+        path: 'dashboard',
+        component: DashboardComponent,
+        data: { label: 'Resumo', icon: 'dashboard' },
+      },
+      {
+        path: 'start',
+        component: OnboardingComponent,
+        data: { label: 'Primeiros passos', icon: 'rocket_launch' },
+      },
+      {
+        path: 'investments',
+        data: { linkType: 'dropdown', label: 'Investimentos', icon: 'query_stats' },
         children: [
-            {
-                path: '',
-                pathMatch: 'full',
-                redirectTo: 'dashboard'
-            },
-            {
-                path: 'dashboard',
-                component: DashboardComponent,
-                data: { label: 'Dashboard', icon: 'dashboard' }
-            },
-            {
-                path: 'start',
-                component: OnboardingComponent,
-                data: { label: 'Primeiros Passos', icon: 'rocket_launch' }
-            },
-            {
-                path: 'investments',
-                data: { linkType: 'dropdown', label: 'Investimentos', icon: 'query_stats' },
-                children: [
-                    {
-                        path: '',
-                        pathMatch: 'full',
-                        redirectTo: 'dashboard'
-                    },
-                    {
-                        path: 'dashboard',
-                        component: InvestmentsDashboardComponent,
-                        data: { label: 'Visão Geral', icon: 'monitoring' }
-                    }
-                ]
-            },
-            {
-                path: 'transactions',
-                data: { linkType: 'dropdown', label: 'Transações', icon: 'monetization_on' },
-                children: [
-                    {
-                        path: '',
-                        pathMatch: 'full',
-                        redirectTo: 'history'
-                    },
-                    {
-                        path: 'history',
-                        component: TransactionsHistoryComponent,
-                        data: { label: 'Histórico', icon: 'history' }
-                    },
-                    {
-                        path: 'statement-import',
-                        component: StatementImportComponent,
-                        data: { label: 'Importar Extrato', icon: 'upload_file' }
-                    },
-                    {
-                        path: 'categories',
-                        component: CategoriesListComponent,
-                        data: { label: 'Categorias', icon: 'category' }
-                    },
-                    {
-                        path: 'category-rules',
-                        component: CategoryRulesComponent,
-                        data: { label: 'Regras de Categorias', icon: 'rule' }
-                    }
-                ]
-            },
-            {
-                path: 'budget',
-                data: { linkType: 'dropdown', label: 'Orçamentos', icon: 'analytics' },
-                children: [
-                    {
-                        path: '',
-                        pathMatch: 'full',
-                        redirectTo: 'expense-budgets'
-                    },
-                    {
-                        path: 'expense-budgets',
-                        component: ExpenseBudgetsComponent,
-                        data: { label: 'Metas de Despesas', icon: 'money_off' }
-                    },
-                    {
-                        path: 'savings-targets',
-                        component: SavingsTargetsComponent,
-                        data: { label: 'Metas de Poupança', icon: 'savings' }
-                    },
-                    {
-                        path: 'monthly-closing',
-                        component: MonthlyClosingComponent,
-                        data: { label: 'Fechamento Mensal', icon: 'lock' }
-                    }
-                ]
-            },
-            {
-                path: 'account',
-                data: { linkType: 'dropdown', label: 'Contas', icon: 'account_balance' },
-                children: [
-                    {
-                        path: '',
-                        pathMatch: 'full',
-                        redirectTo: 'bank-accounts'
-                    },
-                    {
-                        path: 'accounts-receivable',
-                        component: AccountsReceivableComponent,
-                        data: { label: 'Contas a Receber', icon: 'request_quote' }
-                    },
-                    {
-                        path: 'accounts-payable',
-                        component: AccountsPayableComponent,
-                        data: { label: 'Contas a Pagar', icon: 'receipt_long' }
-                    },
-                    {
-                        path: 'bank-accounts',
-                        component: BankAccountsComponent,
-                        data: { label: 'Contas Bancárias', icon: 'credit_card' }
-                    },
-                    {
-                        path: 'calendar',
-                        component: FinancialCalendarComponent,
-                        data: { label: 'Calendario Financeiro', icon: 'event' }
-                    },
-                    {
-                        path: 'reconciliation',
-                        component: AccountReconciliationComponent,
-                        data: { label: 'Conciliacao', icon: 'fact_check' }
-                    }
-                ]
-            },
-            {
-                path: 'settings',
-                data: { linkType: 'dropdown', label: 'Configuracoes', icon: 'settings' },
-                children: [
-                    {
-                        path: '',
-                        pathMatch: 'full',
-                        redirectTo: 'backup'
-                    },
-                    {
-                        path: 'backup',
-                        component: BackupSettingsComponent,
-                        data: { label: 'Backup', icon: 'backup' }
-                    }
-                ]
-            }
-        ]
-    }
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'dashboard',
+          },
+          {
+            path: 'dashboard',
+            component: InvestmentsDashboardComponent,
+            data: { label: 'Resumo', icon: 'monitoring' },
+          },
+        ],
+      },
+      {
+        path: 'transactions',
+        data: { linkType: 'dropdown', label: 'Movimentos', icon: 'receipt_long' },
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'history',
+          },
+          {
+            path: 'history',
+            component: TransactionsHistoryComponent,
+            data: { label: 'Movimentos', icon: 'history' },
+          },
+          {
+            path: 'statement-import',
+            component: StatementImportComponent,
+            data: { label: 'Importar extrato', icon: 'upload_file' },
+          },
+          {
+            path: 'categories',
+            component: CategoriesListComponent,
+            data: { label: 'Categorias', icon: 'category' },
+          },
+          {
+            path: 'category-rules',
+            component: CategoryRulesComponent,
+            data: { label: 'Regras', icon: 'rule' },
+          },
+        ],
+      },
+      {
+        path: 'budget',
+        data: { linkType: 'dropdown', label: 'Planejamento', icon: 'analytics' },
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'expense-budgets',
+          },
+          {
+            path: 'expense-budgets',
+            component: ExpenseBudgetsComponent,
+            data: { label: 'Orcamentos', icon: 'money_off' },
+          },
+          {
+            path: 'savings-targets',
+            component: SavingsTargetsComponent,
+            data: { label: 'Objetivos', icon: 'savings' },
+          },
+          {
+            path: 'monthly-closing',
+            component: MonthlyClosingComponent,
+            data: { label: 'Fechamento mensal', icon: 'lock' },
+          },
+        ],
+      },
+      {
+        path: 'account',
+        data: { linkType: 'dropdown', label: 'Contas', icon: 'account_balance' },
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'bank-accounts',
+          },
+          {
+            path: 'accounts-receivable',
+            component: AccountsReceivableComponent,
+            data: { label: 'A receber', icon: 'request_quote' },
+          },
+          {
+            path: 'accounts-payable',
+            component: AccountsPayableComponent,
+            data: { label: 'A pagar', icon: 'receipt_long' },
+          },
+          {
+            path: 'bank-accounts',
+            component: BankAccountsComponent,
+            data: { label: 'Contas', icon: 'credit_card' },
+          },
+          {
+            path: 'calendar',
+            component: FinancialCalendarComponent,
+            data: { label: 'Agenda', icon: 'event' },
+          },
+          {
+            path: 'reconciliation',
+            component: AccountReconciliationComponent,
+            data: { label: 'Conciliacao', icon: 'fact_check' },
+          },
+        ],
+      },
+      {
+        path: 'settings',
+        data: { linkType: 'dropdown', label: 'Configuracoes', icon: 'settings' },
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'backup',
+          },
+          {
+            path: 'backup',
+            component: BackupSettingsComponent,
+            data: { label: 'Configuracoes', icon: 'settings' },
+          },
+        ],
+      },
+    ],
+  },
 ];

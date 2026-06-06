@@ -3,7 +3,6 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import {
   AccountPayable,
   AccountPayableStatus,
-  NewAccountPayable,
 } from '../../../../models/account-payable.model';
 import { AccountsPayableService } from '../../../../services/accounts-payable.service';
 import { AccountsService } from '../../../../services/accounts.service';
@@ -11,6 +10,7 @@ import { CategoriesService } from '../../../../services/categories.service';
 import { ModalService } from '../../../../services/modal.service';
 import { InputComponent } from '../../../../components/input/input.component';
 import { SelectComponent, SelectOption } from '../../../../components/select/select.component';
+import { buildAccountPayablePayload, todayKey } from '../../accounts-schedule.utils';
 
 @Component({
   selector: 'app-account-payable-form',
@@ -41,7 +41,7 @@ export class AccountPayableFormComponent implements OnInit {
       nonNullable: true,
       validators: [Validators.required, Validators.min(0.01)],
     }),
-    dueDate: new FormControl<string>(this.today(), {
+    dueDate: new FormControl<string>(todayKey(), {
       nonNullable: true,
       validators: [Validators.required],
     }),
@@ -95,25 +95,7 @@ export class AccountPayableFormComponent implements OnInit {
     if (this.form.invalid) return;
 
     const raw = this.form.getRawValue();
-    const payload: NewAccountPayable = {
-      description: raw.description.trim(),
-      payee: raw.payee.trim(),
-      amount: raw.amount,
-      dueDate: raw.dueDate,
-      paidAt: raw.paidAt || null,
-      status: raw.status,
-      isRecurring: raw.isRecurring,
-      recurrenceClassification: raw.isRecurring ? raw.recurrenceClassification : null,
-      totalInstallments: Math.max(1, Number(raw.totalInstallments) || 1),
-      currentInstallment: Math.max(1, Number(raw.currentInstallment) || 1),
-      accountId: raw.accountId || null,
-      categoryId: raw.categoryId || null,
-      notes: raw.notes.trim() || null,
-    };
-
-    if (payload.status === 'paid' && !payload.paidAt) {
-      payload.paidAt = this.today();
-    }
+    const payload = buildAccountPayablePayload(raw);
 
     const save = this.payable?.id
       ? this.payableService.update(this.payable.id, payload)
@@ -150,7 +132,4 @@ export class AccountPayableFormComponent implements OnInit {
     });
   }
 
-  private today(): string {
-    return new Date().toISOString().slice(0, 10);
-  }
 }

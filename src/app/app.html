@@ -1,8 +1,35 @@
-<div class="grid grid-cols-[min-content_1fr] w-full h-screen bg-system overflow-hidden">
+<div class="app-shell">
   <app-sidenav />
 
-  <div class="w-full h-full p-5 flex flex-col overflow-hidden relative">
-    <router-outlet />
+  <div class="app-workspace">
+    <header class="app-topbar">
+      <div class="topbar-copy">
+        <span class="material-symbols-outlined">calendar_month</span>
+        <div>
+          <strong>{{ monthLabel }}</strong>
+          <span>Resumo, contas e proximos compromissos</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <a routerLink="/main/transactions/statement-import" class="ghost-action" title="Importar extrato">
+          <span class="material-symbols-outlined">upload_file</span>
+          <span>Importar</span>
+        </a>
+        <a routerLink="/main/settings/backup" class="icon-action" title="Configuracoes">
+          <span class="material-symbols-outlined">settings</span>
+        </a>
+        <button type="button" class="primary-action" (click)="openNewTransaction()">
+          <span class="material-symbols-outlined">add</span>
+          <span>Novo movimento</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <router-outlet />
+    </main>
+
     <app-modal-container></app-modal-container>
   </div>
 </div>

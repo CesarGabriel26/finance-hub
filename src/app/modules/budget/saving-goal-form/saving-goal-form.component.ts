@@ -8,6 +8,7 @@ import { SelectComponent, SelectOption } from '../../../components/select/select
 import { AccountsService } from '../../../services/accounts.service';
 import { ModalService } from '../../../services/modal.service';
 import { SavingGoalsService } from '../../../services/saving-goals.service';
+import { buildSavingGoalPayload } from './saving-goal-form.utils';
 
 @Component({
   selector: 'app-saving-goal-form',
@@ -93,17 +94,7 @@ export class SavingGoalFormComponent implements OnInit {
     if (this.form.invalid) return;
 
     const raw = this.form.getRawValue();
-    const payload: NewSavingGoal = {
-      name: raw.name.trim(),
-      description: raw.description.trim() || null,
-      targetAmount: Number(raw.targetAmount),
-      currentAmount: Number(raw.currentAmount) || 0,
-      targetDate: raw.targetDate || null,
-      accountId: raw.accountId || null,
-      status: raw.status,
-      color: raw.color,
-      icon: raw.icon,
-    };
+    const payload: NewSavingGoal = buildSavingGoalPayload(raw);
 
     const save = this.goal?.id
       ? this.goalsService.update(this.goal.id, payload)

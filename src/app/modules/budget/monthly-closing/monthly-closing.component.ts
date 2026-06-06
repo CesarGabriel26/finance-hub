@@ -7,6 +7,15 @@ import { BudgetsService } from '../../../services/budgets.service';
 import { InvestmentPortfoliosService } from '../../../services/investment-portfolios.service';
 import { MonthlyClosingsService } from '../../../services/monthly-closings.service';
 import { TransactionsService } from '../../../services/transactions.service';
+import {
+  budgetLimitTotal,
+  budgetSpentTotal,
+  closingPeriod,
+  closingPeriodRange,
+  expenseTotal,
+  incomeTotal,
+  investedTotal,
+} from './monthly-closing.utils';
 
 @Component({
   selector: 'app-monthly-closing',
@@ -41,19 +50,15 @@ export class MonthlyClosingComponent implements OnInit {
   }
 
   period(): string {
-    return `${this.form.controls.year.value}-${String(this.form.controls.month.value).padStart(2, '0')}`;
+    return closingPeriod(this.form.controls.month.value, this.form.controls.year.value);
   }
 
   incomeTotal(): number {
-    return this.transactions()
-      .filter(transaction => transaction.type === 'credit' && !transaction.ignored)
-      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+    return incomeTotal(this.transactions());
   }
 
   expenseTotal(): number {
-    return this.transactions()
-      .filter(transaction => transaction.type === 'debit' && !transaction.ignored)
-      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+    return expenseTotal(this.transactions());
   }
 
   balanceTotal(): number {
@@ -61,17 +66,11 @@ export class MonthlyClosingComponent implements OnInit {
   }
 
   budgetLimitTotal(): number {
-    return this.budgets().reduce((sum, budget) => sum + budget.amountLimit, 0);
+    return budgetLimitTotal(this.budgets());
   }
 
   budgetSpentTotal(): number {
-    return this.budgets().reduce((sum, budget) => {
-      const spent = this.transactions()
-        .filter(transaction => transaction.categoryId === budget.categoryId && transaction.type === 'debit')
-        .reduce((innerSum, transaction) => innerSum + Math.abs(transaction.amount), 0);
-
-      return sum + spent;
-    }, 0);
+    return budgetSpentTotal(this.budgets(), this.transactions());
   }
 
   closeMonth(): void {
@@ -101,8 +100,7 @@ export class MonthlyClosingComponent implements OnInit {
   private loadMonthData(): void {
     const month = Number(this.form.controls.month.value);
     const year = Number(this.form.controls.year.value);
-    const start = `${year}-${String(month).padStart(2, '0')}-01`;
-    const end = new Date(year, month, 0).toISOString().slice(0, 10);
+    const { start, end } = closingPeriodRange(month, year);
 
     Promise.all([
       this.transactionsService.getAll({ date: { between: [start, end] } }),
@@ -122,14 +120,7 @@ export class MonthlyClosingComponent implements OnInit {
       .then(portfolios => Promise.all(portfolios.map(portfolio => this.portfolioService.getAssets(portfolio.id))))
       .then(groups => groups.flat())
       .then(assets => {
-        this.investedTotal.set(assets.reduce((sum, asset) => {
-          const fixedIncome = ['cdb', 'lci_lca', 'treasury'].includes(asset.type);
-          const current = fixedIncome
-            ? Number(asset.fixedIncomeNetAmount || asset.fixedIncomeGrossAmount || asset.currentPrice)
-            : asset.quantity * asset.currentPrice;
-
-          return sum + current;
-        }, 0));
+        this.investedTotal.set(investedTotal(assets));
       });
   }
 }

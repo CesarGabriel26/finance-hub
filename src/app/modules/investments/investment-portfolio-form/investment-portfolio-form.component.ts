@@ -35,7 +35,7 @@ export class InvestmentPortfolioFormComponent implements OnInit {
     }),
     benchmark: new FormControl<string>('CDI', { nonNullable: true }),
     currency: new FormControl<string>('BRL', { nonNullable: true }),
-    beginnerMode: new FormControl<boolean>(false, { nonNullable: true }),
+    beginnerMode: new FormControl<boolean>(true, { nonNullable: true }),
     notes: new FormControl<string>('', { nonNullable: true }),
   });
 

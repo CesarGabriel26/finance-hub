@@ -2,6 +2,7 @@ import { Notification, app, ipcMain } from 'electron';
 import { asc, inArray } from 'drizzle-orm';
 import { db } from '../db';
 import { accountsPayable, accountsReceivable } from '../db/schemas';
+import { getAppSettings } from './app-settings';
 
 interface DueNotificationOptions {
   daysAhead?: number;
@@ -49,7 +50,8 @@ function plural(count: number, singular: string, pluralText: string): string {
 export async function checkDueNotifications(
   options: DueNotificationOptions = {},
 ): Promise<DueNotificationResult> {
-  const daysAhead = Math.max(0, options.daysAhead ?? DEFAULT_DAYS_AHEAD);
+  const settings = getAppSettings();
+  const daysAhead = Math.max(0, options.daysAhead ?? settings.dueNotificationDaysAhead ?? DEFAULT_DAYS_AHEAD);
   const today = todayIso();
   const dueUntil = addDaysIso(daysAhead);
 
@@ -84,6 +86,10 @@ export async function checkDueNotifications(
     overdueCount,
     dueUntil,
   };
+
+  if (!settings.dueNotificationsEnabled && !options.force) {
+    return result;
+  }
 
   if (duePayables.length === 0 && dueReceivables.length === 0) {
     return result;

@@ -138,5 +138,5 @@ export interface ImportedTransaction {
   categoryId?: string | null;
   duplicate?: boolean;
   suggestedCategoryId?: string | null;
-  categorySource?: 'rule' | 'auto' | 'fallback' | 'manual';
+  categorySource?: 'rule' | 'auto' | 'fallback' | 'manual' | 'ai';
 }

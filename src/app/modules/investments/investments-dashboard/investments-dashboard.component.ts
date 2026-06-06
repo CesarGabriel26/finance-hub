@@ -14,6 +14,44 @@ import {
 import { InvestmentPortfoliosService } from '../../../services/investment-portfolios.service';
 import { MarketRatesService } from '../../../services/market-rates.service';
 import { ModalService } from '../../../services/modal.service';
+import {
+  AllocationBucket,
+  AllocationProfile,
+  InvestmentSnapshotEvolutionPoint,
+  allocation,
+  allocationBuckets,
+  allocationGap,
+  allocationProfileMessage,
+  allocationProfileScore,
+  annualIncomeValue,
+  currentValue,
+  fixedIncomeLiquidityLabel,
+  fixedIncomeRateLabel,
+  fixedIncomeSummary,
+  formatShortDate,
+  grossCurrentValue,
+  incomeValue,
+  investedValue,
+  isFixedIncomeAsset,
+  lastSnapshotDateLabel,
+  netResultValue,
+  portfolioYield,
+  recommendedAllocationProfile,
+  resultPercent,
+  resultValue,
+  targetGap,
+  taxWithheldValue,
+  totalCurrentValue,
+  totalInvestedValue,
+  totalNetResultValue,
+  totalResultPercent,
+  totalResultValue,
+  totalTaxWithheldValue,
+  typeLabel,
+  snapshotEvolution,
+  RISK_PROFILES_LABELS,
+  STRATEGIES_LABELS,
+} from '../investment-calculations.util';
 import { InvestmentPortfolioAssetFormComponent } from '../investment-portfolio-asset-form/investment-portfolio-asset-form.component';
 import { InvestmentPortfolioFormComponent } from '../investment-portfolio-form/investment-portfolio-form.component';
 
@@ -77,6 +115,9 @@ export class InvestmentsDashboardComponent implements OnInit {
     },
   ];
 
+  RISK_PROFILES_LABELS = RISK_PROFILES_LABELS;
+  STRATEGIES_LABELS = STRATEGIES_LABELS;
+
   constructor(
     private portfolioService: InvestmentPortfoliosService,
     private marketRatesService: MarketRatesService,
@@ -135,196 +176,123 @@ export class InvestmentsDashboardComponent implements OnInit {
   }
 
   investedValue(asset: InvestmentPortfolioAsset): number {
-    if (this.isFixedIncomeAsset(asset)) {
-      return this.amountOrFallback(asset.fixedIncomeInvestedAmount, asset.quantity * asset.averagePrice);
-    }
-
-    return asset.quantity * asset.averagePrice;
+    return investedValue(asset);
   }
 
   currentValue(asset: InvestmentPortfolioAsset): number {
-    if (this.isFixedIncomeAsset(asset)) {
-      const grossAmount = this.amountOrFallback(asset.fixedIncomeGrossAmount, asset.quantity * asset.currentPrice);
-      return this.amountOrFallback(asset.fixedIncomeNetAmount, grossAmount);
-    }
-
-    return asset.quantity * asset.currentPrice;
+    return currentValue(asset);
   }
 
   grossCurrentValue(asset: InvestmentPortfolioAsset): number {
-    if (this.isFixedIncomeAsset(asset)) {
-      return this.amountOrFallback(asset.fixedIncomeGrossAmount, this.currentValue(asset));
-    }
-
-    return this.currentValue(asset);
+    return grossCurrentValue(asset);
   }
 
   resultValue(asset: InvestmentPortfolioAsset): number {
-    return this.grossCurrentValue(asset) - this.investedValue(asset);
+    return resultValue(asset);
   }
 
   netResultValue(asset: InvestmentPortfolioAsset): number {
-    return this.currentValue(asset) - this.investedValue(asset);
+    return netResultValue(asset);
   }
 
   taxWithheldValue(asset: InvestmentPortfolioAsset): number {
-    if (!this.isFixedIncomeAsset(asset)) return 0;
-
-    return Math.max(0, this.grossCurrentValue(asset) - this.currentValue(asset));
+    return taxWithheldValue(asset);
   }
 
   resultPercent(asset: InvestmentPortfolioAsset): number {
-    const invested = this.investedValue(asset);
-    return invested > 0 ? (this.resultValue(asset) / invested) * 100 : 0;
+    return resultPercent(asset);
   }
 
   totalInvested(): number {
-    return this.assets().reduce((sum, asset) => sum + this.investedValue(asset), 0);
+    return totalInvestedValue(this.assets());
   }
 
   totalCurrent(): number {
-    return this.assets().reduce((sum, asset) => sum + this.currentValue(asset), 0);
+    return totalCurrentValue(this.assets());
   }
 
   totalResult(): number {
-    return this.assets().reduce((sum, asset) => sum + this.resultValue(asset), 0);
+    return totalResultValue(this.assets());
   }
 
   totalNetResult(): number {
-    return this.assets().reduce((sum, asset) => sum + this.netResultValue(asset), 0);
+    return totalNetResultValue(this.assets());
   }
 
   totalTaxWithheld(): number {
-    return this.assets().reduce((sum, asset) => sum + this.taxWithheldValue(asset), 0);
+    return totalTaxWithheldValue(this.assets());
   }
 
   totalResultPercent(): number {
-    const invested = this.totalInvested();
-    return invested > 0 ? (this.totalResult() / invested) * 100 : 0;
+    return totalResultPercent(this.assets());
   }
 
   annualIncome(): number {
-    return this.assets().reduce((sum, asset) => sum + this.incomeValue(asset), 0);
+    return annualIncomeValue(this.assets());
   }
 
   portfolioYield(): number {
-    const total = this.totalCurrent();
-    return total > 0 ? (this.annualIncome() / total) * 100 : 0;
+    return portfolioYield(this.assets());
+  }
+
+  recommendedAllocationProfile(): AllocationProfile {
+    return recommendedAllocationProfile(this.selectedPortfolio());
+  }
+
+  allocationBuckets(): AllocationBucket[] {
+    return allocationBuckets(this.assets(), this.recommendedAllocationProfile());
+  }
+
+  allocationProfileScore(): number {
+    return allocationProfileScore(this.allocationBuckets());
+  }
+
+  allocationProfileMessage(): string {
+    return allocationProfileMessage(this.assets().length, this.allocationProfileScore());
+  }
+
+  allocationGap(bucket: AllocationBucket): number {
+    return allocationGap(bucket);
   }
 
   allocation(asset: InvestmentPortfolioAsset): number {
-    const total = this.totalCurrent();
-    return total > 0 ? (this.currentValue(asset) / total) * 100 : 0;
+    return allocation(asset, this.totalCurrent());
   }
 
   targetGap(asset: InvestmentPortfolioAsset): number {
-    return this.allocation(asset) - asset.targetAllocation;
+    return targetGap(asset, this.totalCurrent());
   }
 
-  snapshotEvolution(): Array<{ date: string; gross: number; net: number; result: number }> {
-    const grouped = new Map<string, { date: string; gross: number; net: number; result: number }>();
-
-    for (const snapshot of this.assetSnapshots()) {
-      const current = grouped.get(snapshot.snapshotDate) ?? {
-        date: snapshot.snapshotDate,
-        gross: 0,
-        net: 0,
-        result: 0,
-      };
-      current.gross += snapshot.grossAmount;
-      current.net += snapshot.netAmount;
-      current.result += snapshot.resultAmount;
-      grouped.set(snapshot.snapshotDate, current);
-    }
-
-    return Array.from(grouped.values())
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 5);
+  snapshotEvolution(): InvestmentSnapshotEvolutionPoint[] {
+    return snapshotEvolution(this.assetSnapshots());
   }
 
   lastSnapshotDate(): string {
-    const latest = this.snapshotEvolution()[0]?.date;
-    return latest ? this.formatShortDate(latest) : 'Sem historico';
+    return lastSnapshotDateLabel(this.assetSnapshots());
   }
 
   incomeValue(asset: InvestmentPortfolioAsset): number {
-    if (this.isFixedIncomeAsset(asset)) {
-      return Math.max(0, this.resultValue(asset));
-    }
-
-    return asset.annualIncome;
+    return incomeValue(asset);
   }
 
   typeLabel(asset: InvestmentPortfolioAsset): string {
-    const labels: Record<InvestmentPortfolioAsset['type'], string> = {
-      stock: 'Acao',
-      fii: 'FII',
-      etf: 'ETF',
-      bdr: 'BDR',
-      reit: 'REIT',
-      international_stock: 'Acao Intl.',
-      cdb: 'CDB',
-      lci_lca: 'LCI/LCA',
-      treasury: 'Tesouro',
-      crypto: 'Cripto',
-      fund: 'Fundo',
-      other: 'Outro',
-    };
-
-    return labels[asset.type];
+    return typeLabel(asset);
   }
 
   isFixedIncomeAsset(asset: InvestmentPortfolioAsset): boolean {
-    return ['cdb', 'lci_lca', 'treasury'].includes(asset.type);
+    return isFixedIncomeAsset(asset);
   }
 
   fixedIncomeSummary(asset: InvestmentPortfolioAsset): string {
-    if (!this.isFixedIncomeAsset(asset)) {
-      return asset.sector || 'Sem setor';
-    }
-
-    const parts = [
-      this.fixedIncomeRateLabel(asset),
-      this.fixedIncomeLiquidityLabel(asset),
-      asset.fixedIncomeMaturityDate ? `vence em ${this.formatShortDate(asset.fixedIncomeMaturityDate)}` : '',
-      asset.fixedIncomeTaxExempt ? 'isento de IR' : '',
-    ].filter(Boolean);
-
-    return parts.join(' - ') || 'Renda fixa';
+    return fixedIncomeSummary(asset);
   }
 
   fixedIncomeRateLabel(asset: InvestmentPortfolioAsset): string {
-    if (!asset.fixedIncomeIndexer || asset.fixedIncomeRate === null || asset.fixedIncomeRate === undefined) {
-      return this.typeLabel(asset);
-    }
-
-    const indexer = {
-      cdi: 'CDI',
-      selic: 'Selic',
-      ipca: 'IPCA',
-      prefixed: 'Prefixado',
-      igpm: 'IGP-M',
-      other: 'Outro',
-    }[asset.fixedIncomeIndexer];
-    const rate = asset.fixedIncomeRate.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-
-    if (asset.fixedIncomeRateType === 'percent_indexer') return `${rate}% do ${indexer}`;
-    if (asset.fixedIncomeRateType === 'indexer_plus') return `${indexer} + ${rate}%`;
-
-    return `${rate}% a.a.`;
+    return fixedIncomeRateLabel(asset);
   }
 
   fixedIncomeLiquidityLabel(asset: InvestmentPortfolioAsset): string {
-    const labels: Record<NonNullable<InvestmentPortfolioAsset['fixedIncomeLiquidity']>, string> = {
-      daily: 'liquidez diaria',
-      maturity: 'liquidez no vencimento',
-      custom: 'liquidez personalizada',
-    };
-
-    return asset.fixedIncomeLiquidity ? labels[asset.fixedIncomeLiquidity] : '';
+    return fixedIncomeLiquidityLabel(asset);
   }
 
   formatPercent(value: number): string {
@@ -357,14 +325,8 @@ export class InvestmentsDashboardComponent implements OnInit {
     return 'text-muted-foreground';
   }
 
-  private amountOrFallback(value: number | null | undefined, fallback: number): number {
-    const amount = Number(value);
-    return Number.isFinite(amount) && amount > 0 ? amount : fallback;
-  }
-
   private formatShortDate(value: string): string {
-    const [year, month, day] = value.slice(0, 10).split('-');
-    return year && month && day ? `${day}/${month}/${year}` : value;
+    return formatShortDate(value);
   }
 
   private loadPortfolios(): void {

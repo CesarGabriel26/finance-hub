@@ -3,6 +3,7 @@ export type InvestmentPortfolioStrategy =
   | 'growth'
   | 'balanced'
   | 'capital_preservation'
+  | 'global_diversification'
   | 'custom';
 
 export type InvestmentRiskProfile = 'conservative' | 'moderate' | 'aggressive';

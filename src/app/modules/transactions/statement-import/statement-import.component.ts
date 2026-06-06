@@ -3,15 +3,40 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataTableColumn, DataTableComponent } from '../../../components/data-table/data-table.component';
 import { formatBytes, parseAndNormalizeOfx } from '../../../utils/helpers/ofx-parser.helper';
-import { autoCategorize } from '../../../utils/helpers/category-rule.helper';
+import {
+  suggestCategoryRuleKeywords,
+  transactionMatchesKeyword,
+} from '../../../utils/helpers/category-rule.helper';
 import { Account, AccountType, Category, CategoryRule, ImportedTransaction } from '../../../models';
 import { OfxParseResult } from '../../../models/ofx.model';
 import { AccountsService } from '../../../services/accounts.service';
 import { AccountStatementBalancesService } from '../../../services/account-statement-balances.service';
+import { AiCategorizationService } from '../../../services/ai-categorization.service';
 import { BankService } from '../../../services/banks.service';
 import { CategoryRulesService } from '../../../services/category-rules.service';
 import { CategoriesService } from '../../../services/categories.service';
+import { DialogService } from '../../../services/dialog.service';
 import { TransactionsService } from '../../../services/transactions.service';
+import {
+  accountColor,
+  accountIcon,
+  applyAiCategorizationSuggestions,
+  buildAiCategorizationRequest,
+  buildAccountName,
+  buildImportPayload,
+  duplicateCountForTransactions,
+  findStatementAccount,
+  mapOfxAccountType,
+  markDuplicateTransactions,
+  matchCategoryForTransaction,
+  normalizeAccountNumber,
+  normalizeText,
+  periodFromDate,
+  selectedImportTransactions,
+  toIsoDate,
+  transactionFitIds,
+  transactionFitIdSet,
+} from './statement-import.utils';
 
 @Component({
   selector: 'app-statement-import',
@@ -22,9 +47,11 @@ import { TransactionsService } from '../../../services/transactions.service';
 export class StatementImportComponent implements OnInit {
   private readonly accountsService = inject(AccountsService);
   private readonly statementBalancesService = inject(AccountStatementBalancesService);
+  private readonly aiCategorizationService = inject(AiCategorizationService);
   private readonly bankService = inject(BankService);
   private readonly categoryRulesService = inject(CategoryRulesService);
   private readonly categoriesService = inject(CategoriesService);
+  private readonly dialogService = inject(DialogService);
   private readonly transactionsService = inject(TransactionsService);
 
   // ── Definição de Colunas da Tabela ────────────────────────
@@ -43,6 +70,7 @@ export class StatementImportComponent implements OnInit {
   readonly accounts = signal<Account[]>([]);
   readonly isDragging = signal(false);
   readonly isLoading = signal(false);
+  readonly isAiCategorizing = signal(false);
   readonly fileName = signal('');
   readonly fileSize = signal('');
   readonly bankName = signal('');
@@ -50,6 +78,7 @@ export class StatementImportComponent implements OnInit {
   readonly accountNumber = signal('');
   readonly accountType = signal<AccountType>('checking');
   readonly accountAutomationMessage = signal('');
+  readonly aiCategorizationMessage = signal('');
   readonly periodStart = signal<Date | null>(null);
   readonly periodEnd = signal<Date | null>(null);
   readonly statementPeriod = signal('');
@@ -150,7 +179,11 @@ export class StatementImportComponent implements OnInit {
   // ── Processamento do Arquivo ──────────────────────────────
   async processFile(file: File) {
     if (!file.name.toLowerCase().endsWith('.ofx')) {
-      alert('Por favor, selecione um arquivo no formato .OFX');
+      await this.dialogService.alert({
+        title: 'Arquivo invalido',
+        message: 'Por favor, selecione um arquivo no formato .OFX.',
+        variant: 'warning',
+      });
       return;
     }
 
@@ -164,7 +197,7 @@ export class StatementImportComponent implements OnInit {
 
       // Mapeia e tenta auto-categorizar ligando com o banco
       const transactions = result.transactions.map(tx => {
-        const matched = this.matchCategoryForTransaction(tx, cats);
+        const matched = matchCategoryForTransaction(tx, cats, this.categoryRules());
         return {
           ...tx,
           categoryId: matched.category?.id ?? null,
@@ -193,7 +226,11 @@ export class StatementImportComponent implements OnInit {
 
     } catch (error) {
       console.error('Erro ao ler arquivo OFX:', error);
-      alert('Ocorreu um erro ao processar o arquivo OFX. Verifique se o arquivo está correto.');
+      await this.dialogService.alert({
+        title: 'Erro ao processar OFX',
+        message: 'Ocorreu um erro ao processar o arquivo OFX. Verifique se o arquivo esta correto.',
+        variant: 'danger',
+      });
       this.resetImport();
     } finally {
       this.isLoading.set(false);
@@ -209,6 +246,50 @@ export class StatementImportComponent implements OnInit {
 
     if (transaction && categoryId && categoryId !== transaction.suggestedCategoryId) {
       await this.offerCategoryRuleLearning(transaction, categoryId);
+    }
+  }
+
+  async categorizeWithAi(): Promise<void> {
+    const transactions = this.activeTx().filter(tx => !tx.ignored);
+
+    if (transactions.length === 0) {
+      await this.dialogService.alert({
+        title: 'Nada para categorizar',
+        message: 'Nenhuma transacao selecionada para a IA analisar.',
+        variant: 'warning',
+      });
+      return;
+    }
+
+    this.isAiCategorizing.set(true);
+    this.aiCategorizationMessage.set('');
+
+    try {
+      const result = await this.aiCategorizationService.categorize(
+        buildAiCategorizationRequest(this.categories(), transactions),
+      );
+      const categorized = applyAiCategorizationSuggestions(
+        this.parsedTransactions(),
+        result.items,
+        this.categories(),
+      );
+
+      this.parsedTransactions.set(categorized.transactions);
+
+      this.aiCategorizationMessage.set(
+        `${categorized.applied} transacao(oes) categorizada(s) por ${result.provider === 'openai' ? 'OpenAI' : 'Gemini'}.`,
+      );
+    } catch (error) {
+      console.error('Erro na categorizacao por IA:', error);
+      await this.dialogService.alert({
+        title: 'Categorizacao por IA',
+        message: error instanceof Error
+          ? error.message
+          : 'Nao foi possivel categorizar as transacoes com IA.',
+        variant: 'warning',
+      });
+    } finally {
+      this.isAiCategorizing.set(false);
     }
   }
 
@@ -239,6 +320,7 @@ export class StatementImportComponent implements OnInit {
     this.accountNumber.set('');
     this.accountType.set('checking');
     this.accountAutomationMessage.set('');
+    this.aiCategorizationMessage.set('');
     this.periodStart.set(null);
     this.periodEnd.set(null);
     this.statementPeriod.set('');
@@ -252,51 +334,38 @@ export class StatementImportComponent implements OnInit {
 
   async confirmImport() {
     if (this.totalTransactionsCount() === 0) {
-      alert('Nenhuma transação selecionada para importação.');
+      await this.dialogService.alert({
+        title: 'Nada para importar',
+        message: 'Nenhuma transacao selecionada para importacao.',
+        variant: 'warning',
+      });
       return;
     }
 
     const accountId = this.selectedAccountId();
     if (!accountId) {
-      alert('Por favor, selecione uma conta de destino.');
+      await this.dialogService.alert({
+        title: 'Conta obrigatoria',
+        message: 'Por favor, selecione uma conta de destino.',
+        variant: 'warning',
+      });
       return;
     }
 
     this.isLoading.set(true);
 
     try {
-      const selectedTransactions = this.activeTx()
-        .filter(tx => !tx.ignored);
-      const fitIds = selectedTransactions
-        .map(tx => tx.fitId)
-        .filter((fitId): fitId is string => Boolean(fitId));
+      const selectedTransactions = selectedImportTransactions(this.activeTx());
+      const fitIds = transactionFitIds(selectedTransactions);
       const existingTransactions = fitIds.length > 0
         ? await this.transactionsService.getAll({
           accountId: { eq: accountId },
           fitId: { in: fitIds },
         })
         : [];
-      const existingFitIds = new Set(existingTransactions.map(tx => tx.fitId).filter(Boolean));
-      const duplicateCount = selectedTransactions.filter(tx => tx.fitId && existingFitIds.has(tx.fitId)).length;
-
-      const payload = selectedTransactions
-        .filter(tx => !tx.fitId || !existingFitIds.has(tx.fitId))
-        .map(tx => {
-          const dateObj = tx.postedAt ? new Date(tx.postedAt) : new Date();
-          const dateStr = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
-
-          return {
-            accountId,
-            categoryId: tx.categoryId ?? null,
-            description: tx.descriptionNormalized || tx.description,
-            originalDescription: tx.description || null,
-            amount: tx.amountAbs ?? 0,
-            type: tx.direction,
-            date: dateStr,
-            ignored: false,
-            fitId: tx.fitId || null
-          };
-        });
+      const existingFitIds = transactionFitIdSet(existingTransactions);
+      const duplicateCount = duplicateCountForTransactions(selectedTransactions, existingFitIds);
+      const payload = buildImportPayload(selectedTransactions, accountId, existingFitIds);
 
       if (payload.length > 0) {
         await this.transactionsService.insert(payload);
@@ -309,55 +378,27 @@ export class StatementImportComponent implements OnInit {
       const learningMessage = this.uncategorizedTransactionsCount() > 0
         ? ` ${this.uncategorizedTransactionsCount()} transacao(oes) ficaram sem categoria.`
         : '';
-      alert(`Importacao concluida com sucesso!${duplicateMessage}${learningMessage}`);
+      await this.dialogService.alert({
+        title: 'Importacao concluida',
+        message: `Importacao concluida com sucesso!${duplicateMessage}${learningMessage}`,
+        variant: 'success',
+      });
       this.resetImport();
     } catch (error) {
       console.error('Erro ao salvar transações:', error);
-      alert('Ocorreu um erro ao salvar as transações importadas no banco.');
+      await this.dialogService.alert({
+        title: 'Erro ao salvar',
+        message: 'Ocorreu um erro ao salvar as transacoes importadas no banco.',
+        variant: 'danger',
+      });
     } finally {
       this.isLoading.set(false);
     }
   }
 
-  private matchCategoryForTransaction(
-    transaction: ImportedTransaction,
-    categories: Category[],
-  ): { category: Category | undefined; source: ImportedTransaction['categorySource'] } {
-    const description = this.normalizeText(
-      `${transaction.descriptionNormalized || ''} ${transaction.description || ''} ${transaction.memo || ''}`,
-    );
-    const type = transaction.direction === 'credit' ? 'income' : 'expense';
-    const rules = this.categoryRules()
-      .filter(rule => rule.categoryType === type || !rule.categoryType)
-      .sort((a, b) => b.priority - a.priority || b.keyword.length - a.keyword.length);
-    const rule = rules.find(candidate => description.includes(this.normalizeText(candidate.keyword)));
-
-    if (rule) {
-      return { category: categories.find(category => category.id === rule.categoryId), source: 'rule' };
-    }
-
-    const categoryName = autoCategorize(transaction.descriptionNormalized || transaction.description);
-    const matchedByName = categories.find(category =>
-      category.type === type &&
-      this.normalizeText(category.name) === this.normalizeText(categoryName)
-    );
-    if (matchedByName) return { category: matchedByName, source: 'auto' };
-
-    const fallbackName = type === 'income' ? 'Outras Receitas' : 'Outras Despesas';
-    return {
-      category: categories.find(category =>
-        category.type === type &&
-        this.normalizeText(category.name) === this.normalizeText(fallbackName)
-      ),
-      source: 'fallback',
-    };
-  }
-
   private async markDuplicatesForSelectedAccount(): Promise<void> {
     const accountId = this.selectedAccountId();
-    const fitIds = this.parsedTransactions()
-      .map(tx => tx.fitId)
-      .filter((fitId): fitId is string => Boolean(fitId));
+    const fitIds = transactionFitIds(this.parsedTransactions());
 
     if (!accountId || fitIds.length === 0) return;
 
@@ -365,73 +406,91 @@ export class StatementImportComponent implements OnInit {
       accountId: { eq: accountId },
       fitId: { in: fitIds },
     });
-    const existingFitIds = new Set(existingTransactions.map(tx => tx.fitId).filter(Boolean));
+    const existingFitIds = transactionFitIdSet(existingTransactions);
 
-    this.parsedTransactions.update(txs =>
-      txs.map(tx => {
-        const duplicate = Boolean(tx.fitId && existingFitIds.has(tx.fitId));
-
-        return {
-          ...tx,
-          duplicate,
-          ignored: duplicate ? true : tx.ignored,
-        };
-      })
-    );
+    this.parsedTransactions.update(txs => markDuplicateTransactions(txs, existingFitIds));
   }
 
   private async offerCategoryRuleLearning(
     transaction: ImportedTransaction,
     categoryId: string,
   ): Promise<void> {
-    const keyword = this.buildRuleKeyword(transaction);
-    if (!keyword || this.categoryRules().some(rule =>
-      this.normalizeText(rule.keyword) === this.normalizeText(keyword)
-    )) {
+    const existingKeywords = new Set(this.categoryRules().map(rule => normalizeText(rule.keyword)));
+    const keywords = suggestCategoryRuleKeywords(transaction)
+      .filter(keyword => !existingKeywords.has(normalizeText(keyword)));
+
+    if (keywords.length === 0) {
       return;
     }
 
     const category = this.categories().find(item => item.id === categoryId);
-    const shouldLearn = confirm(
-      `Criar uma regra para categorizar descricoes parecidas com "${keyword}" como "${category?.name ?? 'categoria selecionada'}"?`,
-    );
+    const shouldLearn = await this.dialogService.confirm({
+      title: 'Aprender categorizacao',
+      message: `Sempre categorizar transacoes parecidas com "${keywords.join('" ou "')}" como "${category?.name ?? 'categoria selecionada'}"?`,
+      confirmLabel: 'Criar regra',
+      variant: 'info',
+    });
     if (!shouldLearn) return;
 
     try {
-      const created = await this.categoryRulesService.insert({
-        keyword,
-        categoryId,
-        priority: 50,
-        createdByUser: true,
-      });
-      this.categoryRules.update(rules => [...rules, created]);
+      const createdRules: CategoryRule[] = [];
+
+      for (const keyword of keywords) {
+        const created = await this.categoryRulesService.insert({
+          keyword,
+          categoryId,
+          priority: 70,
+          createdByUser: true,
+        });
+        createdRules.push(created);
+      }
+
+      if (createdRules.length === 0) return;
+
+      this.categoryRules.update(rules => [...rules, ...createdRules]);
+      this.applyLearnedRules(createdRules, categoryId);
       this.categoryRulesService.updated.emit();
     } catch (error) {
       console.warn('Nao foi possivel criar a regra automaticamente:', error);
     }
   }
 
-  private buildRuleKeyword(transaction: ImportedTransaction): string {
-    const source = (transaction.descriptionNormalized || transaction.description || transaction.memo || '')
-      .replace(/\s+/g, ' ')
-      .trim();
+  private applyLearnedRules(rules: CategoryRule[], categoryId: string): void {
+    this.parsedTransactions.update(txs =>
+      txs.map(tx => {
+        const matches = rules.some(rule => transactionMatchesKeyword(tx, rule.keyword));
 
-    return source.length > 36 ? source.slice(0, 36).trim() : source;
+        if (!matches || tx.categorySource === 'manual') return tx;
+
+        return {
+          ...tx,
+          categoryId,
+          suggestedCategoryId: categoryId,
+          categorySource: 'rule',
+        };
+      })
+    );
   }
 
   private async selectOrCreateStatementAccount(result: OfxParseResult): Promise<void> {
-    const accountType = this.mapOfxAccountType(result.account.accountType);
+    const accountType = mapOfxAccountType(result.account.accountType);
     const bankCode = this.bankService.resolveBankCode(
       result.account.bankId ?? result.institution.bankId,
       result.institution.bankName,
     );
-    const accountNumber = this.normalizeAccountNumber(result.account.accountNumber);
+    const accountNumber = normalizeAccountNumber(result.account.accountNumber);
 
     this.accountType.set(accountType);
     this.bankCode.set(bankCode);
     this.accountNumber.set(result.account.accountNumber ?? '');
 
-    const existing = this.findStatementAccount(accountType, bankCode, accountNumber, result.institution.bankName);
+    const existing = findStatementAccount(
+      this.accounts(),
+      accountType,
+      bankCode,
+      accountNumber,
+      result.institution.bankName,
+    );
     if (existing) {
       this.selectedAccountId.set(existing.id);
       this.accountAutomationMessage.set(`Conta selecionada automaticamente: ${existing.name}`);
@@ -441,13 +500,13 @@ export class StatementImportComponent implements OnInit {
     const bank = bankCode ? this.bankService.getBankByCode(bankCode) : undefined;
     const bankName = bank?.name || result.institution.bankName || 'Banco Importado';
     const created = await this.accountsService.insert({
-      name: this.buildAccountName(bankName, accountType, accountNumber),
+      name: buildAccountName(bankName, accountType, accountNumber),
       type: accountType,
       bankCode,
       accountNumber,
       balance: result.finalBalance ?? 0,
-      color: this.accountColor(accountType),
-      icon: this.accountIcon(accountType),
+      color: accountColor(accountType),
+      icon: accountIcon(accountType),
     });
 
     this.accounts.update(accounts => [...accounts, created]);
@@ -456,100 +515,15 @@ export class StatementImportComponent implements OnInit {
     this.accountsService.updated.emit();
   }
 
-  private findStatementAccount(
-    accountType: AccountType,
-    bankCode: string,
-    accountNumber: string,
-    bankName: string,
-  ): Account | undefined {
-    const normalizedBankName = this.normalizeText(bankName);
-    const candidates = this.accounts().filter(account => {
-      const sameType = account.type === accountType;
-      const sameBank = bankCode
-        ? account.bankCode === bankCode
-        : this.normalizeText(account.name).includes(normalizedBankName);
-
-      return sameType && sameBank;
-    });
-
-    if (accountNumber) {
-      const byNumber = candidates.find(account =>
-        this.normalizeAccountNumber(account.accountNumber) === accountNumber
-      );
-      if (byNumber) return byNumber;
-    }
-
-    return candidates.find(account => !account.accountNumber) ?? candidates[0];
-  }
-
-  private mapOfxAccountType(accountType: string | null): AccountType {
-    const normalized = this.normalizeText(accountType);
-
-    if (/sav|poup/.test(normalized)) return 'savings';
-    if (/money|invest|broker|corret/.test(normalized)) return 'investment';
-
-    return 'checking';
-  }
-
-  private buildAccountName(bankName: string, accountType: AccountType, accountNumber: string): string {
-    const suffix = accountNumber ? ` ${accountNumber}` : '';
-    return `${bankName} - ${this.accountTypeLabel(accountType)}${suffix}`;
-  }
-
-  private accountTypeLabel(accountType: AccountType): string {
-    const labels: Record<AccountType, string> = {
-      checking: 'Conta Corrente',
-      savings: 'Poupanca',
-      cash: 'Dinheiro',
-      investment: 'Investimentos',
-    };
-
-    return labels[accountType];
-  }
-
-  private accountIcon(accountType: AccountType): string {
-    const icons: Record<AccountType, string> = {
-      checking: 'account_balance',
-      savings: 'savings',
-      cash: 'payments',
-      investment: 'account_balance_wallet',
-    };
-
-    return icons[accountType];
-  }
-
-  private accountColor(accountType: AccountType): string {
-    const colors: Record<AccountType, string> = {
-      checking: '#2563eb',
-      savings: '#16a34a',
-      cash: '#f59e0b',
-      investment: '#7c3aed',
-    };
-
-    return colors[accountType];
-  }
-
-  private normalizeAccountNumber(value?: string | null): string {
-    return (value ?? '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  }
-
-  private normalizeText(value?: string | null): string {
-    return (value ?? '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9]/g, '')
-      .toLowerCase();
-  }
-
   private async persistStatementBalance(accountId: string): Promise<void> {
     const finalBalance = this.finalBalance();
     if (finalBalance === null) return;
 
     await this.statementBalancesService.upsert({
       accountId,
-      period: this.statementPeriod() || this.periodFromDate(this.periodEnd()) || new Date().toISOString().slice(0, 7),
-      statementStartDate: this.toIsoDate(this.periodStart()),
-      statementEndDate: this.toIsoDate(this.periodEnd()),
+      period: this.statementPeriod() || periodFromDate(this.periodEnd()) || new Date().toISOString().slice(0, 7),
+      statementStartDate: toIsoDate(this.periodStart()),
+      statementEndDate: toIsoDate(this.periodEnd()),
       initialBalance: this.initialBalance(),
       finalBalance,
       totalCredits: this.statementTotalCredits(),
@@ -567,17 +541,4 @@ export class StatementImportComponent implements OnInit {
     this.accountsService.updated.emit();
   }
 
-  private toIsoDate(date: Date | null): string | null {
-    if (!date) return null;
-
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-  }
-
-  private periodFromDate(date: Date | null): string | null {
-    return this.toIsoDate(date)?.slice(0, 7) ?? null;
-  }
 }

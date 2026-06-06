@@ -1,5 +1,6 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   Account,
   AccountStatementBalance,
@@ -18,42 +19,50 @@ import { AccountsService } from '../../services/accounts.service';
 import { AccountStatementBalancesService } from '../../services/account-statement-balances.service';
 import { BudgetsService } from '../../services/budgets.service';
 import { CategoriesService } from '../../services/categories.service';
+import { FinancialCoachService, FinancialCoachSummary } from '../../services/financial-coach.service';
 import { InvestmentPortfoliosService } from '../../services/investment-portfolios.service';
 import { SavingGoalsService } from '../../services/saving-goals.service';
 import { TransactionsService } from '../../services/transactions.service';
-
-interface MonthFlow {
-  key: string;
-  label: string;
-  income: number;
-  expense: number;
-  net: number;
-  balance: number | null;
-}
-
-interface BudgetInsight {
-  budget: Budget;
-  category?: Category;
-  spent: number;
-  progress: number;
-}
-
-interface UpcomingEntry {
-  id: string;
-  kind: 'payable' | 'receivable';
-  description: string;
-  amount: number;
-  dueDate: string;
-  status: string;
-}
+import { buildCategoryDoughnutChartConfig, buildTrendChartConfig } from './dashboard-chart.utils';
+import {
+  AccountSummaryRow,
+  BudgetInsight,
+  DailyExpensePoint,
+  DashboardTrendRange,
+  MonthFlow,
+  PendingTab,
+  TrendPoint,
+  UpcomingEntry,
+  accountRows,
+  budgetInsights,
+  categorySpending,
+  currentMonthEnd,
+  dailyExpensePoints,
+  monthExpense,
+  monthFlow,
+  monthIncome,
+  monthTransactions,
+  openPayableAmount,
+  openReceivableAmount,
+  overduePayablesAmount,
+  projectedBalanceInDays,
+  todayKey,
+  totalAccountBalance,
+  trendPoints,
+  upcomingEntries,
+} from './dashboard.utils';
 
 @Component({
   selector: 'app-dashboard.component',
-  imports: [CommonModule, CurrencyPipe, DatePipe],
+  imports: [CommonModule, CurrencyPipe, DatePipe, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('trendChartCanvas') trendChartCanvas?: ElementRef<HTMLCanvasElement>;
+  @ViewChild('expenseCategoryChartCanvas') expenseCategoryChartCanvas?: ElementRef<HTMLCanvasElement>;
+  @ViewChild('incomeCategoryChartCanvas') incomeCategoryChartCanvas?: ElementRef<HTMLCanvasElement>;
+
   accounts = signal<Account[]>([]);
   transactions = signal<Transaction[]>([]);
   categories = signal<Category[]>([]);
@@ -64,6 +73,14 @@ export class DashboardComponent implements OnInit {
   statementBalances = signal<AccountStatementBalance[]>([]);
   portfolios = signal<InvestmentPortfolio[]>([]);
   portfolioAssets = signal<InvestmentPortfolioAsset[]>([]);
+  trendRange = signal<DashboardTrendRange>('7d');
+  pendingTab = signal<PendingTab>('payable');
+
+  private chartsReady = false;
+  private chartConstructor?: typeof import('chart.js/auto').default;
+  private trendChart?: import('chart.js').Chart;
+  private expenseCategoryChart?: import('chart.js').Chart;
+  private incomeCategoryChart?: import('chart.js').Chart;
 
   constructor(
     private accountsService: AccountsService,
@@ -75,6 +92,7 @@ export class DashboardComponent implements OnInit {
     private payablesService: AccountsPayableService,
     private receivablesService: AccountsReceivableService,
     private portfoliosService: InvestmentPortfoliosService,
+    private financialCoachService: FinancialCoachService,
   ) {}
 
   ngOnInit(): void {
@@ -88,6 +106,17 @@ export class DashboardComponent implements OnInit {
     this.payablesService.updated.subscribe(() => this.load());
     this.receivablesService.updated.subscribe(() => this.load());
     this.portfoliosService.updated.subscribe(() => this.load());
+  }
+
+  ngAfterViewInit(): void {
+    this.chartsReady = true;
+    this.queueChartRender();
+  }
+
+  ngOnDestroy(): void {
+    this.trendChart?.destroy();
+    this.expenseCategoryChart?.destroy();
+    this.incomeCategoryChart?.destroy();
   }
 
   load(): void {
@@ -117,12 +146,33 @@ export class DashboardComponent implements OnInit {
       this.portfolios.set(portfolios);
 
       Promise.all(portfolios.map(portfolio => this.portfoliosService.getAssets(portfolio.id)))
-        .then(groups => this.portfolioAssets.set(groups.flat()));
+        .then(groups => {
+          this.portfolioAssets.set(groups.flat());
+          this.queueChartRender();
+        });
+
+      this.queueChartRender();
     });
   }
 
   totalBalance(): number {
-    return this.accounts().reduce((sum, account) => sum + this.accountCurrentBalance(account), 0);
+    return totalAccountBalance(this.accounts(), this.statementBalances());
+  }
+
+  initialBalance(): number {
+    return this.accounts().reduce((sum, account) => sum + (account.balance ?? 0), 0);
+  }
+
+  projectedBalance(): number {
+    return this.totalBalance() + this.receivableOpenAmount() - this.payableOpenAmount();
+  }
+
+  currentMonthLabel(): string {
+    return new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
+  }
+
+  accountRows(): AccountSummaryRow[] {
+    return accountRows(this.accounts(), this.statementBalances());
   }
 
   investmentsValue(): number {
@@ -144,24 +194,15 @@ export class DashboardComponent implements OnInit {
   }
 
   monthTransactions(): Transaction[] {
-    const start = this.currentMonthStart();
-    const end = this.currentMonthEnd();
-    return this.transactions().filter(transaction => {
-      const date = transaction.date.slice(0, 10);
-      return date >= start && date <= end && !transaction.ignored;
-    });
+    return monthTransactions(this.transactions());
   }
 
   monthIncome(): number {
-    return this.monthTransactions()
-      .filter(transaction => transaction.type === 'credit')
-      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+    return monthIncome(this.transactions());
   }
 
   monthExpense(): number {
-    return this.monthTransactions()
-      .filter(transaction => transaction.type === 'debit')
-      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+    return monthExpense(this.transactions());
   }
 
   monthNet(): number {
@@ -169,18 +210,7 @@ export class DashboardComponent implements OnInit {
   }
 
   budgetInsights(): BudgetInsight[] {
-    return this.budgets().map(budget => {
-      const spent = this.monthTransactions()
-        .filter(transaction => transaction.type === 'debit' && transaction.categoryId === budget.categoryId)
-        .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
-
-      return {
-        budget,
-        category: this.categories().find(category => category.id === budget.categoryId),
-        spent,
-        progress: budget.amountLimit > 0 ? Math.min(100, (spent / budget.amountLimit) * 100) : 0,
-      };
-    }).sort((a, b) => b.progress - a.progress);
+    return budgetInsights(this.budgets(), this.categories(), this.transactions());
   }
 
   totalBudgetLimit(): number {
@@ -209,49 +239,27 @@ export class DashboardComponent implements OnInit {
   }
 
   upcomingEntries(): UpcomingEntry[] {
-    const payables = this.payables()
-      .filter(item => item.status === 'pending' || item.status === 'overdue')
-      .map(item => ({
-        id: item.id,
-        kind: 'payable' as const,
-        description: item.description,
-        amount: item.amount,
-        dueDate: item.dueDate,
-        status: item.status,
-      }));
+    return upcomingEntries(this.payables(), this.receivables());
+  }
 
-    const receivables = this.receivables()
-      .filter(item => item.status === 'pending' || item.status === 'overdue')
-      .map(item => ({
-        id: item.id,
-        kind: 'receivable' as const,
-        description: item.description,
-        amount: item.amount,
-        dueDate: item.dueDate,
-        status: item.status,
-      }));
+  pendingExpenseCount(): number {
+    return this.payables().filter(item => item.status === 'pending' || item.status === 'overdue').length;
+  }
 
-    return [...payables, ...receivables]
-      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  pendingIncomeCount(): number {
+    return this.receivables().filter(item => item.status === 'pending' || item.status === 'overdue').length;
   }
 
   overduePayablesAmount(): number {
-    const today = this.today();
-    return this.payables()
-      .filter(item => (item.status === 'pending' || item.status === 'overdue') && item.dueDate < today)
-      .reduce((sum, item) => sum + item.amount, 0);
+    return overduePayablesAmount(this.payables());
   }
 
   receivableOpenAmount(): number {
-    return this.receivables()
-      .filter(item => item.status === 'pending' || item.status === 'overdue')
-      .reduce((sum, item) => sum + item.amount, 0);
+    return openReceivableAmount(this.receivables());
   }
 
   payableOpenAmount(): number {
-    return this.payables()
-      .filter(item => item.status === 'pending' || item.status === 'overdue')
-      .reduce((sum, item) => sum + item.amount, 0);
+    return openPayableAmount(this.payables());
   }
 
   recentTransactions(): Transaction[] {
@@ -260,26 +268,12 @@ export class DashboardComponent implements OnInit {
       .sort((a, b) => b.date.localeCompare(a.date));
   }
 
-  monthFlow(): MonthFlow[] {
-    const months = this.lastMonths(6);
-    return months.map(({ key, label }) => {
-      const monthTransactions = this.transactions().filter(transaction => transaction.date.slice(0, 7) === key);
-      const income = monthTransactions
-        .filter(transaction => transaction.type === 'credit')
-        .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
-      const expense = monthTransactions
-        .filter(transaction => transaction.type === 'debit')
-        .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+  recentActivity(): Transaction[] {
+    return this.recentTransactions().slice(0, 6);
+  }
 
-      return {
-        key,
-        label,
-        income,
-        expense,
-        net: income - expense,
-        balance: this.totalBalanceAtPeriodEnd(key),
-      };
-    });
+  monthFlow(): MonthFlow[] {
+    return monthFlow(this.accounts(), this.transactions(), this.statementBalances());
   }
 
   maxFlowValue(): number {
@@ -290,23 +284,126 @@ export class DashboardComponent implements OnInit {
   }
 
   categorySpending(): Array<{ category?: Category; amount: number; percent: number }> {
-    const total = this.monthExpense();
-    const rows = this.categories()
-      .filter(category => category.type === 'expense')
-      .map(category => {
-        const amount = this.monthTransactions()
-          .filter(transaction => transaction.type === 'debit' && transaction.categoryId === category.id)
-          .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
-        return {
-          category,
-          amount,
-          percent: total > 0 ? (amount / total) * 100 : 0,
-        };
-      })
-      .filter(row => row.amount > 0)
-      .sort((a, b) => b.amount - a.amount);
+    return categorySpending(this.categories(), this.transactions(), 'expense');
+  }
 
-    return rows.length > 0 ? rows : [{ category: undefined, amount: 0, percent: 0 }];
+  topCategorySpending(): Array<{ category?: Category; amount: number; percent: number }> {
+    return this.categorySpending().slice(0, 5);
+  }
+
+  dailyExpensePoints(): DailyExpensePoint[] {
+    return dailyExpensePoints(this.transactions());
+  }
+
+  expenseSparklinePoints(): string {
+    const points = this.dailyExpensePoints();
+    const max = Math.max(1, ...points.map(point => point.amount));
+    const lastIndex = Math.max(1, points.length - 1);
+
+    return points.map((point, index) => {
+      const x = (index / lastIndex) * 100;
+      const y = 100 - ((point.amount / max) * 88);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+  }
+
+  expenseSparklineArea(): string {
+    return `0,100 ${this.expenseSparklinePoints()} 100,100`;
+  }
+
+  dailyExpenseHeight(amount: number): number {
+    const max = Math.max(1, ...this.dailyExpensePoints().map(point => point.amount));
+    return Math.max(6, (amount / max) * 100);
+  }
+
+  setTrendRange(range: DashboardTrendRange): void {
+    this.trendRange.set(range);
+    this.queueChartRender();
+  }
+
+  trendRangeLabel(): string {
+    const labels: Record<DashboardTrendRange, string> = {
+      '7d': 'Ultimos 7 dias',
+      '30d': 'Ultimos 30 dias',
+      '6m': 'Ultimos 6 meses',
+      '12m': 'Ultimos 12 meses',
+      '3y': 'Ultimos 3 anos',
+    };
+
+    return labels[this.trendRange()];
+  }
+
+  setPendingTab(tab: PendingTab): void {
+    this.pendingTab.set(tab);
+  }
+
+  pendingTabLabel(): string {
+    return this.pendingTab() === 'payable' ? 'contas a pagar' : 'contas a receber';
+  }
+
+  pendingTabCount(): number {
+    return this.pendingTab() === 'payable' ? this.pendingExpenseCount() : this.pendingIncomeCount();
+  }
+
+  pendingTabAmount(): number {
+    return this.pendingTab() === 'payable' ? this.payableOpenAmount() : this.receivableOpenAmount();
+  }
+
+  pendingTabEntries(): UpcomingEntry[] {
+    return this.upcomingEntries()
+      .filter(entry => this.pendingTab() === 'payable' ? entry.kind === 'payable' : entry.kind === 'receivable')
+      .slice(0, 3);
+  }
+
+  projectedBalanceIn(daysAhead: number): number {
+    return projectedBalanceInDays(this.totalBalance(), this.payables(), this.receivables(), daysAhead);
+  }
+
+  safeDailyLimit(): number {
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const remainingDays = Math.max(1, daysInMonth - now.getDate() + 1);
+    const fixedPayables = this.payables()
+      .filter(item => item.status === 'pending' && item.dueDate >= todayKey() && item.dueDate <= currentMonthEnd())
+      .reduce((sum, item) => sum + item.amount, 0);
+    const safetyMargin = Math.max(0, this.totalBalance() * 0.1);
+
+    return Math.max(0, (this.totalBalance() - fixedPayables - safetyMargin) / remainingDays);
+  }
+
+  survivalPot(): number {
+    const fixedCategoryIds = new Set(this.categories().filter(category => category.isFixed).map(category => category.id));
+    return this.monthTransactions()
+      .filter(transaction => transaction.type === 'debit' && transaction.categoryId && fixedCategoryIds.has(transaction.categoryId))
+      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+  }
+
+  pleasurePot(): number {
+    return Math.max(0, this.monthExpense() - this.survivalPot() - this.coachSummary().monthWealthBuilding);
+  }
+
+  futurePot(): number {
+    return this.coachSummary().monthWealthBuilding + Math.max(0, this.monthNet());
+  }
+
+  incomeCategorySpending(): Array<{ category?: Category; amount: number; percent: number }> {
+    return categorySpending(this.categories(), this.transactions(), 'income');
+  }
+
+  topIncomeCategories(): Array<{ category?: Category; amount: number; percent: number }> {
+    return this.incomeCategorySpending().slice(0, 5);
+  }
+
+  trendPoints(): TrendPoint[] {
+    return trendPoints(this.transactions(), this.trendRange());
+  }
+
+  featuredBudgetInsights(): BudgetInsight[] {
+    return this.budgetInsights().slice(0, 4);
+  }
+
+  activeGoals(): SavingGoal[] {
+    return this.savingGoals().filter(goal => goal.status !== 'completed').slice(0, 4);
   }
 
   investmentReturn(): number {
@@ -318,26 +415,25 @@ export class DashboardComponent implements OnInit {
     return cost > 0 ? (this.investmentReturn() / cost) * 100 : 0;
   }
 
+  coachSummary(): FinancialCoachSummary {
+    return this.financialCoachService.buildSummary({
+      accounts: this.accounts(),
+      transactions: this.transactions(),
+      categories: this.categories(),
+      budgets: this.budgets(),
+      savingGoals: this.savingGoals(),
+      payables: this.payables(),
+      receivables: this.receivables(),
+      investmentAssets: this.portfolioAssets(),
+    });
+  }
+
   financialHealthScore(): number {
-    let score = 100;
-
-    if (this.monthNet() < 0) score -= 12;
-    if (this.budgetUsage() > 100) score -= 18;
-    else if (this.budgetUsage() > 85) score -= 8;
-    if (this.overduePayablesAmount() > 0) score -= 16;
-    if (this.receivableOpenAmount() > this.payableOpenAmount()) score += 4;
-    if (this.investmentsValue() > 0) score += 4;
-    if (this.averageGoalProgress() > 50) score += 4;
-
-    return Math.max(0, Math.min(100, score));
+    return this.coachSummary().healthScore;
   }
 
   healthLabel(): string {
-    const score = this.financialHealthScore();
-    if (score >= 85) return 'Forte';
-    if (score >= 70) return 'Estavel';
-    if (score >= 50) return 'Atencao';
-    return 'Critica';
+    return this.coachSummary().healthLabel;
   }
 
   signedTransactionAmount(transaction: Transaction): number {
@@ -369,6 +465,27 @@ export class DashboardComponent implements OnInit {
     return 'text-muted-foreground';
   }
 
+  accountTypeLabel(type: Account['type']): string {
+    const labels: Record<Account['type'], string> = {
+      checking: 'Conta corrente',
+      savings: 'Poupanca',
+      cash: 'Dinheiro',
+      investment: 'Investimento',
+    };
+
+    return labels[type];
+  }
+
+  transactionIcon(transaction: Transaction): string {
+    if (transaction.type === 'transfer') return 'sync_alt';
+    return this.getTransactionCategory(transaction)?.icon || (transaction.type === 'credit' ? 'add_circle' : 'remove_circle');
+  }
+
+  transactionColor(transaction: Transaction): string {
+    if (transaction.type === 'transfer') return '#f5b70a';
+    return this.getTransactionCategory(transaction)?.color || (transaction.type === 'credit' ? '#169b62' : '#dc3d35');
+  }
+
   formatPercent(value: number): string {
     return `${value.toLocaleString('pt-BR', {
       minimumFractionDigits: 1,
@@ -376,124 +493,56 @@ export class DashboardComponent implements OnInit {
     })}%`;
   }
 
-  private currentMonthStart(): string {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  private queueChartRender(): void {
+    if (!this.chartsReady) return;
+    queueMicrotask(() => void this.renderCharts());
   }
 
-  private currentMonthEnd(): string {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+  private async renderCharts(): Promise<void> {
+    await this.renderTrendChart();
+    await this.renderExpenseCategoryChart();
+    await this.renderIncomeCategoryChart();
   }
 
-  private accountCurrentBalance(account: Account): number {
-    return this.latestStatementBalance(account.id)?.finalBalance ?? account.balance ?? 0;
-  }
-
-  private latestStatementBalance(accountId: string): AccountStatementBalance | undefined {
-    return this.statementBalances()
-      .filter(balance => balance.accountId === accountId && balance.finalBalance !== null)
-      .sort((a, b) => this.statementReferenceDate(b).localeCompare(this.statementReferenceDate(a)))[0];
-  }
-
-  private totalBalanceAtPeriodEnd(period: string): number | null {
-    const projectedBalances = this.accounts().map(account => ({
-      account,
-      balance: this.accountBalanceAtPeriodEnd(account.id, period),
-    }));
-
-    if (!projectedBalances.some(item => item.balance !== null)) {
-      return null;
+  private async getChartConstructor(): Promise<typeof import('chart.js/auto').default> {
+    if (!this.chartConstructor) {
+      this.chartConstructor = (await import('chart.js/auto')).default;
     }
 
-    return projectedBalances.reduce(
-      (sum, item) => sum + (item.balance ?? item.account.balance ?? 0),
-      0,
-    );
+    return this.chartConstructor;
   }
 
-  private accountBalanceAtPeriodEnd(accountId: string, period: string): number | null {
-    const targetEnd = this.periodEndDate(period);
-    const balances = this.statementBalances()
-      .filter(balance => balance.accountId === accountId && balance.finalBalance !== null)
-      .sort((a, b) => this.statementReferenceDate(a).localeCompare(this.statementReferenceDate(b)));
+  private async renderTrendChart(): Promise<void> {
+    const canvas = this.trendChartCanvas?.nativeElement;
+    if (!canvas) return;
 
-    const previous = [...balances]
-      .reverse()
-      .find(balance => this.statementReferenceDate(balance) <= targetEnd);
+    const ChartConstructor = await this.getChartConstructor();
 
-    if (previous?.finalBalance !== null && previous?.finalBalance !== undefined) {
-      return previous.finalBalance + this.accountNetBetween(
-        accountId,
-        this.statementReferenceDate(previous),
-        targetEnd,
-      );
-    }
-
-    const next = balances.find(balance => this.statementReferenceDate(balance) > targetEnd);
-
-    if (next?.finalBalance !== null && next?.finalBalance !== undefined) {
-      return next.finalBalance - this.accountNetBetween(
-        accountId,
-        targetEnd,
-        this.statementReferenceDate(next),
-      );
-    }
-
-    return null;
+    this.trendChart?.destroy();
+    this.trendChart = new ChartConstructor(canvas, buildTrendChartConfig(this.trendPoints()));
   }
 
-  private accountNetBetween(accountId: string, startExclusive: string, endInclusive: string): number {
-    return this.transactions()
-      .filter(transaction => {
-        const date = transaction.date.slice(0, 10);
-        return !transaction.ignored
-          && date > startExclusive
-          && date <= endInclusive
-          && (transaction.accountId === accountId || transaction.transferAccountId === accountId);
-      })
-      .reduce((sum, transaction) => sum + this.signedTransactionForAccount(transaction, accountId), 0);
+  private async renderExpenseCategoryChart(): Promise<void> {
+    const canvas = this.expenseCategoryChartCanvas?.nativeElement;
+    if (!canvas) return;
+
+    const ChartConstructor = await this.getChartConstructor();
+    const rows = this.categorySpending().filter(row => row.amount > 0);
+    this.expenseCategoryChart?.destroy();
+    this.expenseCategoryChart = new ChartConstructor(canvas, buildCategoryDoughnutChartConfig(rows));
   }
 
-  private signedTransactionForAccount(transaction: Transaction, accountId: string): number {
-    const amount = Math.abs(transaction.amount);
+  private async renderIncomeCategoryChart(): Promise<void> {
+    const canvas = this.incomeCategoryChartCanvas?.nativeElement;
+    if (!canvas) return;
 
-    if (transaction.type === 'transfer') {
-      if (transaction.transferAccountId === accountId) return amount;
-      if (transaction.accountId === accountId) return -amount;
-      return 0;
-    }
-
-    if (transaction.accountId !== accountId) return 0;
-    return transaction.type === 'debit' ? -amount : amount;
-  }
-
-  private statementReferenceDate(balance: AccountStatementBalance): string {
-    return balance.statementEndDate ?? this.periodEndDate(balance.period);
-  }
-
-  private periodEndDate(period: string): string {
-    const [year, month] = period.split('-').map(Number);
-    return new Date(year, month, 0).toISOString().slice(0, 10);
+    const ChartConstructor = await this.getChartConstructor();
+    const rows = this.incomeCategorySpending().filter(row => row.amount > 0);
+    this.incomeCategoryChart?.destroy();
+    this.incomeCategoryChart = new ChartConstructor(canvas, buildCategoryDoughnutChartConfig(rows));
   }
 
   today(): string {
-    return new Date().toISOString().slice(0, 10);
-  }
-
-  private lastMonths(count: number): Array<{ key: string; label: string }> {
-    const formatter = new Intl.DateTimeFormat('pt-BR', { month: 'short' });
-    const months: Array<{ key: string; label: string }> = [];
-    const now = new Date();
-
-    for (let index = count - 1; index >= 0; index--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
-      months.push({
-        key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
-        label: formatter.format(date).replace('.', ''),
-      });
-    }
-
-    return months;
+    return todayKey();
   }
 }

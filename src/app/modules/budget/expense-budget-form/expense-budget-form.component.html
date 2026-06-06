@@ -1,49 +1,67 @@
-<form (submit)="submit($event)" [formGroup]="form" class="space-y-5">
-  <div class="mb-2">
-    <h3 class="text-foreground text-lg font-black tracking-tight">
-      {{ budget ? 'Editar Meta de Despesa' : 'Nova Meta de Despesa' }}
-    </h3>
-    <p class="text-muted-foreground text-xs">
-      Defina um limite mensal para uma categoria de despesa.
-    </p>
-  </div>
+<form (submit)="submit($event)" [formGroup]="form" class="friendly-form">
+  <header class="form-hero">
+    <span class="material-symbols-outlined">percent</span>
+    <div>
+      <h3>{{ budget ? 'Editar orcamento' : 'Novo orcamento' }}</h3>
+      <p>Defina quanto voce quer gastar em uma categoria durante o mes.</p>
+    </div>
+  </header>
 
-  <hr class="border-border my-2">
-
-  <div class="grid grid-cols-1 gap-4">
-    <div class="flex flex-col gap-1.5">
-      <label for="budget-category" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Categoria</label>
-      <app-select id="budget-category" formControlName="categoryId" [options]="categoryOptions()" placeholder="Selecione" />
+  <section class="form-section">
+    <div class="section-title">
+      <span>1</span>
+      <div>
+        <h4>Categoria e limite</h4>
+        <p>Exemplo: Alimentacao com limite de R$ 800 no mes.</p>
+      </div>
     </div>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="budget-limit" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Limite Mensal</label>
-      <app-input id="budget-limit" type="currency" prefix="R$ " formControlName="amountLimit" />
+    <div class="field-grid">
+      <label class="field" for="budget-category">
+        <span>Categoria</span>
+        <app-select id="budget-category" formControlName="categoryId" [options]="categoryOptions()" placeholder="Escolha a categoria" />
+      </label>
+
+      <label class="field" for="budget-limit">
+        <span>Limite do mes</span>
+        <app-input id="budget-limit" type="currency" prefix="R$ " formControlName="amountLimit" />
+      </label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="section-title">
+      <span>2</span>
+      <div>
+        <h4>Avisos</h4>
+        <p>O sistema pode avisar quando voce estiver chegando perto do limite.</p>
+      </div>
     </div>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="budget-kind" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Tipo de Meta</label>
-      <app-select id="budget-kind" formControlName="targetKind" [options]="[
-        { value: 'maximum', label: 'Gastar no maximo' },
-        { value: 'minimum', label: 'Cumprir no minimo' }
-      ]" />
-    </div>
+    <div class="field-grid">
+      <label class="field" for="budget-kind">
+        <span>Como controlar</span>
+        <app-select id="budget-kind" formControlName="targetKind" [options]="[
+          { value: 'maximum', label: 'Nao passar desse valor' },
+          { value: 'minimum', label: 'Tentar atingir pelo menos esse valor' }
+        ]" />
+      </label>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="budget-alert" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Alerta (%)</label>
-      <app-input id="budget-alert" type="number" formControlName="alertPercent" placeholder="80" />
-    </div>
+      <label class="field" for="budget-alert">
+        <span>Avisar em (%)</span>
+        <app-input id="budget-alert" type="number" formControlName="alertPercent" placeholder="80" />
+      </label>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="budget-notes" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Observacoes</label>
-      <app-input id="budget-notes" formControlName="notes" placeholder="Contexto da meta" />
+      <label class="field field-wide" for="budget-notes">
+        <span>Observacao opcional</span>
+        <app-input id="budget-notes" formControlName="notes" placeholder="Ex: incluir mercado e restaurante" />
+      </label>
     </div>
-  </div>
+  </section>
 
-  <div class="pt-4 flex justify-end">
-    <button type="submit" [disabled]="form.invalid"
-      class="primary-button w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:filter-none">
-      {{ budget ? 'Salvar Meta' : 'Criar Meta' }}
+  <footer class="form-actions">
+    <button type="submit" [disabled]="form.invalid" class="primary-button disabled:opacity-50 disabled:cursor-not-allowed">
+      {{ budget ? 'Salvar orcamento' : 'Criar orcamento' }}
     </button>
-  </div>
+  </footer>
 </form>

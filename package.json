@@ -45,6 +45,7 @@
     "better-sqlite3": "^12.10.0",
     "chart.js": "^4.5.1",
     "drizzle-orm": "^0.45.2",
+    "electron-updater": "^6.8.3",
     "material-symbols": "^0.44.11",
     "ofx-data-extractor": "^1.5.0",
     "rxjs": "~7.8.0",

@@ -1,11 +1,19 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Category, CategoryRule, NewCategoryRule } from '../../../models';
+import { ReactiveFormsModule } from '@angular/forms';
+import { Category, CategoryRule } from '../../../models';
 import { InputComponent } from '../../../components/input/input.component';
 import { SelectComponent, SelectOption } from '../../../components/select/select.component';
 import { CategoriesService } from '../../../services/categories.service';
 import { CategoryRulesService } from '../../../services/category-rules.service';
+import {
+  buildCategoryRulePayload,
+  categoryOptions,
+  categoryTypeLabel,
+  createCategoryRuleForm,
+  createCategoryRuleSearchControl,
+  filteredCategoryRules,
+} from './category-rules.utils';
 
 @Component({
   selector: 'app-category-rules',
@@ -19,28 +27,11 @@ export class CategoryRulesComponent implements OnInit {
   categoryOptions = signal<SelectOption[]>([]);
   editingRule = signal<CategoryRule | null>(null);
   searchQuery = signal('');
-  search = new FormControl<string>('', { nonNullable: true });
-
-  form = new FormGroup({
-    keyword: new FormControl<string>('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.minLength(2)],
-    }),
-    categoryId: new FormControl<string>('', {
-      nonNullable: true,
-      validators: [Validators.required],
-    }),
-    priority: new FormControl<number>(0, { nonNullable: true }),
-  });
+  search = createCategoryRuleSearchControl();
+  form = createCategoryRuleForm();
 
   filteredRules = computed(() => {
-    const query = this.normalize(this.searchQuery());
-    if (!query) return this.rules();
-
-    return this.rules().filter(rule =>
-      this.normalize(rule.keyword).includes(query) ||
-      this.normalize(rule.categoryName).includes(query)
-    );
+    return filteredCategoryRules(this.rules(), this.searchQuery());
   });
 
   constructor(
@@ -60,13 +51,7 @@ export class CategoryRulesComponent implements OnInit {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
 
-    const raw = this.form.getRawValue();
-    const payload: NewCategoryRule = {
-      keyword: raw.keyword.trim(),
-      categoryId: raw.categoryId,
-      priority: Number(raw.priority) || 0,
-      createdByUser: true,
-    };
+    const payload = buildCategoryRulePayload(this.form.getRawValue());
     const editing = this.editingRule();
     const save = editing
       ? this.categoryRulesService.update(editing.id, payload)
@@ -106,7 +91,7 @@ export class CategoryRulesComponent implements OnInit {
   }
 
   categoryTypeLabel(rule: CategoryRule): string {
-    return rule.categoryType === 'income' ? 'Receita' : 'Despesa';
+    return categoryTypeLabel(rule);
   }
 
   private load(): void {
@@ -115,11 +100,7 @@ export class CategoryRulesComponent implements OnInit {
       this.categoryRulesService.getAll(),
     ]).then(([categories, rules]) => {
       this.categories.set(categories);
-      this.categoryOptions.set(categories.map(category => ({
-        value: category.id,
-        label: `${category.name} (${category.type === 'income' ? 'Receita' : 'Despesa'})`,
-        icon: category.icon ?? undefined,
-      })));
+      this.categoryOptions.set(categoryOptions(categories));
       this.rules.set(rules);
 
       if (!this.form.controls.categoryId.value && this.categoryOptions()[0]) {
@@ -130,12 +111,5 @@ export class CategoryRulesComponent implements OnInit {
 
   private loadRules(): void {
     this.categoryRulesService.getAll().then(rules => this.rules.set(rules));
-  }
-
-  private normalize(value?: string | null): string {
-    return (value ?? '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
   }
 }

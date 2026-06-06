@@ -1,0 +1,24 @@
+<div class="space-y-5">
+  <div class="flex items-start gap-4">
+    <div class="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0" [ngClass]="iconClass()">
+      <span class="material-symbols-outlined">{{ icon() }}</span>
+    </div>
+    <div class="min-w-0">
+      <h2 class="text-lg font-black text-foreground">{{ title }}</h2>
+      <p class="mt-1 text-sm text-muted-foreground whitespace-pre-line">{{ message }}</p>
+    </div>
+  </div>
+
+  <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+    @if (showCancel) {
+    <button type="button" (click)="cancel()"
+      class="px-4 py-2 rounded-md border border-border bg-[var(--card)] text-foreground font-semibold">
+      {{ cancelLabel }}
+    </button>
+    }
+    <button type="button" (click)="confirm()"
+      class="px-4 py-2 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-bold">
+      {{ confirmLabel }}
+    </button>
+  </div>
+</div>

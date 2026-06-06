@@ -11,6 +11,15 @@ import { CategoriesService } from '../../../services/categories.service';
 import { ModalService } from '../../../services/modal.service';
 import { TransactionsService } from '../../../services/transactions.service';
 import { ExpenseBudgetFormComponent } from '../expense-budget-form/expense-budget-form.component';
+import {
+  budgetBalanceLabel,
+  budgetPeriodRange,
+  budgetProgress,
+  budgetProgressClass,
+  budgetTargetLabel,
+  remainingBudgetAmount,
+  spentInBudget,
+} from './expense-budgets.utils';
 
 @Component({
   selector: 'app-expense-budgets.component',
@@ -102,8 +111,7 @@ export class ExpenseBudgetsComponent implements OnInit {
   searchTransactions(): void {
     const month = Number(this.filters.value.month);
     const year = Number(this.filters.value.year);
-    const start = `${year}-${String(month).padStart(2, '0')}-01`;
-    const end = new Date(year, month, 0).toISOString().slice(0, 10);
+    const { start, end } = budgetPeriodRange(month, year);
 
     this.transactionsService
       .getAll({
@@ -125,41 +133,27 @@ export class ExpenseBudgetsComponent implements OnInit {
   }
 
   spent(budget: Budget): number {
-    return this.transactions()
-      .filter(transaction => transaction.categoryId === budget.categoryId)
-      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+    return spentInBudget(budget, this.transactions());
   }
 
   remaining(budget: Budget): number {
-    return budget.targetKind === 'minimum'
-      ? this.spent(budget) - budget.amountLimit
-      : budget.amountLimit - this.spent(budget);
+    return remainingBudgetAmount(budget, this.transactions());
   }
 
   progress(budget: Budget): number {
-    if (budget.amountLimit <= 0) return 0;
-    return Math.min(100, (this.spent(budget) / budget.amountLimit) * 100);
+    return budgetProgress(budget, this.transactions());
   }
 
   progressClass(budget: Budget): string {
-    const progress = this.progress(budget);
-    if (budget.targetKind === 'minimum') {
-      if (progress >= 100) return 'bg-emerald-600';
-      if (progress >= budget.alertPercent) return 'bg-amber-500';
-      return 'bg-red-600';
-    }
-
-    if (progress >= 100) return 'bg-red-600';
-    if (progress >= budget.alertPercent) return 'bg-amber-500';
-    return 'bg-emerald-600';
+    return budgetProgressClass(budget, this.transactions());
   }
 
   targetLabel(budget: Budget): string {
-    return budget.targetKind === 'minimum' ? 'Meta minima' : 'Limite';
+    return budgetTargetLabel(budget);
   }
 
   balanceLabel(budget: Budget): string {
-    return budget.targetKind === 'minimum' ? 'Progresso' : 'Saldo';
+    return budgetBalanceLabel(budget);
   }
 
   totalLimit(): number {

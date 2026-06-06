@@ -30,44 +30,45 @@
 @tailwind utilities;
 
 :root {
-    --background: #f8f8ff;
-    --foreground: oklch(0.153 0.006 107.1);
+    --background: #f5f7fb;
+    --foreground: #2f3340;
     --card: white;
-    --card-foreground: oklch(0.153 0.006 107.1);
+    --card-foreground: #2f3340;
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.153 0.006 107.1);
-    --primary: oklch(0.488 0.243 264.376);
+    --popover-foreground: #2f3340;
+    --primary: #1f7ae0;
     --primary-foreground: oklch(0.97 0.014 254.604);
-    --secondary: oklch(0.967 0.001 286.375);
-    --secondary-foreground: oklch(0.21 0.006 285.885);
-    --muted: oklch(0.966 0.005 106.5);
-    --muted-foreground: oklch(0.58 0.031 107.3);
-    --accent: oklch(0.488 0.243 264.376);
+    --secondary: #eef3fb;
+    --secondary-foreground: #303746;
+    --muted: #eef3f8;
+    --muted-foreground: #727a88;
+    --accent: #1f7ae0;
     --accent-foreground: oklch(0.97 0.014 254.604);
-    --destructive: oklch(0.577 0.245 27.325);
-    --danger: oklch(0.577 0.245 27.325);
-    --success: oklch(0.596 0.145 163.225);
-    --border: oklch(0.93 0.007 106.5);
-    --input: oklch(0.93 0.007 106.5);
-    --ring: oklch(0.737 0.021 106.9);
-    --chart-1: oklch(0.845 0.143 164.978);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.596 0.145 163.225);
-    --chart-4: oklch(0.508 0.118 165.612);
-    --chart-5: oklch(0.432 0.095 166.913);
-    --primary-hover: oklch(0.424 0.199 265.638);
-    --secondary-hover: oklch(0.93 0.007 106.5);
+    --destructive: #dc3d35;
+    --danger: #dc3d35;
+    --success: #169b62;
+    --warning: #f5b70a;
+    --border: #dde4ef;
+    --input: #dde4ef;
+    --ring: #9abce8;
+    --chart-1: #1f7ae0;
+    --chart-2: #169b62;
+    --chart-3: #dc3d35;
+    --chart-4: #f5b70a;
+    --chart-5: #6f58c9;
+    --primary-hover: #1767bf;
+    --secondary-hover: #e3ebf6;
     --radius-sm: 0.5rem;
-    --radius-md: 0.75rem;
-    --radius: 0.875rem;
+    --radius-md: 0.5rem;
+    --radius: 0.5rem;
     --sidebar: white;
-    --sidebar-foreground: oklch(0.153 0.006 107.1);
-    --sidebar-primary: oklch(0.546 0.245 262.881);
+    --sidebar-foreground: #303746;
+    --sidebar-primary: #1f7ae0;
     --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-    --sidebar-accent: oklch(0.966 0.005 106.5);
-    --sidebar-accent-foreground: oklch(0.228 0.013 107.4);
-    --sidebar-border: oklch(0.93 0.007 106.5);
-    --sidebar-ring: oklch(0.737 0.021 106.9);
+    --sidebar-accent: #eaf3ff;
+    --sidebar-accent-foreground: #1f5fba;
+    --sidebar-border: #e7edf5;
+    --sidebar-ring: #9abce8;
 }
 
 .dark {
@@ -119,12 +120,242 @@ button {
     cursor: pointer;
 }
 
+.coach-panel {
+    display: grid;
+    gap: 1rem;
+    padding: 1.1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.coach-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.coach-header h2,
+.mini-heading h3 {
+    margin: 0;
+    color: var(--foreground);
+    font-weight: 900;
+}
+
+.coach-header h2 {
+    font-size: 1.15rem;
+}
+
+.coach-header p,
+.mini-heading span {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--muted-foreground);
+    font-size: 0.82rem;
+}
+
+.health-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.5rem;
+    padding: 0 0.85rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary) 11%, var(--card));
+    color: var(--primary);
+    white-space: nowrap;
+}
+
+.health-pill.good {
+    background: color-mix(in srgb, var(--success) 12%, var(--card));
+    color: var(--success);
+}
+
+.health-pill.warning {
+    background: color-mix(in srgb, var(--warning) 18%, var(--card));
+    color: #9a6a00;
+}
+
+.coach-grid {
+    display: grid;
+    grid-template-columns: minmax(20rem, 1.05fr) minmax(18rem, 0.95fr) minmax(18rem, 0.95fr);
+    gap: 1rem;
+}
+
+.streak-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.streak-card {
+    display: grid;
+    align-content: start;
+    gap: 0.4rem;
+    min-height: 12rem;
+    padding: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--muted) 42%, var(--card));
+}
+
+.streak-card>.material-symbols-outlined {
+    width: 2.2rem;
+    height: 2.2rem;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary) 12%, var(--card));
+    color: var(--primary);
+}
+
+.streak-card.good>.material-symbols-outlined {
+    background: color-mix(in srgb, var(--success) 12%, var(--card));
+    color: var(--success);
+}
+
+.streak-card.warning>.material-symbols-outlined {
+    background: color-mix(in srgb, var(--warning) 22%, var(--card));
+    color: #9a6a00;
+}
+
+.streak-card strong {
+    color: var(--foreground);
+    font-size: 1.75rem;
+    line-height: 1;
+}
+
+.streak-card small {
+    color: var(--muted-foreground);
+    font-weight: 800;
+}
+
+.streak-card h3,
+.streak-card p {
+    margin: 0;
+}
+
+.streak-card h3 {
+    color: var(--foreground);
+    font-size: 0.95rem;
+    font-weight: 900;
+}
+
+.streak-card p,
+.streak-card b {
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+
+.streak-card b {
+    color: var(--primary);
+}
+
+.mission-list,
+.insight-list {
+    display: grid;
+    align-content: start;
+    gap: 0.65rem;
+}
+
+.mission-row,
+.insight-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.7rem;
+    align-items: center;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--foreground);
+    background: var(--card);
+}
+
+.insight-row {
+    grid-template-columns: auto minmax(0, 1fr);
+}
+
+.mission-icon,
+.insight-row>.material-symbols-outlined {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary) 10%, var(--card));
+    color: var(--primary);
+}
+
+.insight-row.good>.material-symbols-outlined {
+    background: color-mix(in srgb, var(--success) 12%, var(--card));
+    color: var(--success);
+}
+
+.insight-row.warning>.material-symbols-outlined {
+    background: color-mix(in srgb, var(--warning) 18%, var(--card));
+    color: #9a6a00;
+}
+
+.insight-row.danger>.material-symbols-outlined {
+    background: color-mix(in srgb, var(--danger) 12%, var(--card));
+    color: var(--danger);
+}
+
+.mission-row strong,
+.mission-row small,
+.insight-row strong,
+.insight-row small {
+    display: block;
+    min-width: 0;
+}
+
+.mission-row strong,
+.insight-row strong {
+    color: var(--foreground);
+    font-size: 0.86rem;
+    font-weight: 900;
+}
+
+.mission-row small,
+.insight-row small {
+    margin-top: 0.15rem;
+    color: var(--muted-foreground);
+    font-size: 0.74rem;
+    line-height: 1.35;
+}
+
+.mission-row>b {
+    color: var(--primary);
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+.mission-progress {
+    display: block;
+    height: 0.35rem;
+    margin-top: 0.45rem;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--muted);
+}
+
+.mission-progress i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--primary);
+}
+
 
 @layer components {
 
     /* Botão Primário - Foco em Finanças Séria/Investimentos */
     .primary-button {
-        @apply px-5 py-3 rounded-2xl font-bold text-center transition-all duration-150 block select-none cursor-pointer;
+        @apply px-5 py-3 rounded-lg font-bold text-center transition-all duration-150 block select-none cursor-pointer;
         background-color: var(--primary);
         color: var(--primary-foreground);
         border-color: var(--primary-hover);
@@ -135,7 +366,7 @@ button {
     }
 
     .secondary-button {
-        @apply px-5 py-3 rounded-2xl font-bold text-center transition-all duration-150 block select-none cursor-pointer;
+        @apply px-5 py-3 rounded-lg font-bold text-center transition-all duration-150 block select-none cursor-pointer;
         background-color: var(--secondary);
         color: var(--secondary-foreground);
         border-color: var(--secondary-hover);
@@ -147,7 +378,7 @@ button {
 
     /* Card Financeiro Inteligente */
     .finance-card {
-        @apply p-5 rounded-2xl border-2 transition-all duration-200 shadow-sm;
+        @apply p-5 rounded-lg border transition-all duration-200 shadow-sm;
         background-color: var(--card);
         color: var(--card-foreground);
         border-color: var(--border);

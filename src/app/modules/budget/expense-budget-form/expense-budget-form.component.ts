@@ -6,6 +6,7 @@ import { SelectComponent, SelectOption } from '../../../components/select/select
 import { BudgetsService } from '../../../services/budgets.service';
 import { CategoriesService } from '../../../services/categories.service';
 import { ModalService } from '../../../services/modal.service';
+import { buildExpenseBudgetPayload } from './expense-budget-form.utils';
 
 @Component({
   selector: 'app-expense-budget-form',
@@ -79,15 +80,11 @@ export class ExpenseBudgetFormComponent implements OnInit {
     if (this.form.invalid) return;
 
     const raw = this.form.getRawValue();
-    const payload: NewBudget = {
-      categoryId: raw.categoryId,
-      amountLimit: Number(raw.amountLimit),
-      targetKind: raw.targetKind,
-      alertPercent: Number(raw.alertPercent) || 80,
-      notes: raw.notes.trim() || null,
-      periodMonth: this.budget?.periodMonth ?? this.month,
-      periodYear: this.budget?.periodYear ?? this.year,
-    };
+    const payload: NewBudget = buildExpenseBudgetPayload(raw, {
+      budget: this.budget,
+      month: this.month,
+      year: this.year,
+    });
 
     const save = this.budget?.id
       ? this.budgetsService.update(this.budget.id, payload)

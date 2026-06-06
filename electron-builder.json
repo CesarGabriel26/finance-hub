@@ -15,6 +15,14 @@
   "extraMetadata": {
     "main": "dist-electron/main.js"
   },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "CesarGabriel26",
+      "repo": "finance-hub",
+      "releaseType": "release"
+    }
+  ],
   "win": {
     "target": [
       {
@@ -22,16 +30,16 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "public/favicon.ico"
+    "icon": "public/icon.ico"
   },
   "mac": {
     "target": ["dmg"],
-    "icon": "public/favicon.icns",
+    "icon": "public/icon.icns",
     "category": "public.app-category.finance"
   },
   "linux": {
     "target": ["AppImage", "deb"],
-    "icon": "public/favicon.png",
+    "icon": "public/icon.png",
     "category": "Finance"
   },
   "nsis": {

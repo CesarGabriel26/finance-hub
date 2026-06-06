@@ -18,6 +18,11 @@
 
         @if(parsedTransactions().length > 0 && !isLoading()) {
         <div class="flex items-center gap-3">
+            <button (click)="categorizeWithAi()" [disabled]="isAiCategorizing()"
+                class="px-4 py-2 text-sm font-semibold rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                {{ isAiCategorizing() ? 'Analisando...' : 'Categorizar com IA' }}
+            </button>
             <button (click)="resetImport()"
                 class="px-4 py-2 text-sm font-semibold rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-all cursor-pointer">
                 Cancelar
@@ -295,6 +300,10 @@
                 </span>
             </div>
 
+            @if (aiCategorizationMessage()) {
+            <span class="text-xs font-bold text-[var(--primary)]">{{ aiCategorizationMessage() }}</span>
+            }
+
             <div class="w-full flex-1 min-h-0">
                 <app-data-table class="w-full h-full min-h-0 block" [columns]="transactionColumns" [rows]="activeTx()">
 
@@ -331,6 +340,8 @@
                                     <span class="text-xxs font-bold text-amber-700">Duplicada ja importada</span>
                                     } @else if (row.categorySource === 'rule') {
                                     <span class="text-xxs font-bold text-[var(--primary)]">Categoria por regra</span>
+                                    } @else if (row.categorySource === 'ai') {
+                                    <span class="text-xxs font-bold text-[var(--primary)]">Categoria pela IA</span>
                                     } @else if (row.categorySource === 'fallback') {
                                     <span class="text-xxs font-bold text-amber-700">Revisar categoria sugerida</span>
                                     }

@@ -6,7 +6,7 @@ exports.investmentPortfolios = (0, sqlite_core_1.sqliteTable)('investment_portfo
     id: (0, sqlite_core_1.text)('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
     name: (0, sqlite_core_1.text)('name').notNull(),
     strategy: (0, sqlite_core_1.text)('strategy', {
-        enum: ['income', 'growth', 'balanced', 'capital_preservation', 'custom'],
+        enum: ['income', 'growth', 'balanced', 'capital_preservation', 'global_diversification', 'custom'],
     }).notNull().default('balanced'),
     riskProfile: (0, sqlite_core_1.text)('risk_profile', {
         enum: ['conservative', 'moderate', 'aggressive'],

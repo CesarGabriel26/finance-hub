@@ -1,60 +1,81 @@
-<form (submit)="submit($event)" [formGroup]="form" class="space-y-5">
-  <div class="mb-2">
-    <h3 class="text-foreground text-lg font-black tracking-tight">
-      {{ transaction ? 'Editar Transacao' : 'Nova Transacao' }}
-    </h3>
-    <p class="text-muted-foreground text-xs">
-      Registre uma movimentacao manual vinculada a uma conta.
-    </p>
-  </div>
+<form (submit)="submit($event)" [formGroup]="form" class="friendly-form">
+  <header class="form-hero">
+    <span class="material-symbols-outlined">receipt_long</span>
+    <div>
+      <h3>{{ transaction ? 'Editar movimento' : 'Novo movimento' }}</h3>
+      <p>Use este formulario para registrar uma compra, uma entrada de dinheiro ou uma transferencia.</p>
+    </div>
+  </header>
 
-  <hr class="border-border my-2">
-
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="flex flex-col gap-1.5 md:col-span-2">
-      <label for="tx-account" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Conta</label>
-      <app-select id="tx-account" formControlName="accountId" [options]="accountOptions()" placeholder="Selecione a conta" />
+  <section class="form-section">
+    <div class="section-title">
+      <span>1</span>
+      <div>
+        <h4>O que aconteceu?</h4>
+        <p>Escreva do jeito que voce lembraria ao procurar depois.</p>
+      </div>
     </div>
 
-    <div class="flex flex-col gap-1.5 md:col-span-2">
-      <label for="tx-description" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Descricao</label>
-      <app-input id="tx-description" formControlName="description" placeholder="Ex: Mercado, salario, aluguel" />
+    <div class="field-grid">
+      <label class="field field-wide" for="tx-description">
+        <span>Descricao</span>
+        <app-input id="tx-description" formControlName="description" placeholder="Ex: Mercado, salario, aluguel" />
+      </label>
+
+      <label class="field" for="tx-type">
+        <span>Tipo</span>
+        <app-select id="tx-type" formControlName="type" [options]="[
+          { value: 'debit', label: 'Despesa' },
+          { value: 'credit', label: 'Receita' },
+          { value: 'transfer', label: 'Transferencia' }
+        ]" />
+      </label>
+
+      <label class="field" for="tx-amount">
+        <span>Valor</span>
+        <app-input id="tx-amount" type="currency" prefix="R$ " formControlName="amount" />
+      </label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="section-title">
+      <span>2</span>
+      <div>
+        <h4>Onde e quando?</h4>
+        <p>A conta define de onde o dinheiro saiu ou entrou.</p>
+      </div>
     </div>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="tx-type" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Tipo</label>
-      <app-select id="tx-type" formControlName="type" [options]="[
-        { value: 'debit', label: 'Despesa' },
-        { value: 'credit', label: 'Receita' },
-        { value: 'transfer', label: 'Transferencia' }
-      ]" />
-    </div>
+    <div class="field-grid">
+      <label class="field field-wide" for="tx-account">
+        <span>Conta</span>
+        <app-select id="tx-account" formControlName="accountId" [options]="accountOptions()" placeholder="Escolha a conta" />
+      </label>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="tx-amount" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Valor</label>
-      <app-input id="tx-amount" type="currency" prefix="R$ " formControlName="amount" />
-    </div>
+      <label class="field" for="tx-date">
+        <span>Data</span>
+        <app-input id="tx-date" type="date" formControlName="date" />
+      </label>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="tx-date" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Data</label>
-      <app-input id="tx-date" type="date" formControlName="date" />
+      <label class="field" for="tx-category">
+        <span>Categoria</span>
+        <app-select id="tx-category" formControlName="categoryId" [options]="categoryOptions()" placeholder="Sem categoria" />
+      </label>
     </div>
+  </section>
 
-    <div class="flex flex-col gap-1.5">
-      <label for="tx-category" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Categoria</label>
-      <app-select id="tx-category" formControlName="categoryId" [options]="categoryOptions()" placeholder="Selecione" />
-    </div>
+  <section class="form-section soft">
+    <label class="field" for="tx-tags">
+      <span>Tags opcionais</span>
+      <app-input id="tx-tags" formControlName="tags" placeholder="#viagem, #familia, #imposto" />
+      <small>Tags ajudam a encontrar movimentos que pertencem ao mesmo assunto.</small>
+    </label>
+  </section>
 
-    <div class="flex flex-col gap-1.5 md:col-span-2">
-      <label for="tx-tags" class="text-foreground text-xs font-extrabold uppercase tracking-wider">Tags</label>
-      <app-input id="tx-tags" formControlName="tags" placeholder="#viagem, #familia, #ir" />
-    </div>
-  </div>
-
-  <div class="pt-4 flex justify-end">
-    <button type="submit" [disabled]="form.invalid"
-      class="primary-button w-full sm:w-auto min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:filter-none">
-      {{ transaction ? 'Salvar Transacao' : 'Criar Transacao' }}
+  <footer class="form-actions">
+    <button type="submit" [disabled]="form.invalid" class="primary-button disabled:opacity-50 disabled:cursor-not-allowed">
+      {{ transaction ? 'Salvar movimento' : 'Registrar movimento' }}
     </button>
-  </div>
+  </footer>
 </form>

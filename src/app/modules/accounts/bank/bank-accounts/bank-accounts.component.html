@@ -1,63 +1,100 @@
-<section class="h-full w-full grid grid-rows-[auto_1fr] gap-4 ">
-    <form [formGroup]="filters" class="bg-[var(--card)] p-4 rounded-xl shadow-lg grid grid-cols-[3fr_1fr_1fr] gap-4">
-        <app-input formControlName="name" placeholder="Filtrar por texto..." />
-
-        <app-select formControlName="type" [options]="ACCOUNT_TYPES" placeholder="Selecionar tipo" />
-        <button (click)="openModal()"
-            class="px-4 py-2 rounded-md flex justify-center items-center cursor-pointer select-none bg-[var(--primary)] text-[var(--primary-foreground)]">
-            <span class="material-symbols-outlined">add</span>
-            <span>Nova Conta bancária</span>
-        </button>
-    </form>
-
-    <div class="w-full flex-1 min-h-0">
-        <app-data-table title="Contas bancárias" description="Gerencie suas contas bancárias." [rows]="accounts()"
-            [columns]="accountsColumns" [getRowId]="identifyAccount">
-
-            <ng-template #dataTableRow let-row>
-                <div class="grid grid-cols-[1fr_1fr_1fr_0.7fr_auto] w-full gap-4 items-center cursor-context-menu"
-                    [appContextMenuTriggerFor]="myContextMenu" [appContextMenuData]="row">
-                    <div class="flex items-center gap-4">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-full bg-muted text-muted-foreground flex-shrink-0"
-                            [style.background-color]="row.color + '1a'">
-                            <span class="material-symbols-outlined text-xl" [style.color]="row.color">
-                                {{ row.icon || 'payments' }}
-                            </span>
-
-                        </div>
-
-                        <div class="flex flex-col min-w-0">
-                            <span class="font-semibold text-[var(--foreground)] truncate text-sm sm:text-base">
-                                {{ row.name }}
-                            </span>
-                            <span class="text-xs text-[var(--foreground)] opacity-50 truncate">
-                                {{ getAccLabel(row.type)}}
-                            </span>
-                        </div>
-                    </div>
-
-                    <span class="font-semibold text-[var(--foreground)] truncate text-sm sm:text-base">
-                        {{ (row.balance || 0) | currency: 'BRL' }}
-                    </span>
-
-                    <span class="font-semibold text-[var(--foreground)] truncate text-sm sm:text-base">
-                        {{ bankService.getBankByCode(row.bankCode)?.name }}
-                    </span>
-
-                    <span class="font-semibold text-[var(--foreground)] truncate text-sm sm:text-base">
-                        {{ row.accountNumber || '-' }}
-                    </span>
-
-                    <button [appContextMenuTriggerFor]="myContextMenu" [appContextMenuData]="row"
-                        appContextMenuTriggerType="click"
-                        class="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                        type="button" aria-label="Mais opções">
-                        <span class="material-symbols-outlined text-xl block">more_vert</span>
-                    </button>
-                </div>
-            </ng-template>
-        </app-data-table>
+<section class="accounts-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Contas</span>
+      <h1>Onde seu dinheiro esta</h1>
+      <p>Cadastre bancos, carteira, poupanca e contas de investimento em um lugar so.</p>
     </div>
+
+    <div class="header-actions">
+      <a routerLink="/main/transactions/statement-import" class="secondary-action">
+        <span class="material-symbols-outlined">upload_file</span>
+        Importar extrato
+      </a>
+      <button type="button" (click)="openModal()" class="primary-action">
+        <span class="material-symbols-outlined">add</span>
+        Nova conta
+      </button>
+    </div>
+  </header>
+
+  <div class="summary-grid">
+    <article>
+      <span>Saldo total</span>
+      <strong>{{ totalBalance() | currency: 'BRL' }}</strong>
+    </article>
+    <article>
+      <span>Contas</span>
+      <strong>{{ accountCountLabel() }}</strong>
+    </article>
+  </div>
+
+  <form [formGroup]="filters" class="filter-panel">
+    <label>
+      <span>Buscar</span>
+      <app-input formControlName="name" placeholder="Nome da conta ou banco" />
+    </label>
+    <label>
+      <span>Tipo</span>
+      <app-select formControlName="type" [options]="ACCOUNT_TYPES" placeholder="Todos os tipos" />
+    </label>
+  </form>
+
+  <div class="accounts-grid">
+    @for (account of accounts(); track account.id) {
+    <article class="account-card">
+      <div class="account-main">
+        <span class="account-icon" [style.background-color]="(account.color || '#1f7ae0') + '18'">
+          <span class="material-symbols-outlined" [style.color]="account.color || '#1f7ae0'">
+            {{ account.icon || 'account_balance' }}
+          </span>
+        </span>
+
+        <div>
+          <h2>{{ account.name }}</h2>
+          <p>{{ getAccLabel(account.type) }} - {{ bankName(account) }}</p>
+        </div>
+      </div>
+
+      <div class="account-balance">
+        <span>Saldo atual</span>
+        <strong>{{ (account.balance || 0) | currency: 'BRL' }}</strong>
+      </div>
+
+      <dl>
+        <div>
+          <dt>Banco</dt>
+          <dd>{{ account.bankCode || '-' }}</dd>
+        </div>
+        <div>
+          <dt>Conta</dt>
+          <dd>{{ account.accountNumber || '-' }}</dd>
+        </div>
+      </dl>
+
+      <footer>
+        <button type="button" (click)="openModal(account)" class="text-action">
+          <span class="material-symbols-outlined">edit</span>
+          Editar
+        </button>
+        <button type="button" [appContextMenuTriggerFor]="accountMenu" [appContextMenuData]="account"
+          appContextMenuTriggerType="click" class="icon-action" aria-label="Mais opcoes">
+          <span class="material-symbols-outlined">more_vert</span>
+        </button>
+      </footer>
+    </article>
+    } @empty {
+    <div class="empty-state">
+      <span class="material-symbols-outlined">account_balance</span>
+      <h2>Nenhuma conta cadastrada</h2>
+      <p>Crie uma conta manualmente ou importe um extrato para o sistema criar automaticamente.</p>
+      <button type="button" (click)="openModal()" class="primary-action">
+        <span class="material-symbols-outlined">add</span>
+        Criar primeira conta
+      </button>
+    </div>
+    }
+  </div>
 </section>
 
-<app-context-menu #myContextMenu [items]="menuItems" />
+<app-context-menu #accountMenu [items]="menuItems" />

@@ -3,7 +3,6 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import {
   AccountReceivable,
   AccountReceivableStatus,
-  NewAccountReceivable,
 } from '../../../../models/account-receivable.model';
 import { AccountsReceivableService } from '../../../../services/accounts-receivable.service';
 import { AccountsService } from '../../../../services/accounts.service';
@@ -11,6 +10,7 @@ import { CategoriesService } from '../../../../services/categories.service';
 import { ModalService } from '../../../../services/modal.service';
 import { InputComponent } from '../../../../components/input/input.component';
 import { SelectComponent, SelectOption } from '../../../../components/select/select.component';
+import { buildAccountReceivablePayload, todayKey } from '../../accounts-schedule.utils';
 
 @Component({
   selector: 'app-account-receivable-form',
@@ -41,7 +41,7 @@ export class AccountReceivableFormComponent implements OnInit {
       nonNullable: true,
       validators: [Validators.required, Validators.min(0.01)],
     }),
-    dueDate: new FormControl<string>(this.today(), {
+    dueDate: new FormControl<string>(todayKey(), {
       nonNullable: true,
       validators: [Validators.required],
     }),
@@ -95,25 +95,7 @@ export class AccountReceivableFormComponent implements OnInit {
     if (this.form.invalid) return;
 
     const raw = this.form.getRawValue();
-    const payload: NewAccountReceivable = {
-      description: raw.description.trim(),
-      payer: raw.payer.trim(),
-      amount: raw.amount,
-      dueDate: raw.dueDate,
-      receivedAt: raw.receivedAt || null,
-      status: raw.status,
-      isRecurring: raw.isRecurring,
-      recurrenceClassification: raw.isRecurring ? raw.recurrenceClassification : null,
-      totalInstallments: Math.max(1, Number(raw.totalInstallments) || 1),
-      currentInstallment: Math.max(1, Number(raw.currentInstallment) || 1),
-      accountId: raw.accountId || null,
-      categoryId: raw.categoryId || null,
-      notes: raw.notes.trim() || null,
-    };
-
-    if (payload.status === 'received' && !payload.receivedAt) {
-      payload.receivedAt = this.today();
-    }
+    const payload = buildAccountReceivablePayload(raw);
 
     const save = this.receivable?.id
       ? this.receivableService.update(this.receivable.id, payload)
@@ -150,7 +132,4 @@ export class AccountReceivableFormComponent implements OnInit {
     });
   }
 
-  private today(): string {
-    return new Date().toISOString().slice(0, 10);
-  }
 }
